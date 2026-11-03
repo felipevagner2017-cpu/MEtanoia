@@ -76,10 +76,10 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
    } else listOf(start.toLocalDate())
    dates.forEach { date->
     val occurrenceAt=date.atTime(start.hour,start.minute).atZone(zone).toInstant().toEpochMilli()
-    val reminderAt=if(reminder) occurrenceAt-15*60*1000L else null
+    val reminderAt=if(reminder) occurrenceAt-30*60*1000L else null
     val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=occurrenceAt,reminderAt=reminderAt,recurrenceRule=recurrenceRule)
     val id=db.agendaDao().insert(item)
-    if(reminder && reminderAt!=null && reminderAt>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id))
+    if(reminder && reminderAt!=null && occurrenceAt>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id))
    }
   }
  }
@@ -87,7 +87,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
   viewModelScope.launch {
    scheduler.cancel(item)
    db.agendaDao().update(item)
-   if (item.reminderAt != null && item.reminderAt > System.currentTimeMillis()) scheduler.schedule(item)
+   if (item.reminderAt != null && item.scheduledAt > System.currentTimeMillis()) scheduler.schedule(item)
   }
  }
  fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed) } }
@@ -312,14 +312,14 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
     }) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
     Row(verticalAlignment=Alignment.CenterVertically) {
      Checkbox(checked=reminder,onCheckedChange={reminder=it})
-     Text("Lembrete 15 minutos antes",color=Navy)
+     Text("Lembretes 2 horas, 1 hora e 30 minutos antes",color=Navy)
     }
    }
   },
   confirmButton={
    TextButton(enabled=title.isNotBlank(),onClick={
     val scheduled=date.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
-    val reminderAt=if(reminder) scheduled-15*60*1000L else null
+    val reminderAt=if(reminder) scheduled-30*60*1000L else null
     onSave(item.copy(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,reminderAt=reminderAt))
    }) { Text("Salvar alterações",color=Gold) }
   },
