@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#102542"><meta name="description" content="MEtonoia — Palavra, consciência e prática diária.">
+<meta name="theme-color" content="#102542"><meta name="description" content="MEtanoia — Palavra, consciência e prática diária.">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/metonoia.svg"><link rel="apple-touch-icon" href="/icons/metonoia.svg">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>MEtonoia</title>
+<title>MEtanoia</title>
 <style>
 :root{--navy:#102542;--deep:#07172f;--gold:#C5A15A;--white:#fff;--muted:#aebdd0;--line:#c5a15a55;--panel:#112b49;--green:#8de7a8}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;padding-bottom:86px;background:radial-gradient(ellipse at 50% -15%,#24466b 0%,var(--deep) 56%);color:var(--white);font:15px/1.5 system-ui,-apple-system,sans-serif}
@@ -27,7 +27,7 @@ h2{font:600 18px Georgia,serif;margin:0 0 10px}h3{font-size:14px;margin:0 0 5px}
 .modalbg{position:fixed;inset:0;background:#07172acc;z-index:8;display:flex;align-items:flex-end;padding:10px}.modal{background:#102542;border:1px solid #c5a15a88;color:#fff;border-radius:18px;width:100%;max-width:540px;margin:auto;padding:17px;max-height:90vh;overflow:auto}
 @media(min-width:600px){.modalbg{align-items:center}.modal{border-radius:18px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-/* Refinamento visual MEtonoia — tipografia, alinhamento e calendário */
+/* Refinamento visual MEtanoia — tipografia, alinhamento e calendário */
 :root{--navy:#102542;--deep:#07172f;--gold:#c5a15a;--white:#fff;--muted:#b9c7d8;--line:#c5a15a55;--panel:#112b49}
 html{scroll-behavior:smooth}body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;letter-spacing:.005em;padding-bottom:calc(82px + env(safe-area-inset-bottom));}
 header{padding:16px 18px 17px}.brand img{width:46px;height:46px}h1{font-family:Inter,system-ui,sans-serif;font-size:20px;letter-spacing:.12em;font-weight:750}.tag{font-size:10px;letter-spacing:.075em}
@@ -66,7 +66,7 @@ label{color:#E5D4AC}
 .event-emoji-picker small{display:block;color:#aaa;font-size:10px;margin-top:-5px}
 \n/* Palavra por seleção sequencial e confissão temporária */\n.word-select-list{display:grid;gap:9px;margin:14px 0}.word-choice{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #C5A15A66;border-radius:13px;background:#0b0b0b;cursor:pointer}.word-choice input{width:19px;height:19px;accent-color:#C5A15A;flex:0 0 auto}.word-choice>span:nth-of-type(2){display:flex;flex-direction:column;gap:3px}.word-choice strong{color:#E2C47E;font-size:14px}.word-choice small{color:#BDBDBD;font-size:11px;font-weight:400}.confession-panel{border-color:#C5A15A99}.confession-panel .reading-page{margin-top:14px}.confession-panel .row{flex-wrap:wrap}\n</style></head>
 <body>
-<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtonoia"><div><h1>MEtonoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
+<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
 <main>
 <section id="word"><div class="panel"><div class="eyebrow">Livro da Palavra</div><h2>Uma página por vez. Uma direção para cada área.</h2><p class="muted">Escolha a área que deseja consultar. Os relatos do diário ajudam a relacionar a Palavra ao assunto que está vivendo.</p><div id="wordAreas"></div></div></section>
 <section id="agenda" class="hidden">
@@ -83,6 +83,6 @@ label{color:#E5D4AC}
 <section id="diary" class="hidden"><div class="panel"><div class="eyebrow">Exame da realidade</div><h2>Diário</h2><p class="muted">Relate o que aconteceu e classifique a área. A inteligência usará esses relatos para oferecer direção bíblica.</p><label>Área da vida</label><select id="jd" class="field"><option>Espiritual</option><option>Matrimonial</option><option>Profissional</option><option>Cotidiano</option></select><label>Título do relato</label><input id="jt" class="field" placeholder="Ex.: Uma conversa difícil"><label>O que aconteceu? O que pensei, senti ou fiz?</label><textarea id="jb" class="field" rows="5" placeholder="Escreva com sinceridade..."></textarea><div id="journalPrompts"></div><button id="saveJ" class="btn gold">Salvar no diário</button></div><div class="panel confession-panel"><div class="eyebrow">Espaço reservado · não permanente</div><h2>Confissão</h2><p class="muted">Relate algo que você reconhece como erro, pecado ou atitude que precisa ser corrigida. A orientação será apresentada à luz das Escrituras. Este relato não será salvo no diário nem no histórico.</p><label>O que aconteceu? O que você fez e quem foi afetado?</label><textarea id="confessionText" class="field" rows="5" placeholder="Escreva com sinceridade. Este campo é temporário..."></textarea><div class="row"><button id="confessionRun" class="btn gold">Receber orientação bíblica</button><button id="confessionClear" class="btn">Limpar</button></div><div id="confessionResult"></div></div><div class="panel"><h2>Meus relatos</h2><div id="journalList"></div></div></section>
 <section id="intel" class="hidden"><div class="panel"><div class="eyebrow">Inteligência bíblica</div><h2>Direção a partir do seu diário</h2><p class="muted">Passagens, princípios, reflexões e passos práticos associados aos relatos de cada área. Sem presumir intenções ou emitir diagnóstico espiritual.</p><div id="intelligenceAreas"></div></div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
-<p class="muted" style="text-align:center;padding:10px">MEtonoia · A transformação é uma construção diária.</p></main>
+<p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
 <nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Palavra</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
 <div id="modal"></div><script src="/app.js"></script></body></html>
