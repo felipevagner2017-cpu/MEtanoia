@@ -1,5 +1,8 @@
 name: Android build
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
@@ -26,6 +29,22 @@ jobs:
         run: gradle assembleDebug
       - name: Run unit tests
         run: gradle testDebugUnitTest
+      - name: Package source code
+        run: git archive --format=zip --output=MEtonoia-codigo-fonte.zip HEAD
+      - name: Upload source code
+        uses: actions/upload-artifact@v4
+        with:
+          name: metanoia-source-code
+          path: MEtonoia-codigo-fonte.zip
+          if-no-files-found: error
+      - name: Publish direct Android installer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: MEtonoia Android — versão de teste
+          prerelease: true
+          overwrite_files: true
+          files: app/build/outputs/apk/debug/app-debug.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
