@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
   super.onCreate(savedInstanceState)
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
+  scheduler.scheduleDailyReminders()
   setContent { MaterialTheme(colorScheme = lightColorScheme(primary=Navy, secondary=Gold, background=Paper)) {
    Surface(Modifier.fillMaxSize(), color=Paper) { MetanoiaApp(db, scheduler) }
   } }
