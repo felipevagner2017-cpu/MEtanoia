@@ -2,12 +2,14 @@ package br.com.metanoia
 import android.os.Bundle
 import android.os.Build
 import android.Manifest
+import android.app.TimePickerDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -49,9 +52,9 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
- fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, reminder:Boolean) {
+ fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean) {
   if(title.isBlank()) return
-  viewModelScope.launch { val at=System.currentTimeMillis(); val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=at,reminderAt=if(reminder) at+60*60*1000L else null); val id=db.agendaDao().insert(item); if(reminder) scheduler.schedule(item.copy(id=id)) }
+  viewModelScope.launch { val reminderAt=if(reminder) scheduledAt-15*60*1000L else null; val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduledAt,reminderAt=reminderAt); val id=db.agendaDao().insert(item); if(reminder && reminderAt!!>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id)) }
  }
  fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed) } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item) } }
@@ -90,31 +93,130 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  }
 }
 @Composable private fun AgendaPage(items:List<AgendaItem>,vm:AppViewModel) {
+ val context=LocalContext.current
+ val zone=remember { ZoneId.systemDefault() }
+ var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+ var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var dimension by remember { mutableStateOf(LifeDimension.ROUTINE) }
- var range by remember { mutableStateOf("Todos") }; var reminder by remember { mutableStateOf(false) }
- val now=System.currentTimeMillis(); val day=86400000L
- val visible=when(range) { "Hoje"->items.filter{it.scheduledAt in now-day..now+day}; "Semana"->items.filter{it.scheduledAt in now-day..now+7*day}; "Mês"->items.filter{it.scheduledAt in now-day..now+30*day}; else->items }
- Column(Modifier.fillMaxSize().padding(16.dp)) {
-  Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
-  OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Tarefa, hábito ou compromisso")},singleLine=true)
-  Row { AgendaKind.entries.forEach { v-> FilterChip(kind==v,{kind=v},label={Text(kindLabel(v))}) } }
-  var menu by remember { mutableStateOf(false) }
-  Box { OutlinedButton(onClick={menu=true}) { Text(dimensionLabel(dimension)) }
-   DropdownMenu(menu,{menu=false}) { LifeDimension.entries.forEach { v-> DropdownMenuItem(text={Text(dimensionLabel(v))},onClick={dimension=v;menu=false}) } }
+ var reminder by remember { mutableStateOf(false) }
+ var hour by remember { mutableIntStateOf(9) }
+ var minute by remember { mutableIntStateOf(0) }
+ var dimensionMenu by remember { mutableStateOf(false) }
+ val first=displayedMonth.atDay(1)
+ val leading=first.dayOfWeek.value-1
+ val dayCount=displayedMonth.lengthOfMonth()
+ val cells=buildList<LocalDate?> {
+  repeat(leading) { add(null) }
+  for(dayNumber in 1..dayCount) add(displayedMonth.atDay(dayNumber))
+  while(size%7!=0) add(null)
+ }
+ val selectedItems=items.filter { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate()==selectedDate }.sortedBy { it.scheduledAt }
+ val monthItems=items.groupBy { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate() }
+ val weekdays=listOf("SEG","TER","QUA","QUI","SEX","SÁB","DOM")
+ Column(Modifier.fillMaxSize().padding(horizontal=14.dp, vertical=10.dp)) {
+  Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+   Column {
+    Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+    Text("Organize seus dias com intenção.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+   }
+   TextButton(onClick={selectedDate=LocalDate.now();displayedMonth=YearMonth.now()}) { Text("Hoje",color=Gold) }
   }
-  Row(verticalAlignment=Alignment.CenterVertically) { Checkbox(reminder,{reminder=it}); Text("Lembrar em 1 hora",color=Navy) }
-  Button(onClick={vm.addAgenda(title,kind,dimension,reminder).also { title=""; reminder=false }},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Adicionar à agenda") }
-  Row { listOf("Hoje","Semana","Mês","Todos").forEach { v-> FilterChip(range==v,{range=v},label={Text(v)}) } }
-  Text(visible.count{!it.completed}.toString()+" pendentes · "+visible.count{it.completed}+" concluídos",color=Gold)
-  LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) { items(visible,key={it.id}) { item->
-   Card(colors=CardDefaults.cardColors(containerColor=Color.White)) { Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
-    Checkbox(item.completed,{vm.toggle(item)})
-    Column(Modifier.weight(1f)) { Text(item.title,color=Navy,fontWeight=FontWeight.SemiBold); Text(kindLabel(item.kind)+" · "+dimensionLabel(item.dimension)+" · "+formatDate(item.scheduledAt),style=MaterialTheme.typography.labelSmall) }
-    TextButton(onClick={vm.delete(item)}) { Text("Excluir") }
-   } }
-  } }
+  Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Column(Modifier.padding(12.dp)) {
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=Navy,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
+     Row {
+      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=Navy,style=MaterialTheme.typography.headlineMedium) }
+      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=Navy,style=MaterialTheme.typography.headlineMedium) }
+     }
+    }
+    Row(Modifier.fillMaxWidth()) {
+     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color=Color.Gray,style=MaterialTheme.typography.labelSmall) } }
+    }
+    cells.chunked(7).forEach { week->
+     Row(Modifier.fillMaxWidth()) {
+      week.forEach { date->
+       Box(Modifier.weight(1f).height(43.dp).padding(2.dp),contentAlignment=Alignment.Center) {
+        if(date!=null) {
+         val isSelected=date==selectedDate
+         val isToday=date==LocalDate.now()
+         val count=monthItems[date]?.size?:0
+         Column(Modifier.fillMaxSize().background(if(isSelected) Navy else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+          Text(date.dayOfMonth.toString(),color=if(isSelected) Color.White else Navy,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
+          if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+           repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
+          } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
+         }
+        }
+       }
+      }
+     }
+    }
+    Row(Modifier.fillMaxWidth().padding(top=6.dp),horizontalArrangement=Arrangement.SpaceBetween) {
+     Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+     Text("\${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
+    }
+   }
+  }
+  Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+   Column {
+    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=Navy,fontWeight=FontWeight.Bold)
+    Text("\${selectedItems.count{!it.completed}} pendentes · \${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
+   }
+   TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
+  }
+  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+    OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Nova tarefa, hábito ou compromisso")},singleLine=true)
+    Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value},label={Text(kindLabel(value))}) }
+    }
+    Box {
+     OutlinedButton(onClick={dimensionMenu=true}) { Text(dimensionLabel(dimension),color=Navy) }
+     DropdownMenu(expanded=dimensionMenu,onDismissRequest={dimensionMenu=false}) {
+      LifeDimension.entries.forEach { value->DropdownMenuItem(text={Text(dimensionLabel(value))},onClick={dimension=value;dimensionMenu=false}) }
+     }
+    }
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+     TextButton(onClick={TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()}) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
+     Row(verticalAlignment=Alignment.CenterVertically) {
+      Checkbox(checked=reminder,onCheckedChange={reminder=it})
+      Text("Avisar 15 min antes",style=MaterialTheme.typography.labelSmall,color=Navy)
+     }
+    }
+    Button(onClick={
+     val scheduled=selectedDate.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
+     vm.addAgenda(title,kind,dimension,scheduled,reminder)
+     title=""
+     reminder=false
+    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
+     Text("Adicionar em \${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
+    }
+   }
+  }
+  if(selectedItems.isEmpty()) {
+   Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
+    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color=Color.Gray,style=MaterialTheme.typography.bodyMedium)
+   }
+  } else {
+   LazyColumn(Modifier.weight(1f).padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+    items(selectedItems,key={it.id}) { item->
+     Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+      Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
+       Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
+       Column(Modifier.weight(1f)) {
+        Text(item.title,color=Navy,fontWeight=FontWeight.SemiBold)
+        val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
+        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+       }
+       TextButton(onClick={vm.delete(item)}) { Text("Excluir",color=Color.Gray) }
+      }
+     }
+    }
+   }
+  }
  }
 }
 @Composable private fun JournalPage(entries:List<JournalEntry>,vm:AppViewModel) {
