@@ -9,15 +9,19 @@ import br.com.metanoia.data.AgendaItem
 import java.time.ZonedDateTime
 
 class ReminderScheduler(private val context: Context) {
+    private val offsets = listOf(120, 60, 30)
+
     fun schedule(item: AgendaItem) {
-        val triggerAt = item.reminderAt ?: return
-        if (triggerAt <= System.currentTimeMillis()) return
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pending = pendingIntent(item)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-        } else {
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        offsets.forEachIndexed { index, minutes ->
+            val triggerAt = item.scheduledAt - minutes * 60_000L
+            if (triggerAt <= System.currentTimeMillis()) return@forEachIndexed
+            val pending = pendingIntent(item, index, minutes)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            }
         }
     }
 
@@ -33,9 +37,7 @@ class ReminderScheduler(private val context: Context) {
             .putExtra(ReminderReceiver.EXTRA_DAILY, true)
             .putExtra(ReminderReceiver.EXTRA_HOUR, hour)
         val pending = PendingIntent.getBroadcast(
-            context,
-            DAILY_REQUEST_BASE + hour,
-            intent,
+            context, DAILY_REQUEST_BASE + hour, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -49,17 +51,18 @@ class ReminderScheduler(private val context: Context) {
 
     fun cancel(item: AgendaItem) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.cancel(pendingIntent(item))
+        offsets.forEachIndexed { index, minutes ->
+            alarmManager.cancel(pendingIntent(item, index, minutes))
+        }
     }
 
-    private fun pendingIntent(item: AgendaItem): PendingIntent {
+    private fun pendingIntent(item: AgendaItem, index: Int, minutes: Int): PendingIntent {
         val intent = Intent(context, ReminderReceiver::class.java)
             .putExtra(ReminderReceiver.EXTRA_TITLE, item.title)
             .putExtra(ReminderReceiver.EXTRA_ID, item.id)
+            .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, minutes)
         return PendingIntent.getBroadcast(
-            context,
-            item.id.toInt(),
-            intent,
+            context, item.id.toInt() * 10 + index, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
