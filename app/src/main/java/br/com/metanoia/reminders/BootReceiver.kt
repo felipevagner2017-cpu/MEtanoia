@@ -17,6 +17,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 val dao = MetanoiaDatabase.get(context).agendaDao()
                 val scheduler = ReminderScheduler(context)
+                scheduler.scheduleDailyReminders()
                 dao.pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule)
             } finally {
                 pendingResult.finish()
