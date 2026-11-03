@@ -27,6 +27,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.com.metanoia.data.*
+import br.com.metanoia.domain.RecurrenceEngine
+import br.com.metanoia.domain.RecurrenceFrequency
 import br.com.metanoia.reminders.ReminderScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -63,9 +65,22 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
- fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean) {
+ fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean, recurrenceRule:String?) {
   if(title.isBlank()) return
-  viewModelScope.launch { val reminderAt=if(reminder) scheduledAt-15*60*1000L else null; val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduledAt,reminderAt=reminderAt); val id=db.agendaDao().insert(item); if(reminder && reminderAt!!>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id)) }
+  viewModelScope.launch {
+   val zone=ZoneId.systemDefault()
+   val start=Instant.ofEpochMilli(scheduledAt).atZone(zone)
+   val dates=if(kind==AgendaKind.HABIT && recurrenceRule!=null) {
+    RecurrenceEngine.datesUntil(start.toLocalDate(),RecurrenceFrequency.valueOf(recurrenceRule),start.toLocalDate().plusDays(90))
+   } else listOf(start.toLocalDate())
+   dates.forEach { date->
+    val occurrenceAt=date.atTime(start.hour,start.minute).atZone(zone).toInstant().toEpochMilli()
+    val reminderAt=if(reminder) occurrenceAt-15*60*1000L else null
+    val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=occurrenceAt,reminderAt=reminderAt,recurrenceRule=recurrenceRule)
+    val id=db.agendaDao().insert(item)
+    if(reminder && reminderAt!=null && reminderAt>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id))
+   }
+  }
  }
  fun updateAgenda(item:AgendaItem) {
   viewModelScope.launch {
@@ -118,6 +133,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
+ var recurrenceFrequency by remember { mutableStateOf<RecurrenceFrequency?>(null) }
  var dimension by remember { mutableStateOf(LifeDimension.ROUTINE) }
  var reminder by remember { mutableStateOf(false) }
  var hour by remember { mutableIntStateOf(9) }
@@ -190,7 +206,22 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
    Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Nova tarefa, hábito ou compromisso")},singleLine=true)
     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value},label={Text(kindLabel(value))}) }
+     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value;if(value!=AgendaKind.HABIT) recurrenceFrequency=null},label={Text(kindLabel(value))}) }
+    }
+    if(kind==AgendaKind.HABIT) {
+     Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
+      Text("Repetição do hábito",color=Navy,style=MaterialTheme.typography.labelMedium)
+      Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+       FilterChip(selected=recurrenceFrequency==null,onClick={recurrenceFrequency=null},label={Text("Único")})
+       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.DAILY,onClick={recurrenceFrequency=RecurrenceFrequency.DAILY},label={Text("Diário")})
+       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKDAYS,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKDAYS},label={Text("Dias úteis")})
+      }
+      Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
+       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
+      }
+      Text("Os próximos 90 dias serão organizados automaticamente.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+     }
     }
     Box {
      OutlinedButton(onClick={dimensionMenu=true}) { Text(dimensionLabel(dimension),color=Navy) }
@@ -207,7 +238,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
     }
     Button(onClick={
      val scheduled=selectedDate.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
-     vm.addAgenda(title,kind,dimension,scheduled,reminder)
+     vm.addAgenda(title,kind,dimension,scheduled,reminder,recurrenceFrequency?.name)
      title=""
      reminder=false
     },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
@@ -319,6 +350,20 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
   Row { ReviewPeriod.entries.forEach { v->FilterChip(period==v,{period=v},label={Text(if(v==ReviewPeriod.WEEKLY) "Semanal" else "Mensal")}) } }
   OutlinedTextField(body,{body=it},Modifier.fillMaxWidth().heightIn(min=120.dp),label={Text("O que aprendi? O que merece atenção? Qual será meu próximo passo?")})
   Button(onClick={vm.addReview(period,body).also{body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Salvar revisão") }
+  val periodEntries=entries.filter { it.period==period }.sortedByDescending { it.periodStart }
+  if(periodEntries.size>=2) {
+   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+     Text("Comparação com a revisão anterior",color=Navy,fontWeight=FontWeight.Bold)
+     Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+     Text("Mais recente · "+formatDate(periodEntries[0].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
+     Text(periodEntries[0].reflection,color=Navy)
+     Divider(color=Paper)
+     Text("Anterior · "+formatDate(periodEntries[1].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
+     Text(periodEntries[1].reflection,color=Navy)
+    }
+   }
+  }
   LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
    Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=Navy,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
   } } }
