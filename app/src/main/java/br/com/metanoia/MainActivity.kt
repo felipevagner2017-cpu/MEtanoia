@@ -1,5 +1,8 @@
 package br.com.metanoia
 import android.os.Bundle
+import android.content.Context
+import android.content.res.Configuration
+import android.app.DatePickerDialog
 import android.os.Build
 import android.Manifest
 import android.app.TimePickerDialog
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.util.Locale
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -39,6 +43,13 @@ private val Gold = Color(0xFFC5A15A)
 private val Paper = Color(0xFFF4F6F9)
 
 class MainActivity : ComponentActivity() {
+ override fun attachBaseContext(newBase: Context) {
+  val locale = Locale("pt", "BR")
+  Locale.setDefault(locale)
+  val configuration = Configuration(newBase.resources.configuration)
+  configuration.setLocale(locale)
+  super.attachBaseContext(newBase.createConfigurationContext(configuration))
+ }
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
   val db = MetanoiaDatabase.get(this)
@@ -55,6 +66,13 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean) {
   if(title.isBlank()) return
   viewModelScope.launch { val reminderAt=if(reminder) scheduledAt-15*60*1000L else null; val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduledAt,reminderAt=reminderAt); val id=db.agendaDao().insert(item); if(reminder && reminderAt!!>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id)) }
+ }
+ fun updateAgenda(item:AgendaItem) {
+  viewModelScope.launch {
+   scheduler.cancel(item)
+   db.agendaDao().update(item)
+   if (item.reminderAt != null && item.reminderAt > System.currentTimeMillis()) scheduler.schedule(item)
+  }
  }
  fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed) } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item) } }
@@ -96,6 +114,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  val context=LocalContext.current
  val zone=remember { ZoneId.systemDefault() }
  var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+ var editingItem by remember { mutableStateOf<AgendaItem?>(null) }
  var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
@@ -211,14 +230,71 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
         Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Color.Gray)
        }
-       TextButton(onClick={vm.delete(item)}) { Text("Excluir",color=Color.Gray) }
+       Column(horizontalAlignment=Alignment.End) {
+        TextButton(onClick={editingItem=item}) { Text("Editar",color=Gold) }
+        TextButton(onClick={vm.delete(item)}) { Text("Excluir",color=Color.Gray) }
+       }
       }
      }
     }
    }
   }
  }
+ if (editingItem != null) {
+  EditAgendaDialog(item=editingItem!!, onDismiss={editingItem=null}, onSave={updated->vm.updateAgenda(updated);editingItem=null})
+ }
 }
+
+@Composable private fun EditAgendaDialog(item:AgendaItem,onDismiss:()->Unit,onSave:(AgendaItem)->Unit) {
+ val context=LocalContext.current
+ val zone=remember { ZoneId.systemDefault() }
+ var title by remember(item.id) { mutableStateOf(item.title) }
+ var kind by remember(item.id) { mutableStateOf(item.kind) }
+ var dimension by remember(item.id) { mutableStateOf(item.dimension) }
+ var date by remember(item.id) { mutableStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).toLocalDate()) }
+ var hour by remember(item.id) { mutableIntStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).hour) }
+ var minute by remember(item.id) { mutableIntStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).minute) }
+ var reminder by remember(item.id) { mutableStateOf(item.reminderAt != null) }
+ var dimensionMenu by remember { mutableStateOf(false) }
+ AlertDialog(
+  onDismissRequest=onDismiss,
+  title={Text("Editar registro",color=Navy,fontWeight=FontWeight.Bold)},
+  text={
+   Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+    OutlinedTextField(value=title,onValueChange={title=it},label={Text("Título")},singleLine=true)
+    Text("Tipo",color=Navy,fontWeight=FontWeight.SemiBold)
+    Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+     AgendaKind.entries.forEach { v->FilterChip(selected=kind==v,onClick={kind=v},label={Text(kindLabel(v))}) }
+    }
+    Box {
+     OutlinedButton(onClick={dimensionMenu=true}) { Text(dimensionLabel(dimension),color=Navy) }
+     DropdownMenu(expanded=dimensionMenu,onDismissRequest={dimensionMenu=false}) {
+      LifeDimension.entries.forEach { v->DropdownMenuItem(text={Text(dimensionLabel(v))},onClick={dimension=v;dimensionMenu=false}) }
+     }
+    }
+    OutlinedButton(onClick={
+     DatePickerDialog(context,{_,y,m,d->date=LocalDate.of(y,m+1,d)},date.year,date.monthValue-1,date.dayOfMonth).show()
+    }) { Text("Data: "+date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),color=Navy) }
+    OutlinedButton(onClick={
+     TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()
+    }) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
+    Row(verticalAlignment=Alignment.CenterVertically) {
+     Checkbox(checked=reminder,onCheckedChange={reminder=it})
+     Text("Lembrete 15 minutos antes",color=Navy)
+    }
+   }
+  },
+  confirmButton={
+   TextButton(enabled=title.isNotBlank(),onClick={
+    val scheduled=date.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
+    val reminderAt=if(reminder) scheduled-15*60*1000L else null
+    onSave(item.copy(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,reminderAt=reminderAt))
+   }) { Text("Salvar alterações",color=Gold) }
+  },
+  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color=Color.Gray) }}
+ )
+}
+
 @Composable private fun JournalPage(entries:List<JournalEntry>,vm:AppViewModel) {
  var title by remember { mutableStateOf("") }; var body by remember { mutableStateOf("") }
  var dimension by remember { mutableStateOf(LifeDimension.INDIVIDUAL) }; var menu by remember { mutableStateOf(false) }
