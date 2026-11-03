@@ -16,11 +16,11 @@ class ReminderReceiver : BroadcastReceiver() {
         val isDaily = intent.getBooleanExtra(EXTRA_DAILY, false)
         val hour = intent.getIntExtra(EXTRA_HOUR, -1)
         val id = if (isDaily) DAILY_NOTIFICATION_BASE + hour else intent.getLongExtra(EXTRA_ID, 0L).toInt()
-        val title = if (isDaily) "MEtonoia · Cotidiano" else "MEtonoia · Compromisso"
+        val title = if (isDaily && hour == 7) "MEtanoia · Desafio com Ingrid" else if (isDaily) "MEtanoia · Cotidiano" else "MEtanoia · Compromisso"
         val message = if (isDaily) dailyMessage(hour) else (intent.getStringExtra(EXTRA_TITLE) ?: "Compromisso agendado")
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Lembretes MEtonoia", NotificationManager.IMPORTANCE_HIGH).apply {
+            val channel = NotificationChannel(CHANNEL_ID, "Lembretes MEtanoia", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Lembretes diários e compromissos da sua agenda"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 250, 120, 250)
@@ -56,7 +56,7 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     private fun dailyMessage(hour: Int): String = when (hour) {
-        7 -> "Comece o dia: entregue seus planos ao Senhor e escolha a prioridade de hoje."
+        7 -> "Abra a área Ingrid no MEtanoia, consulte o cuidado de hoje e pergunte a ela do que precisa. Escute sem presumir."
         12 -> "Faça uma pausa: revise o que está sob sua responsabilidade e reorganize o restante com sabedoria."
         18 -> "Encerre o dia: reconheça o que avançou, registre o que ficou e desacelere."
         else -> "Pare um momento e revise suas prioridades com sabedoria."
