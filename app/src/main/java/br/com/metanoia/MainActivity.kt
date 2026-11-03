@@ -1,5 +1,10 @@
 package br.com.metanoia
 import android.os.Bundle
+import android.os.Build
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -64,6 +69,9 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  }
 }
 @Composable private fun MetanoiaApp(db:MetanoiaDatabase,scheduler:ReminderScheduler) {
+ val context=LocalContext.current
+ val permissionLauncher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+ LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
  val vm=remember { AppViewModel(db,scheduler) }
  val agenda by vm.agenda.collectAsStateWithLifecycle()
  val journal by vm.journal.collectAsStateWithLifecycle()
