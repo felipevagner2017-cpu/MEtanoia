@@ -156,14 +156,14 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
     }
     Row(Modifier.fillMaxWidth().padding(top=6.dp),horizontalArrangement=Arrangement.SpaceBetween) {
      Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color=Color.Gray)
-     Text("\${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
+     Text("${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
     }
    }
   }
   Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
     Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=Navy,fontWeight=FontWeight.Bold)
-    Text("\${selectedItems.count{!it.completed}} pendentes · \${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
+    Text("${selectedItems.count{!it.completed}} pendentes · ${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
    }
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
   }
@@ -192,7 +192,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
      title=""
      reminder=false
     },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
-     Text("Adicionar em \${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
+     Text("Adicionar em ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
     }
    }
   }
