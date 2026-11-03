@@ -1,4 +1,4 @@
-name: Deploy MEtonoia PWA to Cloudflare Workers
+name: Deploy MEtanoia PWA to Cloudflare Workers
 on:
   push:
     branches: [main]
