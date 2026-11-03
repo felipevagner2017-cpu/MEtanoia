@@ -44,9 +44,9 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
- fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension) {
+ fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, reminder:Boolean) {
   if(title.isBlank()) return
-  viewModelScope.launch { db.agendaDao().insert(AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=System.currentTimeMillis())) }
+  viewModelScope.launch { val at=System.currentTimeMillis(); val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=at,reminderAt=if(reminder) at+60*60*1000L else null); val id=db.agendaDao().insert(item); if(reminder) scheduler.schedule(item.copy(id=id)) }
  }
  fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed) } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item) } }
@@ -85,7 +85,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var dimension by remember { mutableStateOf(LifeDimension.ROUTINE) }
- var range by remember { mutableStateOf("Todos") }
+ var range by remember { mutableStateOf("Todos") }; var reminder by remember { mutableStateOf(false) }
  val now=System.currentTimeMillis(); val day=86400000L
  val visible=when(range) { "Hoje"->items.filter{it.scheduledAt in now-day..now+day}; "Semana"->items.filter{it.scheduledAt in now-day..now+7*day}; "Mês"->items.filter{it.scheduledAt in now-day..now+30*day}; else->items }
  Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -96,7 +96,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
   Box { OutlinedButton(onClick={menu=true}) { Text(dimensionLabel(dimension)) }
    DropdownMenu(menu,{menu=false}) { LifeDimension.entries.forEach { v-> DropdownMenuItem(text={Text(dimensionLabel(v))},onClick={dimension=v;menu=false}) } }
   }
-  Button(onClick={vm.addAgenda(title,kind,dimension).also { title="" }},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Adicionar à agenda") }
+  Row(verticalAlignment=Alignment.CenterVertically) { Checkbox(reminder,{reminder=it}); Text("Lembrar em 1 hora",color=Navy) }\n  Button(onClick={vm.addAgenda(title,kind,dimension,reminder).also { title=""; reminder=false }},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Adicionar à agenda") }
   Row { listOf("Hoje","Semana","Mês","Todos").forEach { v-> FilterChip(range==v,{range=v},label={Text(v)}) } }
   Text(visible.count{!it.completed}.toString()+" pendentes · "+visible.count{it.completed}+" concluídos",color=Gold)
   LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)) { items(visible,key={it.id}) { item->
