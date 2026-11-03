@@ -136,7 +136,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var recurrenceFrequency by remember { mutableStateOf<RecurrenceFrequency?>(null) }
  var dimension by remember { mutableStateOf(LifeDimension.ROUTINE) }
- var reminder by remember { mutableStateOf(false) }
+ var reminder by remember { mutableStateOf(true) }
  var hour by remember { mutableIntStateOf(9) }
  var minute by remember { mutableIntStateOf(0) }
  var dimensionMenu by remember { mutableStateOf(false) }
