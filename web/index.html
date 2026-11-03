@@ -33,7 +33,38 @@ html{scroll-behavior:smooth}body{font-family:Inter,system-ui,-apple-system,"Sego
 header{padding:16px 18px 17px}.brand img{width:46px;height:46px}h1{font-family:Inter,system-ui,sans-serif;font-size:20px;letter-spacing:.12em;font-weight:750}.tag{font-size:10px;letter-spacing:.075em}
 main{width:100%;max-width:720px;margin:0 auto;padding:14px 16px 22px}.panel{padding:17px;border-radius:18px;margin-bottom:14px}h2{font-family:Inter,system-ui,sans-serif;font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.3}h3{font-size:15px;font-weight:700;line-height:1.35}.muted{font-size:12.5px;line-height:1.55}.eyebrow{font-size:10px;letter-spacing:.13em}.btn{font-size:13px;font-weight:700;min-height:40px;padding:10px 14px}.field{font-size:14px;min-height:43px;padding:11px 12px}label{font-size:12px;line-height:1.45}.item{gap:10px;padding:12px}.item-action{line-height:1.45}.tabs{justify-content:space-around;overflow-x:auto;padding:7px 8px calc(7px + env(safe-area-inset-bottom));scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{flex:1 1 0;min-width:0;max-width:112px;text-align:center;font-size:10.5px;white-space:nowrap;padding:7px 3px}.tab b{font-size:18px;line-height:1.1;margin-bottom:4px}.tab.active{border-radius:11px}.calendar-panel{padding:17px 15px}.calendar-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;text-align:center;margin:13px 0 9px}.calendar-head strong{font-size:15px;font-weight:750;color:#f0d89f;text-transform:capitalize}.calendar-nav{width:36px;height:36px;border:1px solid #c5a15a66;border-radius:10px;background:#0a1c34;color:#f0d89f;font-size:25px;line-height:1;cursor:pointer}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.calendar-weekday{text-align:center;color:#aebdd0;font-size:10px;font-weight:700;padding:7px 0}.calendar-day{position:relative;min-width:0;min-height:42px;border:1px solid transparent;border-radius:11px;background:#091c34;color:#f4f6fa;font:600 13px Inter,system-ui,sans-serif;cursor:pointer}.calendar-day.outside{opacity:.35}.calendar-day.selected{background:linear-gradient(135deg,#e2c47e,#b58a3d);color:#102542;font-weight:800}.calendar-day.today:not(.selected){border-color:#e2c47e}.calendar-day .event-dot{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#e2c47e}.calendar-day.selected .event-dot{background:#102542}.calendar-legend{display:flex;gap:16px;justify-content:center;margin:10px 0 15px;color:#b9c7d8;font-size:10px}.calendar-legend span{display:flex;align-items:center;gap:6px}.calendar-legend i{width:6px;height:6px;border-radius:50%;background:#e2c47e}.calendar-legend i.today-dot{width:9px;height:9px;background:transparent;border:1px solid #e2c47e}.calendar-selected{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #ffffff18;padding-top:14px;margin-top:4px}.calendar-selected h3{margin:0;font-size:15px;text-transform:capitalize}.calendar-tools{padding:13px 15px}.calendar-tools .row{gap:12px}.calendar-tools .muted{margin:2px 0 0}.empty{padding:20px 10px;text-align:center}.modal{font-family:Inter,system-ui,sans-serif}.book-page strong{font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:700}
 @media(max-width:380px){main{padding:10px 11px 18px}.panel{padding:14px}.calendar-day{min-height:38px;font-size:12px}.tab{font-size:9px}}
- .category-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 13px;margin:0 0 14px;color:#b9c7d8;font-size:10px}.category-legend span{display:flex;align-items:center;gap:5px}.category-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}.calendar-color-preview{display:flex;align-items:center;gap:8px;margin:-2px 0 12px;color:#b9c7d8;font-size:11px}.calendar-color-preview span{width:11px;height:11px;border-radius:50%;background:#C5A15A;display:inline-block} .event-dots{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px;align-items:center}.event-dots .event-dot{position:static;display:block;width:4px;height:4px;border-radius:50%}.calendar-day.selected .event-dots .event-dot{border:1px solid #102542}</style></head>
+ .category-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 13px;margin:0 0 14px;color:#b9c7d8;font-size:10px}.category-legend span{display:flex;align-items:center;gap:5px}.category-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}.calendar-color-preview{display:flex;align-items:center;gap:8px;margin:-2px 0 12px;color:#b9c7d8;font-size:11px}.calendar-color-preview span{width:11px;height:11px;border-radius:50%;background:#C5A15A;display:inline-block} .event-dots{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px;align-items:center}.event-dots .event-dot{position:static;display:block;width:4px;height:4px;border-radius:50%}.calendar-day.selected .event-dots .event-dot{border:1px solid #102542}/* Identidade visual oficial: preto, dourado e branco */
+:root{--navy:#111111;--deep:#050505;--gold:#C5A15A;--white:#FFFFFF;--muted:#BDBDBD;--line:#C5A15A66;--panel:#121212;--green:#C5A15A}
+body{background:radial-gradient(ellipse at 50% -15%,#29231a 0%,#050505 58%);color:#fff}
+header{background:linear-gradient(145deg,#050505,#111 72%,#1b1710);border-bottom:1px solid #C5A15A;box-shadow:0 10px 30px #000}
+.tag{color:#D8C08E}.date,.muted{color:#BDBDBD}
+.panel{background:linear-gradient(155deg,#181818,#0c0c0c);border-color:#C5A15A55;box-shadow:0 8px 24px #0008}
+.eyebrow,.link,.pill,.calendar-head strong{color:#D7B873}
+.btn{background:#1b1b1b;border-color:#C5A15A88;color:#fff}
+.gold,.btn.gold{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#090909;border:0}
+.field{background:#080808;border-color:#C5A15A66;color:#fff}
+label{color:#E5D4AC}
+.intel,.area,.reading-page,.book-page,.calendar-day,.calendar-nav,.item{background:#0b0b0b;border-color:#C5A15A55}
+.book-page,.book-page strong,.reading-page h2,.reading-page h3,.area h3{color:#E2C47E}
+.book-page span:not(.book-number),.book-page em,.area p,.reading-page p{color:#E5E5E5}
+.hero{background:linear-gradient(120deg,#1c1a16,#090909 78%);border-color:#C5A15A88}
+.hero p,.book-intro{color:#ddd}
+.tabs{background:#050505f5;border-top-color:#C5A15A88}
+.tab{color:#BDBDBD}.tab.active{background:#211b10;color:#E8CD8F}
+.calendar-day.selected{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#080808}
+.calendar-day.today:not(.selected){border-color:#C5A15A}
+.calendar-legend,.category-legend{color:#BDBDBD}
+.calendar-legend i,.category-legend i{background:#C5A15A}
+.calendar-day .event-dot{background:#C5A15A}
+.calendar-day.selected .event-dot{background:#080808}
+.modal{background:#111;border-color:#C5A15A;color:#fff}
+.modalbg{background:#000e}
+.item.done{background:#17140e;border-color:#C5A15A}
+.item.done .statusline{color:#E2C47E}
+.event-emoji{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;margin-right:5px;border:1px solid #C5A15A55;border-radius:8px;background:#1a1711;font-size:17px;vertical-align:middle}
+.event-emoji-picker{margin:4px 0 10px;padding:9px 10px;border:1px solid #C5A15A44;border-radius:10px;background:#0a0a0a}
+.event-emoji-picker small{display:block;color:#aaa;font-size:10px;margin-top:-5px}
+</style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtonoia"><div><h1>MEtonoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
 <main>
@@ -43,7 +74,7 @@ main{width:100%;max-width:720px;margin:0 auto;padding:14px 16px 22px}.panel{padd
  <div class="eyebrow">Planejamento pessoal</div><h2>Minha agenda</h2>
  <div class="calendar-head"><button class="calendar-nav" id="prevMonth" aria-label="Mês anterior">‹</button><strong id="calendarTitle"></strong><button class="calendar-nav" id="nextMonth" aria-label="Próximo mês">›</button></div>
  <div class="calendar-grid" id="calendarGrid"></div>
- <div class="calendar-legend"><span><i></i> Compromisso eventual</span><span><i class="today-dot"></i> Hoje</span></div><div class="category-legend"><span><i style="background:#C5A15A"></i>Espiritual</span><span><i style="background:#C9829B"></i>Matrimonial</span><span><i style="background:#6FA8DC"></i>Profissional</span><span><i style="background:#78B98B"></i>Cotidiano</span></div>
+ <div class="calendar-legend"><span><i></i> Compromisso eventual</span><span><i class="today-dot"></i> Hoje</span></div><div class="category-legend"><span><i style="background:#C5A15A"></i>Espiritual</span><span><i style="background:#C5A15A"></i>Matrimonial</span><span><i style="background:#C5A15A"></i>Profissional</span><span><i style="background:#C5A15A"></i>Cotidiano</span></div>
  <div class="calendar-selected"><div><div class="eyebrow">Dia selecionado</div><h3 id="selectedDateLabel"></h3></div><button class="btn gold" id="addCommitment">+ Compromisso</button></div>
  <div id="agendaList"></div>
 </div>
