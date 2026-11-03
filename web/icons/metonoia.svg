@@ -8,5 +8,5 @@
 </g>
 <path d="M80 350Q165 326 256 370Q347 326 432 350L432 398Q343 377 256 416Q169 377 80 398z" fill="#f4e7c3" stroke="url(#gold)" stroke-width="8"/><path d="M256 370v45M92 359q83-20 164 18M420 359q-83-20-164 18" fill="none" stroke="#b88934" stroke-width="5"/>
 <path d="M95 278C171 337 340 339 425 257" fill="none" stroke="url(#gold)" stroke-width="9" stroke-linecap="round"/><path d="M416 91v76m-38-38h76m-65-27 54 54m0-54-54 54" stroke="#ffe18a" stroke-width="7" stroke-linecap="round" filter="url(#glow)"/>
-<text x="256" y="466" text-anchor="middle" font-family="Georgia,serif" font-size="43" font-weight="bold" fill="#f4d27b">MEtonoia</text>
+<text x="256" y="466" text-anchor="middle" font-family="Georgia,serif" font-size="43" font-weight="bold" fill="#f4d27b">MEtanoia</text>
 </svg>
