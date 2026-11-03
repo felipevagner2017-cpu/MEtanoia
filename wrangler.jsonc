@@ -1,0 +1,1 @@
+{"$schema":"node_modules/wrangler/config-schema.json","name":"metonoia","compatibility_date":"2026-11-03","workers_dev":true,"assets":{"directory":"./web","not_found_handling":"single-page-application"},"observability":{"logs":{"enabled":true,"invocation_logs":true}}}
