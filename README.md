@@ -1,4 +1,4 @@
-# MEtonoia
+# MEtanoia
 
 **A transformação é uma construção diária.**  
 Uma mente renovada. Uma vida intencional. (Romanos 12:2)
