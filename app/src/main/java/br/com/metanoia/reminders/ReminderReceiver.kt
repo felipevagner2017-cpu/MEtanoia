@@ -15,9 +15,18 @@ class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val isDaily = intent.getBooleanExtra(EXTRA_DAILY, false)
         val hour = intent.getIntExtra(EXTRA_HOUR, -1)
-        val id = if (isDaily) DAILY_NOTIFICATION_BASE + hour else intent.getLongExtra(EXTRA_ID, 0L).toInt()
-        val title = if (isDaily && hour == 7) "MEtanoia · Desafio com Ingrid" else if (isDaily) "MEtanoia · Cotidiano" else "MEtanoia · Compromisso"
-        val message = if (isDaily) dailyMessage(hour) else (intent.getStringExtra(EXTRA_TITLE) ?: "Compromisso agendado")
+        val id = if (isDaily) DAILY_NOTIFICATION_BASE + hour else {
+            val eventId = intent.getLongExtra(EXTRA_ID, 0L).toInt()
+            val lead = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
+            eventId * 10 + when (lead) { 120 -> 0; 60 -> 1; else -> 2 }
+        }
+        val title = if (isDaily && hour == 7) "MEtanoia · Desafio com Ingrid"
+            else if (isDaily) "MEtanoia · Cotidiano" else "MEtanoia · Compromisso próximo"
+        val message = if (isDaily) dailyMessage(hour) else {
+            val lead = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
+            val whenText = when (lead) { 120 -> "em 2 horas"; 60 -> "em 1 hora"; else -> "em 30 minutos" }
+            "${intent.getStringExtra(EXTRA_TITLE) ?: "Compromisso agendado"} — começa $whenText."
+        }
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(CHANNEL_ID, "Lembretes MEtanoia", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -26,10 +35,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 vibrationPattern = longArrayOf(0, 250, 120, 250)
                 setSound(
                     RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
                 )
             }
             manager.createNotificationChannel(channel)
@@ -43,16 +50,10 @@ class ReminderReceiver : BroadcastReceiver() {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
             .setVibrate(longArrayOf(0, 250, 120, 250))
-            .setAutoCancel(true)
-            .build()
-        try {
-            NotificationManagerCompat.from(context).notify(id, notification)
-        } catch (_: SecurityException) {
-            // Android 13+: a permissão de notificações pode estar desativada.
-        }
-        if (isDaily && hour in listOf(7, 12, 18)) {
-            ReminderScheduler(context).scheduleNextDailyReminder(hour)
-        }
+            .setAutoCancel(true).build()
+        try { NotificationManagerCompat.from(context).notify(id, notification) }
+        catch (_: SecurityException) { }
+        if (isDaily && hour in listOf(7, 12, 18)) ReminderScheduler(context).scheduleNextDailyReminder(hour)
     }
 
     private fun dailyMessage(hour: Int): String = when (hour) {
@@ -68,6 +69,7 @@ class ReminderReceiver : BroadcastReceiver() {
         const val EXTRA_ID = "extra_id"
         const val EXTRA_DAILY = "extra_daily"
         const val EXTRA_HOUR = "extra_hour"
+        const val EXTRA_LEAD_MINUTES = "extra_lead_minutes"
         private const val DAILY_NOTIFICATION_BASE = 70000
     }
 }
