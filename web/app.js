@@ -58,8 +58,10 @@ function renderCalendar(){
  const weekdays=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
  let out=weekdays.map(d=>'<div class="calendar-weekday">'+d+'</div>').join("");
  for(let i=0;i<cells;i++){
-  const date=new Date(first.getFullYear(),first.getMonth(),i-offset+1),k=key(date),inMonth=date.getMonth()===first.getMonth(),isToday=k===today(),isSelected=k===agendaDate,hasEvents=forDate(date).length>0;
-  out+='<button class="calendar-day '+(!inMonth?"outside ":"")+(isToday?"today ":"")+(isSelected?"selected":"")+'" data-calendar-date="'+k+'" aria-label="'+esc(date.toLocaleDateString("pt-BR"))+'">'+date.getDate()+(hasEvents?'<i class="event-dot"></i>':"")+'</button>';
+  const date=new Date(first.getFullYear(),first.getMonth(),i-offset+1),k=key(date),inMonth=date.getMonth()===first.getMonth(),isToday=k===today(),isSelected=k===agendaDate;
+  const colors=[...new Set(forDate(date).map(categoryColor))];
+  const dots=colors.length?'<span class="event-dots">'+colors.map(c=>'<i class="event-dot" style="background:'+c+'"></i>').join("")+'</span>':"";
+  out+='<button class="calendar-day '+(!inMonth?"outside ":"")+(isToday?"today ":"")+(isSelected?"selected":"")+'" data-calendar-date="'+k+'" aria-label="'+esc(date.toLocaleDateString("pt-BR"))+'">'+date.getDate()+dots+'</button>';
  }
  $("calendarGrid").innerHTML=out;
  $("selectedDateLabel").textContent=parse(agendaDate).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
