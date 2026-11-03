@@ -116,7 +116,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  var tab by remember { mutableStateOf("Agenda") }
  Column(Modifier.fillMaxSize()) {
   Column(Modifier.fillMaxWidth().background(Navy).padding(22.dp)) {
-   Text("MEtonoia",color=Gold,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
+   Text("MEtanoia",color=Gold,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
    Text("A transformação é uma construção diária.",color=Color.White)
    Text("Uma mente renovada. Uma vida intencional.",color=Color.White.copy(alpha=.8f))
   }
