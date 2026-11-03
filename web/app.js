@@ -11,7 +11,21 @@ let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected)
 const save=()=>localStorage.setItem(K,JSON.stringify(db));
 const occurrence=(x,k)=>x.completions?.[k]||{done:!!x.done&&x.date===k,note:""};
 function forDate(d){const k=key(d);return db.items.filter(x=>!fixed(x)&&x.date===k).sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
-const categoryColor=x=>({Espiritual:"#C5A15A",Matrimonial:"#C9829B",Profissional:"#6FA8DC",Cotidiano:"#78B98B"}[area(x.dimension)]||"#C5A15A");
+const categoryColor=x=>"#C5A15A";
+function suggestEventEmoji(title,kind,dimension){
+ const t=(String(title||"")+" "+String(kind||"")+" "+String(dimension||"")).toLowerCase();
+ if(/igreja|culto|pastor|minist[eé]rio|congrega|celebra/.test(t))return "🏠";
+ if(/pet|cachorr|c[aã]o|gato|animal/.test(t))return "🐶";
+ if(/profission|trabalho|empresa|cliente|venda|reuni[aã]o|entrevista|neg[oó]cio/.test(t))return "👔";
+ if(/consulta|m[eé]dic|dent|exame|sa[uú]de|terapia/.test(t))return "🏥";
+ if(/viagem|desloc|carro|aeroporto|estrada/.test(t))return "🚗";
+ if(/casal|esposa|marido|matrim[oô]nio/.test(t))return "💍";
+ if(/ora[cç][aã]o|b[ií]blia|leitura|devocional|estudo b[ií]blico/.test(t)||dimension==="Espiritual")return "📖";
+ if(/anivers[aá]rio|festa|amigo|fam[ií]lia|almo[cç]o|jantar/.test(t))return "🎉";
+ if(/limpeza|casa|organiza[cç][aã]o|lavar|mercado|compras/.test(t))return "🏡";
+ return "📅";
+}
+const eventEmojiOptions=["📅","🏠","🐶","🐱","👔","💼","📖","🙏","💍","❤️","🏥","💊","🚗","✈️","🎉","👨‍👩‍👧‍👦","🏡","🛒","⚽","🏋️"];
 const guidance={
 "Espiritual":{ref:"João 15:1–8; Salmo 139:23–24",principle:"Jesus ensina que o fruto nasce da permanência nele. O exame do coração deve conduzir à dependência de Deus e à obediência, não à aparência religiosa.",reflect:"O que seu relato revela sobre sua comunhão com Deus, suas motivações e sua resposta à Palavra?",action:"Separe um tempo real para ler o texto no contexto, orar com sinceridade e praticar uma instrução específica que ele apresenta."},
 "Matrimonial":{ref:"Efésios 4:1–3, 25–32; Colossenses 3:12–19",principle:"A nova vida em Cristo aparece na maneira de falar, ouvir, perdoar e tratar o cônjuge. Amor bíblico envolve humildade, verdade, paciência e ações concretas.",reflect:"No episódio relatado, o que precisava ser ouvido, dito com verdade, reparado ou perdoado?",action:"Escolha uma atitude observável: ouvir sem interromper, pedir perdão sem justificativas, falar a verdade com mansidão ou servir em algo concreto."},
@@ -68,15 +82,17 @@ function renderCalendar(){
 }
 function renderAgenda(){
  const list=forDate(parse(agendaDate));$("agendaDate").value=agendaDate;renderCalendar();
- $("agendaList").innerHTML=list.length?list.map(x=>{const o=occurrence(x,agendaDate),c=categoryColor(x);return '<div class="item '+(o.done?"done":"")+'" style="border-left:4px solid '+c+'"><div class="grow"><button class="item-action" data-answer="'+esc(x.id)+'" data-date="'+agendaDate+'"><strong>'+esc(x.title)+'</strong><div class="muted">'+esc(x.time||"Sem horário")+' · '+esc(x.dimension||"Cotidiano")+' · '+esc(x.kind||"Compromisso")+'</div><div class="statusline">'+(o.done?"✓ Concluído":o.note?"Não concluído — "+esc(o.note):"Toque para confirmar")+'</div></button></div><button class="link" data-edit="'+esc(x.id)+'">Editar</button><button class="link" data-del="'+esc(x.id)+'">Excluir</button></div>'}).join(""):'<div class="empty">Nenhum compromisso eventual nesta data. Use “+ Compromisso” para registrar algo fora da rotina.</div>';
+ $("agendaList").innerHTML=list.length?list.map(x=>{const o=occurrence(x,agendaDate),c=categoryColor(x),em=x.emoji||suggestEventEmoji(x.title,x.kind,x.dimension);return '<div class="item '+(o.done?"done":"")+'" style="border-left:4px solid '+c+'"><div class="grow"><button class="item-action" data-answer="'+esc(x.id)+'" data-date="'+agendaDate+'"><strong><span class="event-emoji">'+em+'</span> '+esc(x.title)+'</strong><div class="muted">'+esc(x.time||"Sem horário")+' · '+esc(x.dimension||"Cotidiano")+' · '+esc(x.kind||"Compromisso")+'</div><div class="statusline">'+(o.done?"✓ Concluído":o.note?"Não concluído — "+esc(o.note):"Toque para confirmar")+'</div></button></div><button class="link" data-edit="'+esc(x.id)+'">Editar</button><button class="link" data-del="'+esc(x.id)+'">Excluir</button></div>'}).join(""):'<div class="empty">Nenhum compromisso eventual nesta data. Use “+ Compromisso” para registrar algo fora da rotina.</div>';
 }
 function modal(x){
  const old=x||{title:"",kind:"Compromisso",dimension:"Cotidiano",date:agendaDate,time:"09:00"};
- $("modal").innerHTML='<div class="modalbg"><div class="modal"><div class="row between"><h2>'+(x?"Editar":"Novo")+' compromisso eventual</h2><button class="link" id="close">Fechar ✕</button></div><form id="edit"><label>Descrição</label><input class="field" name="title" required value="'+esc(old.title)+'"><label>Categoria</label><select class="field" name="dimension">'+areas.map(a=>'<option>'+a+'</option>').join("")+'</select><div class="calendar-color-preview" id="eventColorPreview"><span></span><small>Cor automática da categoria</small></div><label>Classificação</label><select class="field" name="kind"><option>Compromisso</option><option>Tarefa</option><option>Prazo</option><option>Evento</option></select><label>Data</label><input class="field" type="date" name="date" required value="'+esc(old.date||agendaDate)+'"><label>Horário</label><input class="field" type="time" name="time" value="'+esc(old.time||"09:00")+'"><button class="btn gold">Salvar compromisso</button></form></div></div>';
- $("edit").kind.value=old.kind||"Compromisso";$("edit").dimension.value=area(old.dimension);
- const preview=()=>{$("eventColorPreview").querySelector("span").style.background=categoryColor({dimension:$("edit").dimension.value})};
- $("edit").dimension.onchange=preview;preview();$("close").onclick=()=>$("modal").innerHTML="";
- $("edit").onsubmit=e=>{e.preventDefault();const fd=new FormData(e.target),v={title:fd.get("title").trim(),kind:fd.get("kind"),dimension:fd.get("dimension"),time:fd.get("time")||"",schedule:"once",category:"extra",date:fd.get("date"),weekdays:[],completions:old.completions||{}};
+ const initialEmoji=old.emoji||suggestEventEmoji(old.title,old.kind,old.dimension);
+ $("modal").innerHTML='<div class="modalbg"><div class="modal"><div class="row between"><h2>'+(x?"Editar":"Novo")+' compromisso eventual</h2><button class="link" id="close">Fechar ✕</button></div><form id="edit"><label>Descrição</label><input class="field" name="title" id="eventTitle" required value="'+esc(old.title)+'"><label>Categoria</label><select class="field" name="dimension">'+areas.map(a=>'<option>'+a+'</option>').join("")+'</select><div class="event-emoji-picker"><label>Ícone do compromisso</label><select class="field" name="emoji" id="eventEmoji">'+eventEmojiOptions.map(e=>'<option value="'+e+'">'+e+'</option>').join("")+'</select><small>Ícone sugerido automaticamente. Você pode alterar.</small></div><label>Classificação</label><select class="field" name="kind"><option>Compromisso</option><option>Tarefa</option><option>Prazo</option><option>Evento</option><option>Atividade da igreja</option></select><label>Data</label><input class="field" type="date" name="date" required value="'+esc(old.date||agendaDate)+'"><label>Horário</label><input class="field" type="time" name="time" value="'+esc(old.time||"09:00")+'"><button class="btn gold">Salvar compromisso</button></form></div></div>';
+ $("edit").kind.value=old.kind||"Compromisso";$("edit").dimension.value=area(old.dimension);$("eventEmoji").value=eventEmojiOptions.includes(initialEmoji)?initialEmoji:"📅";
+ const autoEmoji=()=>{$("eventEmoji").value=suggestEventEmoji($("eventTitle").value,$("edit").kind.value,$("edit").dimension.value)};
+ $("eventTitle").addEventListener("input",autoEmoji);$("edit").kind.onchange=autoEmoji;$("edit").dimension.onchange=autoEmoji;
+ $("close").onclick=()=>$("modal").innerHTML="";
+ $("edit").onsubmit=e=>{e.preventDefault();const fd=new FormData(e.target),v={title:fd.get("title").trim(),kind:fd.get("kind"),dimension:fd.get("dimension"),emoji:fd.get("emoji"),time:fd.get("time")||"",schedule:"once",category:"extra",date:fd.get("date"),weekdays:[],completions:old.completions||{}};
  if(x)Object.assign(x,v);else db.items.push({id:uid(),...v});save();$("modal").innerHTML="";renderAgenda();renderEvolution()};
 }
 function answer(x,k){const o=occurrence(x,k);$("modal").innerHTML='<div class="modalbg"><div class="modal"><div class="eyebrow">Confirmação</div><h2>'+esc(x.title)+'</h2><p class="muted">'+fmt(k)+' · '+esc(x.time||"Sem horário")+'</p><p>Você realizou este compromisso?</p><label>Observação (opcional)</label><textarea id="note" class="field" rows="3" placeholder="Como foi ou o que impediu?">'+esc(o.note||"")+'</textarea><div class="row"><button class="btn gold" id="done">Sim, concluído</button><button class="btn" id="notdone">Não concluído</button></div><button class="link" id="cancel">Voltar</button></div></div>';$("done").onclick=()=>saveAnswer(x,k,true);$("notdone").onclick=()=>saveAnswer(x,k,false);$("cancel").onclick=()=>$("modal").innerHTML=""}
