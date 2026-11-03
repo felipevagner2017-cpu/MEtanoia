@@ -128,8 +128,24 @@ function renderEvolution(){
  $("evolutionAreas").innerHTML=weekly+html;$("reviewList").innerHTML=db.reviews.slice().reverse().map(x=>'<div class="item"><div class="grow"><b>Revisão · '+new Date(x.at).toLocaleDateString("pt-BR")+'</b><p>'+esc(x.body)+'</p></div></div>').join("")
 }
 function renderReminderStatus(){if(!("Notification"in window)){$("reminderStatus").textContent="Navegador sem suporte a notificações.";return}const p=Notification.permission;$("reminderStatus").textContent=p==="granted"?"Permissão concedida neste aparelho.":"Permissão: "+p;$("enableReminders").textContent=p==="granted"?"Notificações ativadas":"Ativar notificações";$("enableReminders").disabled=p==="granted"}
-async function enableReminders(){if(!("Notification"in window))return alert("Navegador sem suporte.");const p=await Notification.requestPermission();renderReminderStatus();if(p==="granted"&&"serviceWorker"in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtonoia — lembretes ativados",{body:"Lembretes do cotidiano configurados para 07h, 12h e 18h.",icon:"/icons/metonoia.svg",tag:"metonoia-activated"})}}
-async function checkReminderClock(){if(!("Notification"in window)||Notification.permission!=="granted")return;const n=new Date(),h=n.getHours();if(n.getMinutes()!==0||![7,12,18].includes(h))return;const stamp=key(n)+"-"+h;if(localStorage.getItem("metonoia-reminder-"+stamp))return;localStorage.setItem("metonoia-reminder-"+stamp,"1");const dailyBody=h===7?(ingridUnlocked?ingridChallenge(cycleStatus(ingridData)):"Comece o dia com escuta: pergunte à Ingrid como está e o que seria cuidado para ela hoje."):h===12?"Faça uma pausa e confira se há alguma necessidade prática que você pode aliviar.":"Encerre o dia com gratidão, escuta e uma atitude concreta de carinho.";const opts={body:dailyBody,icon:"/icons/metonoia.svg",badge:"/icons/metonoia.svg",tag:"metonoia-daily-"+stamp,renotify:false,vibrate:[250,120,250]};try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtonoia · Hora de revisar o cotidiano",opts)}catch(e){console.warn(e)}}
+async function enableReminders(){if(!("Notification"in window))return alert("Navegador sem suporte.");const p=await Notification.requestPermission();renderReminderStatus();if(p==="granted"&&"serviceWorker"in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtonoia — lembretes ativados",{body:"Lembretes diários às 07h, 12h e 18h; compromissos 2h, 1h e 30min antes.",icon:"/icons/metonoia.svg",tag:"metonoia-activated"})}}
+async function checkCommitmentReminders(){
+ if(!("Notification"in window)||Notification.permission!=="granted"||!("serviceWorker"in navigator))return;
+ const now=Date.now(),offsets=[120,60,30];
+ for(const item of db.items){
+  if(fixed(item)||!item.date||!item.time)continue;
+  const eventAt=new Date(item.date+"T"+item.time+":00").getTime();
+  if(!Number.isFinite(eventAt)||eventAt<=now)continue;
+  for(const minutes of offsets){
+   const fireAt=eventAt-minutes*60000,stamp="metonoia-event-"+item.id+"-"+minutes;
+   if(now<fireAt||now>=fireAt+60000||localStorage.getItem(stamp))continue;
+   localStorage.setItem(stamp,"1");
+   const label=minutes===120?"em 2 horas":minutes===60?"em 1 hora":"em 30 minutos";
+   try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtanoia · Compromisso próximo",{body:item.title+" começa "+label+".",icon:"/icons/metonoia.svg",badge:"/icons/metonoia.svg",tag:stamp,renotify:false,vibrate:[250,120,250]})}catch(e){console.warn(e)}
+  }
+ }
+}
+async function checkReminderClock(){if(!("Notification"in window)||Notification.permission!=="granted")return;await checkCommitmentReminders();const n=new Date(),h=n.getHours();if(n.getMinutes()!==0||![7,12,18].includes(h))return;const stamp=key(n)+"-"+h;if(localStorage.getItem("metonoia-reminder-"+stamp))return;localStorage.setItem("metonoia-reminder-"+stamp,"1");const dailyBody=h===7?(ingridUnlocked?ingridChallenge(cycleStatus(ingridData)):"Comece o dia com escuta: pergunte à Ingrid como está e o que seria cuidado para ela hoje."):h===12?"Faça uma pausa e confira se há alguma necessidade prática que você pode aliviar.":"Encerre o dia com gratidão, escuta e uma atitude concreta de carinho.";const opts={body:dailyBody,icon:"/icons/metonoia.svg",badge:"/icons/metonoia.svg",tag:"metonoia-daily-"+stamp,renotify:false,vibrate:[250,120,250]};try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtonoia · Hora de revisar o cotidiano",opts)}catch(e){console.warn(e)}}
 
 const INGRID_VAULT_KEY="metonoia-ingrid-vault-v1";
 let ingridData=null,ingridUnlocked=false,ingridSessionPin='';
