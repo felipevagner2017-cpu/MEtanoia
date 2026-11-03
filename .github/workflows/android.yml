@@ -37,6 +37,8 @@ jobs:
           name: metanoia-source-code
           path: MEtonoia-codigo-fonte.zip
           if-no-files-found: error
+      - name: Name Android installer
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtonoia-Android.apk
       - name: Publish direct Android installer
         uses: softprops/action-gh-release@v2
         with:
@@ -44,7 +46,7 @@ jobs:
           name: MEtonoia Android — versão de teste
           prerelease: true
           overwrite_files: true
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/apk/debug/MEtonoia-Android.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
