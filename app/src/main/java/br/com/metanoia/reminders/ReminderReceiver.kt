@@ -56,7 +56,7 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     private fun dailyMessage(hour: Int): String = when (hour) {
-        7 -> "Abra a área Ingrid no MEtanoia, consulte o cuidado de hoje e pergunte a ela do que precisa. Escute sem presumir."
+        7 -> "Pergunte à Ingrid como ela está e o que seria cuidado para ela hoje. Escute sem presumir e transforme a resposta em uma atitude concreta."
         12 -> "Faça uma pausa: revise o que está sob sua responsabilidade e reorganize o restante com sabedoria."
         18 -> "Encerre o dia: reconheça o que avançou, registre o que ficou e desacelere."
         else -> "Pare um momento e revise suas prioridades com sabedoria."
