@@ -57,9 +57,9 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val Navy = GoldBright
+private val Navy = Ivory
 private val Gold = GoldChampagne
-private val Paper = DeepViolet
+private val Paper = GoldChampagne.copy(alpha = .28f)
 
 class MainActivity : ComponentActivity() {
  override fun attachBaseContext(newBase: Context) {
@@ -356,8 +356,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
          val isSelected=date==selectedDate
          val isToday=date==LocalDate.now()
          val count=monthItems[date]?.size?:0
-         Column(Modifier.fillMaxSize().background(if(isSelected) Navy else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-          Text(date.dayOfMonth.toString(),color=if(isSelected) DeepViolet else Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
+         Column(Modifier.fillMaxSize().background(if(isSelected) VioletPrimary else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+          Text(date.dayOfMonth.toString(),color=Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
           if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
            repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
           } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
