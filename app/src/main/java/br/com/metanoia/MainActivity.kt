@@ -384,7 +384,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
     if(kind==AgendaKind.HABIT) {
      Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
-      Text("Repetição do hábito",color=Navy,style=MaterialTheme.typography.labelMedium)
+      Text("Repetição do hábito",color=GoldBright,style=MaterialTheme.typography.labelMedium)
       Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
        FilterChip(selected=recurrenceFrequency==null,onClick={recurrenceFrequency=null},label={Text("Único")})
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.DAILY,onClick={recurrenceFrequency=RecurrenceFrequency.DAILY},label={Text("Diário")})
@@ -431,7 +431,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
        Column(Modifier.weight(1f)) {
-        Text(item.title,color=Navy,fontWeight=FontWeight.SemiBold)
+        Text(item.title,color=GoldBright,fontWeight=FontWeight.SemiBold)
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
         Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
        }
@@ -467,7 +467,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   text={
    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
     OutlinedTextField(value=title,onValueChange={title=it},label={Text("Título")},singleLine=true)
-    Text("Tipo",color=Navy,fontWeight=FontWeight.SemiBold)
+    Text("Tipo",color=GoldBright,fontWeight=FontWeight.SemiBold)
     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
      AgendaKind.entries.forEach { v->FilterChip(selected=kind==v,onClick={kind=v},label={Text(kindLabel(v))}) }
     }
@@ -585,8 +585,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   if(!exactAllowed && Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
    Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
     Column(Modifier.padding(12.dp)) {
-     Text("Horário exato limitado pelo Android",color=Navy,fontWeight=FontWeight.Bold)
-     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Navy,style=MaterialTheme.typography.bodySmall)
+     Text("Horário exato limitado pelo Android",color=GoldBright,fontWeight=FontWeight.Bold)
+     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Ivory,style=MaterialTheme.typography.bodySmall)
      TextButton(onClick={context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}){Text("Configurar alarmes exatos",color=Gold)}
     }
    }
