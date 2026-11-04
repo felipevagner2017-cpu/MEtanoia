@@ -20,7 +20,7 @@ jobs:
           ref: main
       - name: Download latest verified Android release files
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p web/downloads
           gh release download android-latest --repo "${GITHUB_REPOSITORY}" --pattern "MEtonoia-Android.apk" --pattern "MEtonoia-codigo-fonte.zip" --dir web/downloads
