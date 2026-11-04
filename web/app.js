@@ -253,6 +253,60 @@ function renderIngrid(){
  $("deleteIngridVault").onclick=()=>{if(confirm("Apagar definitivamente os dados de Ingrid deste aparelho?")){localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin="";renderIngrid();}};
 }
 
+
+const aiSession={token:sessionStorage.getItem("metonoia-ai-token")||"",history:[],busy:false};
+const aiDimensionRecords={
+ "Devoção":["Espiritual"],"Matrimônio":["Matrimonial"],"Profissional":["Profissional"],"Cotidiano":["Cotidiano"]
+};
+function buildAiContext(){
+ const scope=$("aiDimension").value;
+ const allowed=aiDimensionRecords[scope];
+ let records=db.journal.slice().sort((a,b)=>b.at-a.at);
+ if(allowed) records=records.filter(x=>allowed.includes(area(x.dimension)));
+ else {
+  const picked=[];
+  for(const dimension of ["Espiritual","Matrimonial","Profissional","Cotidiano"]){
+   picked.push(...records.filter(x=>area(x.dimension)===dimension).slice(0,3));
+  }
+  records=picked.sort((a,b)=>b.at-a.at);
+ }
+ records=records.slice(0,12).map(x=>({date:new Date(x.at).toLocaleDateString("pt-BR"),dimension:area(x.dimension),title:x.title||"",content:String(x.body||"").slice(0,1100),checkin:x.checkin||{}}));
+ const now=today();
+ const agenda=db.items.filter(x=>!x.date||x.date>=now).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,10).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto"}));
+ return JSON.stringify({registros:records,agenda},null,2).slice(0,12000);
+}
+function renderAiConversation(){
+ const root=$("aiConversation");
+ root.innerHTML=aiSession.history.map(m=>'<div class="ai-message '+(m.role==="user"?"ai-user":"ai-assistant")+'"><b>'+(m.role==="user"?"Você":"MEtanoia AI")+'</b><p>'+esc(m.content).replace(/\n/g,"<br>")+'</p></div>').join("")||'<div class="empty">Sua conversa aparecerá aqui.</div>';
+ root.scrollTop=root.scrollHeight;
+}
+async function sendAiQuestion(){
+ if(aiSession.busy)return;
+ const token=$("aiToken").value.trim(),question=$("aiQuestion").value.trim();
+ if(!token){$("aiStatus").textContent="Informe a credencial privada fornecida para o serviço do MEtanoia.";return}
+ if(token.length<24){$("aiStatus").textContent="A credencial parece incompleta.";return}
+ if(!$("aiConsent").checked){$("aiStatus").textContent="Confirme a autorização antes de enviar seus registros.";return}
+ if(!question){$("aiStatus").textContent="Escreva uma pergunta antes de enviar.";return}
+ aiSession.token=token;sessionStorage.setItem("metonoia-ai-token",token);
+ aiSession.busy=true;$("aiSend").disabled=true;$("aiStatus").textContent="A inteligência está analisando sua pergunta e o contexto autorizado...";
+ const previous=aiSession.history.slice(-8);
+ aiSession.history.push({role:"user",content:question});renderAiConversation();$("aiQuestion").value="";
+ try{
+  const response=await fetch("/api/ai/chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({dimension:$("aiDimension").value,context:buildAiContext(),history:previous,question})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Não foi possível acessar o serviço de IA.");
+  aiSession.history.push({role:"assistant",content:data.answer});$("aiStatus").textContent="Resposta gerada pelo modelo conectado. A conversa permanece apenas nesta sessão.";
+ }catch(error){
+  aiSession.history.pop();$("aiStatus").textContent=error.message||"Falha de conexão. A análise local continua disponível.";
+ }finally{
+  aiSession.busy=false;$("aiSend").disabled=false;renderAiConversation();
+ }
+}
+$("aiToken").value=aiSession.token;
+$("aiSend").onclick=sendAiQuestion;
+$("aiQuestion").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiQuestion()}});
+$("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatus").textContent="Conversa limpa. Os registros locais não foram alterados."};
+
 function show(id){["word","agenda","diary","intel","evolution","ingrid"].forEach(n=>$(n).classList.toggle("hidden",n!==id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));renderHomeReminder();if(id==="agenda")renderAgenda();if(id==="ingrid")renderIngrid();if(id==="diary")renderDiary();if(id==="intel")renderIntel();if(id==="evolution")renderEvolution()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("addCommitment").onclick=()=>modal(null);$("agendaDate").value=agendaDate;$("agendaDate").onchange=()=>{agendaDate=$("agendaDate").value||today();const d=parse(agendaDate);calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);renderAgenda()};$("prevMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$("nextMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};setInterval(()=>{checkReminderClock();renderHomeReminder();const now=today();if(now!==observedToday){if(agendaDate===observedToday){agendaDate=now;calendarMonth=new Date(parse(now).getFullYear(),parse(now).getMonth(),1);renderAgenda()}observedToday=now;renderWord();$("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}},15000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkReminderClock()});
