@@ -388,8 +388,8 @@ private fun DimensionRecordPage(
                     Button(
                         onClick = {
                             val content = when {
-                                isSpiritual -> "Contexto: $contextNotes\\nObservações: $analysisNotes\\nInterpretação e aplicação pastoral: $applicationNotes"
-                                isProfessional -> "Meta ou projeto: $body\\nObstáculo: $obstacle\\nPróxima ação: $nextAction\\nPrazo: $deadline\\nMedida de resultado: $successMeasure"
+                                isSpiritual -> "Contexto: $contextNotes\nObservações: $analysisNotes\nInterpretação e aplicação pastoral: $applicationNotes"
+                                isProfessional -> "Meta ou projeto: $body\nObstáculo: $obstacle\nPróxima ação: $nextAction\nPrazo: $deadline\nMedida de resultado: $successMeasure"
                                 else -> body
                             }
                             onSave(recordTitle, content)
