@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Rule
 import org.junit.Test
 
@@ -20,24 +21,24 @@ class MainActivityNavigationTest {
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
         composeRule.onNodeWithText("Devoção", substring = false).performClick()
-        composeRule.onNodeWithText("Texto bíblico ou tema pastoral").assertIsDisplayed()
+        composeRule.onNodeWithText("Texto bíblico ou tema pastoral").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
-        composeRule.onNodeWithText("DESAFIO MATRIMONIAL").assertIsDisplayed()
+        composeRule.onNodeWithText("DESAFIO MATRIMONIAL").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Profissional", substring = false).performClick()
-        composeRule.onNodeWithText("Meta, projeto ou desafio profissional").assertIsDisplayed()
+        composeRule.onNodeWithText("Meta, projeto ou desafio profissional").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Cotidiano", substring = false).performClick()
-        composeRule.onNodeWithText("Minha agenda").assertIsDisplayed()
+        composeRule.onNodeWithText("Minha agenda").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Diário", substring = false).performClick()
-        composeRule.onNodeWithText("Diário de hoje").assertIsDisplayed()
+        composeRule.onNodeWithText("Diário de hoje").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Revisões", substring = false).performClick()
-        composeRule.onNodeWithText("Revisões históricas").assertIsDisplayed()
+        composeRule.onNodeWithText("Revisões históricas").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Alertas", substring = false).performClick()
-        composeRule.onNodeWithText("LEMBRETES DIÁRIOS").assertIsDisplayed()
+        composeRule.onNodeWithText("LEMBRETES DIÁRIOS").performScrollTo().assertIsDisplayed()
     }
 }
