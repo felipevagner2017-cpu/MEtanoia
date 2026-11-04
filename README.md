@@ -13,13 +13,14 @@ O aplicativo organiza a jornada em quatro dimensões integradas:
 3. **Profissional** — metas, projetos, competências e resultados.
 4. **Cotidiano** — agenda, calendário, tarefas, hábitos, diário unificado, confissão opcional, revisões e alertas.
 
-A navegação principal é uma única jornada horizontal, com páginas deslizáveis: Mensagens e desafios, Devocional, Matrimônio, Profissional e Cotidiano. O painel inicial usa um cabeçalho premium, indicadores do dia e atalhos em grade para as quatro dimensões. Dentro de Cotidiano permanecem Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
+A navegação principal é uma única jornada horizontal com quatro painéis, nesta ordem: **Devoção**, **Matrimônio**, **Profissional** e **Cotidiano**. Devoção é a primeira tela e concentra a trilha de formação bíblica e pastoral. Matrimônio reúne cuidado diário, desafios, estudos temáticos e histórico; os desafios evitam repetições recentes com base nos registros. Profissional organiza metas, obstáculos, competências, entregas e próximos passos. Cotidiano concentra Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
 
 ## Identidade visual
 
 Design tokens centralizados em `MetanoiaDesignSystem.kt`:
 - Violeta principal: `#35105F`
 - Violeta profundo: `#1B092B`
+- Violeta secundário: `#54218A`
 - Violeta de superfície: `#2A1243`
 - Dourado champanhe: `#D9BC83`
 - Dourado luminoso: `#F0D9A1`
@@ -34,6 +35,12 @@ Room mantém agenda, diário, revisões, confissões e análises. A migração m
 ## Inteligência contextual
 
 O analisador diário atual é local, baseado em regras explícitas e executado offline. Ele identifica temas e dimensões a partir do texto informado, integra títulos de compromissos e evita tratar a palavra “confesso” isoladamente como admissão de pecado. Não é um modelo generativo conectado nem substitui aconselhamento pastoral, psicológico ou profissional.
+
+## Orientação das dimensões
+
+A área devocional foi estruturada para estudos aprofundados, exegese, contexto histórico-cultural-teológico, interpretação, aplicação pastoral, caráter e histórico de estudos. A área matrimonial inclui trilhas de conversa sobre fidelidade, pornografia, finanças, seduções, comunicação, conflitos, perdão e intimidade. A área profissional estrutura metas, desafios, planejamento, competências e resultados.
+
+O analisador contextual permanece determinístico e offline. Ele não deve ser descrito como terapeuta, pastor ou coach humano, nem como inteligência generativa: para respostas abertas, exegese gerada ou aconselhamento conversacional real será necessária uma integração explícita com um modelo, com controles de privacidade e segurança.
 
 ## Limites visuais conhecidos
 
