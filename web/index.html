@@ -233,6 +233,68 @@ main{max-width:790px;padding:16px 16px 26px}
 .word-topic.active b,.word-topic.active small,.word-topic.active>span{color:#F0D9A1}
 .word-topic.active::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:1px;background:#F0D9A1;transform:rotate(45deg);opacity:.78;box-shadow:0 0 9px #F0D9A1aa}
 
+
+/* Sistema visual refinado — superfícies, tipografia e controles consistentes */
+:root{
+ --ink:#F5F0F7;--ink-soft:#D8CCDF;--muted:#B7A9C2;
+ --canvas:#100817;--surface:#1A1024;--surface-raised:#241631;
+ --surface-soft:#2D1C3C;--gold:#D9BC83;--gold-bright:#F0D9A1;
+ --stroke:rgba(217,188,131,.25);--stroke-strong:rgba(217,188,131,.52);
+ --shadow-soft:0 8px 24px rgba(0,0,0,.22);--shadow-deep:0 18px 42px rgba(0,0,0,.34);
+ --radius-card:20px;
+}
+html{background:var(--canvas);scroll-behavior:smooth}
+body{background:radial-gradient(ellipse at 50% -16%,#402451 0%,#21132e 36%,var(--canvas) 78%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:20;padding:13px max(16px,calc((100vw - 790px)/2)) 14px;background:rgba(16,8,23,.91);border-bottom:1px solid var(--stroke-strong);box-shadow:0 8px 26px rgba(0,0,0,.22);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.brand{gap:13px}.brand img{width:44px;height:44px;filter:drop-shadow(0 3px 10px rgba(217,188,131,.18))}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:21px;letter-spacing:.13em;color:#FBF7F0}
+.tag{font-size:9px;letter-spacing:.13em;color:#D8C7A4}
+main{max-width:790px;padding:18px 16px 112px}
+.panel,.word-welcome,.word-slide,.home-reminder-card{border-radius:var(--radius-card);box-shadow:var(--shadow-soft)}
+.panel{padding:19px;background:linear-gradient(150deg,rgba(43,27,57,.96),rgba(24,14,34,.98));border:1px solid var(--stroke)}
+.panel h2,.panel h3{color:var(--ink);letter-spacing:-.025em}
+.eyebrow,.word-kicker,.challenge-mark{font-size:9px;font-weight:750;letter-spacing:.17em;color:var(--gold);text-transform:uppercase}
+p,.muted{color:var(--ink-soft)}
+.muted{font-size:12px;line-height:1.65}
+.btn{min-height:43px;padding:10px 16px;border:1px solid var(--stroke-strong);border-radius:13px;background:linear-gradient(145deg,#342342,#241631);color:var(--ink);font:650 12px/1.2 inherit;letter-spacing:.015em;box-shadow:0 4px 12px rgba(0,0,0,.16);transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.btn:active{transform:scale(.98)}
+.btn.gold{background:linear-gradient(135deg,#F0D9A1,#D1B477);border-color:#F6E6BE;color:#21152A;box-shadow:0 6px 17px rgba(217,188,131,.18)}
+.field,select.field,textarea.field,input.field{width:100%;min-height:45px;padding:12px 13px;border:1px solid rgba(217,188,131,.32);border-radius:13px;background:#120B1B;color:var(--ink);font:500 13px/1.5 inherit;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);transition:border-color .18s ease,box-shadow .18s ease}
+.field::placeholder{color:#8F809B}
+.field:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,188,131,.12)}
+label{display:block;margin:12px 0 6px;color:#E5D8E9;font-size:11px;font-weight:650}
+.word-welcome{position:relative;overflow:hidden;background:radial-gradient(circle at 90% 10%,rgba(217,188,131,.15),transparent 32%),linear-gradient(125deg,#42265A,#281638 60%,#170D22);border:1px solid var(--stroke-strong)}
+.word-welcome:after{content:"";position:absolute;inset:auto -35px -72px auto;width:190px;height:190px;border:1px solid rgba(217,188,131,.13);border-radius:50%;box-shadow:0 0 0 18px rgba(217,188,131,.025),0 0 0 38px rgba(217,188,131,.018);pointer-events:none}
+.word-topic-rail{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.word-topic-rail::-webkit-scrollbar,.word-carousel::-webkit-scrollbar{display:none}
+.word-topic{min-width:0;min-height:78px;border-radius:15px}
+.word-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.word-slide{scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.word-slide-head{display:flex;align-items:center}
+.word-slide-head p{font-size:11px;line-height:1.5}
+.daily-word-source{padding:19px 2px 13px}
+.daily-word-source .goldtext{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:1.5;color:var(--gold-bright);margin:9px 0}
+.daily-word-source p{font-size:12px;line-height:1.7}
+.word-challenge{border-radius:15px}
+.word-challenge p{font-size:12px;line-height:1.65}
+.word-slide-foot{padding-top:12px;border-top:1px solid rgba(217,188,131,.17);font-size:9px;letter-spacing:.1em;color:#AFA1B9}
+.word-pagination button{width:7px;height:7px;border:0;border-radius:99px;background:#75647F;transition:width .2s ease}
+.word-pagination button.active{width:23px;border-radius:8px;background:var(--gold-bright)}
+.calendar-panel,.calendar-tools,.confession-panel,.ai-assistant-panel{background:linear-gradient(150deg,#2B1B39,#1A1024);border-color:var(--stroke)}
+.calendar-head,.calendar-selected{padding:12px 0}
+.calendar-nav{width:38px;height:38px;border:1px solid var(--stroke);border-radius:12px;background:#251631;color:var(--gold-bright)}
+.calendar-day{border-radius:11px}
+.item{border:1px solid var(--stroke);border-radius:14px;background:rgba(18,11,27,.78);padding:12px;margin:8px 0}
+.tabs{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;padding:8px max(7px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));background:rgba(16,8,23,.94);border-top:1px solid var(--stroke-strong);box-shadow:0 -8px 28px rgba(0,0,0,.28);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.tab{flex:1;max-width:116px;min-width:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid transparent;border-radius:13px;background:transparent;color:#B7A9C2;font-size:9px;font-weight:650;letter-spacing:.015em}
+.tab b{font-size:17px;line-height:1.1;font-weight:500;color:inherit}
+.tab.active{background:linear-gradient(145deg,rgba(76,46,96,.8),rgba(42,25,58,.92));border-color:rgba(217,188,131,.24);color:var(--gold-bright)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-bright);outline-offset:3px}
+@media(min-width:700px){main{padding-top:22px}.word-slide{min-height:460px;padding:25px}.panel{padding:23px}}
+@media(max-width:520px){header{padding:11px 13px 12px}.brand img{width:39px;height:39px}h1{font-size:19px}.tag{font-size:8px;letter-spacing:.09em}.headerline{gap:8px}.headerline>.row{gap:6px}.headerline .btn{min-height:38px;padding:8px 10px;font-size:10px}main{padding:13px 12px 108px}.panel{padding:16px;border-radius:17px}.tabs{gap:2px;padding-left:5px;padding-right:5px}.tab{font-size:8px;min-height:49px;border-radius:11px}.tab b{font-size:16px}.word-slide{min-height:455px}.word-welcome{border-radius:18px}}
+@media(max-width:360px){.tag{max-width:170px}.tab{font-size:7px}.headerline .btn{padding:7px 8px}.word-slide{min-height:470px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="aiOpen" class="btn gold">Assistente IA</button><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
