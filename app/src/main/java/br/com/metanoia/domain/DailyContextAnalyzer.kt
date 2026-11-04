@@ -30,7 +30,6 @@ object DailyContextAnalyzer {
         if (listOf("agrade", "grato", "grata", "conquista", "consegui", "vitoria", "feliz").any(text::contains)) categories += "Gratidão ou conquista"
         if (listOf("nao sei", "por que", "porque", "duvida", "question").any(text::contains)) categories += "Dúvida ou questionamento"
         if (emotions.any(text::contains)) dimensions += "Individual"
-        if (dimensions.isEmpty() && combined.isNotBlank()) dimensions += "Individual"
         val feeling = when {
             listOf("triste", "desanim", "decepcion", "mago", "angust").any(text::contains) -> "O relato expressa tristeza, desânimo ou mágoa."
             listOf("ansios", "preocup", "medo", "insegur").any(text::contains) -> "O relato expressa preocupação, medo ou insegurança."
@@ -58,7 +57,7 @@ object DailyContextAnalyzer {
             categories.contains("Expressão emocional") -> "Salmo 34:18" to "O salmo nasce em contexto de aflição e livramento; afirma a proximidade do Senhor com os quebrantados. A dor é acolhida, não tratada como culpa."
             else -> "" to ""
         }
-        val direction = if (scripture.first.isNotBlank()) "Considere " + scripture.first + ": " + scripture.second else if (combined.isBlank()) "Registre livremente o que desejar. Não é necessário preencher todas as dimensões." else "Não há elementos suficientes para escolher uma passagem específica com responsabilidade. Uma pergunta de esclarecimento é melhor que um versículo aleatório."
+        val direction = if (scripture.first.isNotBlank()) "Considere " + scripture.first + ": " + scripture.second else if (combined.isBlank()) "Registre livremente o que desejar. Não é necessário preencher todas as dimensões." else if (combined.isNotBlank() && categories.isEmpty()) "Para compreender melhor, o que mais pesou para você hoje e que tipo de apoio ou direção está buscando?" else "Não há elementos suficientes para escolher uma passagem específica com responsabilidade. É melhor esclarecer o contexto do que usar um versículo aleatório."
         val next = when {
             categories.contains("Dificuldade financeira") -> "Anote uma preocupação financeira concreta, o prazo e uma pequena ação verificável que esteja ao seu alcance."
             categories.contains("Conflito ou vínculo familiar") -> "Quando houver tranquilidade, descreva o que você sentiu e o que precisa comunicar, sem preparar uma acusação."
