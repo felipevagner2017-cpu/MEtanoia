@@ -35,52 +35,119 @@ internal fun DashboardPage(
     val start = today.atStartOfDay(zone).toInstant().toEpochMilli()
     val end = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
     val todayItems = agenda.filter { it.scheduledAt in start..end }.sortedBy { it.scheduledAt }
+    val pending = todayItems.count { !it.completed }
+    val completed = todayItems.count { it.completed }
     val todayAnalysis = analyses.firstOrNull { it.dayKey == today.toString() }
+    val dateLabel = today.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM", Locale("pt", "BR")))
+        .replaceFirstChar { it.uppercase(Locale("pt", "BR")) }
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 14.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 18.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Mensagens e desafios", color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Seu ponto de partida para uma vida intencional: visão do dia, mensagens, desafios e acesso às quatro dimensões.", color = Ivory, style = MaterialTheme.typography.bodyMedium)
-        }
-        item {
-            Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("RESUMO DE HOJE", color = GoldChampagne, fontWeight = FontWeight.Bold)
-                    Text("${todayItems.count { !it.completed }} compromissos pendentes · ${todayItems.count { it.completed }} concluídos", color = Ivory)
-                    Text("${journal.count { it.dayKey == today.toString() }} registro(s) no diário e nas dimensões", color = Ivory)
-                    if (todayAnalysis != null) {
-                        Text("Leitura do dia", color = GoldBright, fontWeight = FontWeight.SemiBold)
-                        Text(todayAnalysis.emotionalState, color = Ivory)
-                        Text(todayAnalysis.nextStep, color = Ivory)
-                    } else {
-                        Text("Seu resumo integrado aparecerá após salvar o relato diário.", color = Ivory.copy(alpha = .82f))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = CardDefaults.cardColors(containerColor = VioletPrimary)
+            ) {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(Brush.linearGradient(listOf(VioletPrimary, Color(0xFF241039), Color(0xFF4B3264))))
+                        .padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    Text("METANOIA  /  PAINEL PESSOAL", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                    Text("Mensagens e desafios", color = Ivory, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(dateLabel, color = GoldBright, style = MaterialTheme.typography.titleMedium)
+                    Text("Uma mente renovada. Uma vida intencional.", color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(3.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.width(34.dp).height(3.dp).background(GoldChampagne, CircleShape))
+                        Text("ROMANOS 12:2", color = GoldChampagne, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                     }
                 }
             }
         }
         item {
-            Text("AS QUATRO DIMENSÕES", color = GoldChampagne, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SummaryMetricCard(Modifier.weight(1f), pending.toString(), "PENDENTES HOJE", GoldBright)
+                SummaryMetricCard(Modifier.weight(1f), completed.toString(), "CONCLUÍDOS HOJE", Color(0xFF9ED6B5))
+            }
         }
-        item { DimensionAccessCard("01", "DEVOCIONAL / ESPIRITUAL", "Escrituras, formação, caráter e jornada espiritual.", "Devocional") { onNavigate("Devocional") } }
-        item { DimensionAccessCard("02", "MATRIMÔNIO / INGRID", "Cuidado, presença, escuta e parceria no cotidiano.", "Matrimônio") { onNavigate("Matrimônio") } }
-        item { DimensionAccessCard("03", "PROFISSIONAL", "Metas, projetos, competências e resultados.", "Profissional") { onNavigate("Profissional") } }
-        item { DimensionAccessCard("04", "COTIDIANO", "Agenda, calendário, tarefas, hábitos e diário unificado.", "Cotidiano") { onNavigate("Cotidiano") } }
         item {
-            Text("AGENDA DE HOJE", color = GoldChampagne, fontWeight = FontWeight.Bold)
-            if (todayItems.isEmpty()) Text("Nenhum compromisso registrado para hoje.", color = Ivory)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("SUAS QUATRO DIMENSÕES", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                Text("Escolha onde deseja investir sua atenção.", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
+            }
         }
-        items(todayItems.take(6), key = { "today-${it.id}" }) { item ->
-            Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")), color = GoldBright, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(14.dp))
-                    Column {
-                        Text(item.title, color = Ivory, fontWeight = FontWeight.SemiBold)
-                        Text(if (item.completed) "Concluído" else "Previsto · ${dimensionName(item.dimension)}", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DimensionAccessCard(Modifier.weight(1f), "01", "DEVOCIONAL", "Palavra, formação e vida com Deus.") { onNavigate("Devocional") }
+                DimensionAccessCard(Modifier.weight(1f), "02", "MATRIMÔNIO", "Presença, cuidado e parceria.") { onNavigate("Matrimônio") }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DimensionAccessCard(Modifier.weight(1f), "03", "PROFISSIONAL", "Metas, projetos e realizações.") { onNavigate("Profissional") }
+                DimensionAccessCard(Modifier.weight(1f), "04", "COTIDIANO", "Agenda, hábitos e organização.") { onNavigate("Cotidiano") }
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("LEITURA DO DIA", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    if (todayAnalysis != null) {
+                        Text(todayAnalysis.emotionalState, color = Ivory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(todayAnalysis.nextStep, color = Ivory.copy(alpha = .84f), style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        Text("Seu dia ainda está em construção.", color = Ivory, style = MaterialTheme.typography.titleMedium)
+                        Text("Registre sua reflexão no Diário para reunir acontecimentos, sentimentos e próximos passos em uma visão integrada.", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
                     }
+                    Text("${journal.count { it.dayKey == today.toString() }} registro(s) feitos hoje", color = GoldBright, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("AGENDA DE HOJE", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text(if (todayItems.isEmpty()) "Seu dia está livre de registros." else "$pending pendente(s) · $completed concluído(s)", color = Ivory.copy(alpha = .76f), style = MaterialTheme.typography.bodySmall)
+                }
+                TextButton(onClick = { onNavigate("Cotidiano") }) {
+                    Text("VER AGENDA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        if (todayItems.isEmpty()) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
+                    Text("Adicione um compromisso para visualizar seus próximos horários aqui.", modifier = Modifier.padding(16.dp), color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        items(todayItems.take(5), key = { "today-${it.id}" }) { item ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Row(Modifier.padding(horizontal = 15.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")), color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Box(Modifier.padding(top = 5.dp).width(24.dp).height(2.dp).background(GoldChampagne, CircleShape))
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(item.title, color = Ivory, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
+                        Text(if (item.completed) "Concluído" else "Previsto · ${dimensionName(item.dimension)}", color = Ivory.copy(alpha = .72f), style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (item.completed) Text("✓", color = Color(0xFF9ED6B5), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -88,19 +155,36 @@ internal fun DashboardPage(
 }
 
 @Composable
-private fun DimensionAccessCard(number: String, title: String, description: String, action: String, onClick: () -> Unit) {
+private fun SummaryMetricCard(modifier: Modifier, value: String, label: String, accent: androidx.compose.ui.graphics.Color) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = CardSurface)
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        shape = MaterialTheme.shapes.large
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(number, color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, color = GoldChampagne, fontWeight = FontWeight.Bold)
-                Text(description, color = Ivory, style = MaterialTheme.typography.bodyMedium)
-                Text("ACESSAR  →", color = GoldBright, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(value, color = accent, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(label, color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
+        }
+    }
+}
+
+@Composable
+private fun DimensionAccessCard(modifier: Modifier, number: String, title: String, description: String, onClick: () -> Unit) {
+    Card(
+        modifier = modifier.heightIn(min = 158.dp).clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Box(
+                Modifier.size(34.dp).background(Brush.linearGradient(listOf(GoldBright, GoldChampagne)), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(number, color = DeepViolet, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             }
+            Text(title, color = GoldChampagne, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            Text(description, color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
+            Text("ABRIR ÁREA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = .7.sp)
         }
     }
 }
