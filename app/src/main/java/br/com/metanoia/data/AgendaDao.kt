@@ -33,7 +33,4 @@ interface AgendaDao {
 
     @Query("SELECT * FROM agenda_items WHERE id = :id LIMIT 1")
     suspend fun findById(id: Long): AgendaItem?
-
-    @Query("SELECT * FROM agenda_items WHERE reminderAt IS NOT NULL AND reminderAt >= :now")
-    suspend fun pendingReminders(now: Long): List<AgendaItem>
 }
