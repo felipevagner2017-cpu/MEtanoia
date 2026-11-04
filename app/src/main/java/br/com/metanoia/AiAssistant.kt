@@ -58,6 +58,8 @@ private class AiTokenStore(context: Context) {
         } catch (_: Exception) { "" }
     }
 
+    fun clear() { prefs.edit().remove("credential").apply() }
+
     fun save(value: String) {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
@@ -217,7 +219,10 @@ internal fun AiAssistantDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = GoldChampagne, contentColor = DeepViolet)
                     ) { Text(if (busy) "Aguarde..." else "Enviar à IA") }
                     TextButton(onClick = { messages = emptyList(); status = "Conversa limpa. Seus registros continuam no aparelho." }) {
-                        Text("Limpar", color = GoldBright)
+                        Text("Limpar conversa", color = GoldBright)
+                    }
+                    TextButton(onClick = { tokenStore.clear(); token = ""; status = "Credencial apagada deste aparelho." }) {
+                        Text("Apagar credencial", color = GoldBright)
                     }
                 }
                 Text(status, color = Ivory.copy(alpha = .76f), style = MaterialTheme.typography.labelSmall)
@@ -259,13 +264,15 @@ private fun buildAiContext(
     val records = selected.joinToString("\n") { entry ->
         entry.dayKey + " | " + label(entry.dimension) + " | " + entry.title + ": " + entry.content.take(1000)
     }
-    val confessionText = confessions.sortedByDescending { it.createdAt }.take(3).joinToString("\n") {
-        it.dayKey + " | Registro pessoal: " + it.content.take(700)
-    }
+    val confessionText = if (dimension == "Visão integrada" || dimension == "Devoção") {
+        confessions.sortedByDescending { it.createdAt }.take(3).joinToString("\n") {
+            it.dayKey + " | Registro pessoal: " + it.content.take(700)
+        }
+    } else ""
     val now = System.currentTimeMillis()
     val zone = ZoneId.systemDefault()
     val dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-    val agendaText = agenda.filter { it.scheduledAt >= now - 7 * 86400000L }
+    val agendaText = agenda.filter { it.scheduledAt >= now - 7 * 86400000L && (allowed.isEmpty() || it.dimension in allowed) }
         .sortedBy { it.scheduledAt }.take(10).joinToString("\n") { item ->
             val whenText = Instant.ofEpochMilli(item.scheduledAt).atZone(zone).format(dateFormat)
             whenText + " | " + label(item.dimension) + " | " + item.title + " | " + if (item.completed) "concluído" else "previsto"
