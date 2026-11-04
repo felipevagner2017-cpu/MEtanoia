@@ -121,7 +121,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  fun toggle(item:AgendaItem) { viewModelScope.launch {
   val completed = !item.completed
   db.agendaDao().setCompleted(item.id,completed)
-  if (completed) scheduler.cancel(item) else scheduler.schedule(item)
+  if (completed) scheduler.cancel(item) else scheduler.schedule(item.copy(completed = false))
   LockScreenAgendaWallpaper.refresh(appContext, db)
  } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
@@ -521,6 +521,20 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
   Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
   Text("Configure cada lembrete e mantenha sua agenda sob controle.",color = Ivory.copy(alpha = .78f))
+  val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+    Text(if(notificationsEnabled) "NOTIFICAÇÕES ATIVAS" else "NOTIFICAÇÕES DESATIVADAS",color=if(notificationsEnabled) GoldBright else Color(0xFFFF9A8B),fontWeight=FontWeight.Bold)
+    Text(
+     if(notificationsEnabled) "Os lembretes do MEtanoia podem ser exibidos pelo Android. Para vê-los na tela bloqueada, permita notificações e conteúdo na tela de bloqueio nas configurações do aparelho."
+     else "O Android está bloqueando as notificações do aplicativo. Ative-as para receber os lembretes dos seus compromissos.",
+     color=Ivory,style=MaterialTheme.typography.bodySmall
+    )
+    OutlinedButton(onClick={
+     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName))
+    },modifier=Modifier.fillMaxWidth()) { Text("Configurar notificações e tela de bloqueio") }
+   }
+  }
   Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("LEMBRETES DIÁRIOS",color=Gold,fontWeight=FontWeight.Bold)
