@@ -609,6 +609,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
        Text("Confissão integrada",color=gold,fontWeight=FontWeight.SemiBold)
        Text(old.content,color=violet,maxLines=3)
       }
+      analyses.firstOrNull{it.dayKey==entry.dayKey}?.let { oldAnalysis->
+       Text("Análise consolidada",color=gold,fontWeight=FontWeight.SemiBold)
+       Text(oldAnalysis.dimensions.ifBlank{"Dimensões não identificadas"},color=violet,style=MaterialTheme.typography.bodySmall)
+       Text(oldAnalysis.attention,color=violet,style=MaterialTheme.typography.bodySmall,maxLines=3)
+       Text("Próximo passo: "+oldAnalysis.nextStep,color=violet,style=MaterialTheme.typography.bodySmall,maxLines=3)
+      }
      }
     }
    }
