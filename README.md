@@ -34,7 +34,7 @@ Room mantém agenda, diário, revisões, confissões e análises. A migração m
 
 ## Inteligência contextual
 
-O analisador diário atual é local, baseado em regras explícitas e executado offline. Ele identifica temas e dimensões a partir do texto informado, integra títulos de compromissos e evita tratar a palavra “confesso” isoladamente como admissão de pecado. Não é um modelo generativo conectado nem substitui aconselhamento pastoral, psicológico ou profissional.
+A inteligência do MEtanoia agora tem arquitetura híbrida: a leitura contextual local permanece disponível offline; quando há internet, a assistente integrada pode consultar o modelo generativo Workers AI por um Worker protegido. O usuário escolhe o foco e autoriza explicitamente o envio de registros recentes relevantes. O Worker não grava conversas. A credencial não fica no código: Android a cifra com Android Keystore e a PWA a mantém somente na sessão do navegador. A configuração única do segredo METANOIA_AI_TOKEN está documentada em docs/AI_HYBRID.md.
 
 ## Orientação das dimensões
 
