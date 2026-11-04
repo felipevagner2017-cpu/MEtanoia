@@ -42,7 +42,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private const val METANOIA_AI_ENDPOINT = "https://metonoia.felipevagner2017.workers.dev/api/ai/chat"
+private const val METANOIA_AI_ENDPOINT = "https://metanoia.restaura-lar.workers.dev/api/ai/chat"
 private data class AiChatMessage(val role: String, val content: String)
 
 private class AiTokenStore(context: Context) {
