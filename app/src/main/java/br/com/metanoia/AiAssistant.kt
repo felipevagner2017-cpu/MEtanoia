@@ -92,13 +92,14 @@ internal fun AiAssistantDialog(
     journal: List<JournalEntry>,
     confessions: List<ConfessionEntry>,
     agenda: List<AgendaItem>,
+    initialDimension: String = "Visão integrada",
     onDismiss: () -> Unit
 ) {
     val tokenStore = remember { AiTokenStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var token by remember { mutableStateOf(tokenStore.read()) }
     var question by remember { mutableStateOf("") }
-    var dimension by remember { mutableStateOf("Visão integrada") }
+    var dimension by remember { mutableStateOf(initialDimension) }
     var consent by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("A conversa não será salva automaticamente.") }
