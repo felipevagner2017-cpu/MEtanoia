@@ -186,8 +186,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews by vm.reviews.collectAsStateWithLifecycle()
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
- var tab by remember { mutableStateOf("Painel") }
  var cotidianoTab by remember { mutableStateOf("Agenda") }
+ val sectionLabels = listOf("Mensagens e desafios","Devocional","Matrimônio","Profissional","Cotidiano")
+ val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
+ val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
   if (result.resultCode == android.app.Activity.RESULT_OK) {
    val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
@@ -209,54 +211,61 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Text("Uma mente renovada. Uma vida intencional.",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.bodyMedium)
   }
   Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp, vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-   listOf("Painel","Devocional","Matrimônio","Profissional","Cotidiano").forEach { label ->
-    TextButton(onClick={tab=label}) {
-     Text(label,color=if(tab==label) GoldBright else Ivory,fontWeight=if(tab==label) FontWeight.Bold else FontWeight.Medium)
+   sectionLabels.forEachIndexed { index, label ->
+    TextButton(onClick={ pagerScope.launch { pagerState.animateScrollToPage(index) } }) {
+     Text(label,color=if(pagerState.currentPage==index) GoldBright else Ivory,fontWeight=if(pagerState.currentPage==index) FontWeight.Bold else FontWeight.Medium)
     }
    }
   }
-  when(tab) {
-   "Painel" -> DashboardPage(agenda,journal,analyses) { tab=it }
-   "Devocional" -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
-   "Matrimônio" -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
-   "Profissional" -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
-   else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
-    Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-     listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
-      TextButton(onClick={cotidianoTab=label}) { Text(label,color=if(cotidianoTab==label) GoldBright else Ivory,fontWeight=if(cotidianoTab==label) FontWeight.Bold else FontWeight.Normal) }
-     }
+  androidx.compose.foundation.pager.HorizontalPager(
+   state = pagerState,
+   modifier = Modifier.fillMaxSize().weight(1f)
+  ) { page ->
+   when(page) {
+    0 -> DashboardPage(agenda,journal,analyses) { destination ->
+     val target = sectionLabels.indexOf(destination).takeIf { it >= 0 } ?: 0
+     pagerScope.launch { pagerState.animateScrollToPage(target) }
     }
-    when(cotidianoTab) {
-     "Agenda" -> AgendaPage(agenda,vm)
-     "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
-     "Revisões" -> ReviewPage(reviews,vm)
-     else -> NotificationSettingsPage(context,agenda,{
-      val prefs=NotificationPreferences(context)
-      val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som das notificações diárias")
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
+    1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
+    2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
+    3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
+    else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
+     Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+      listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
+       TextButton(onClick={cotidianoTab=label}) { Text(label,color=if(cotidianoTab==label) GoldBright else Ivory,fontWeight=if(cotidianoTab==label) FontWeight.Bold else FontWeight.Normal) }
       }
-      ringtoneLauncher.launch(pick)
-     },{
-      val prefs=NotificationPreferences(context)
-      val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(prefs.eventSound()))
-      }
-      eventRingtoneLauncher.launch(pick)
-     })
+     }
+     when(cotidianoTab) {
+      "Agenda" -> AgendaPage(agenda,vm)
+      "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
+      "Revisões" -> ReviewPage(reviews,vm)
+      else -> NotificationSettingsPage(context,agenda,{
+       val prefs=NotificationPreferences(context)
+       val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som das notificações diárias")
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
+       }
+       ringtoneLauncher.launch(pick)
+      },{
+       val prefs=NotificationPreferences(context)
+       val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(prefs.eventSound()))
+       }
+       eventRingtoneLauncher.launch(pick)
+      })
+     }
     }
    }
   }
  }
 }
-
 @Composable private fun AgendaPage(items:List<AgendaItem>,vm:AppViewModel) {
  val context=LocalContext.current
  val zone=remember { ZoneId.systemDefault() }
