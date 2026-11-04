@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
   lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
+  // Official MEtanoia violet, champagne-gold and ivory Material 3 system.
   setContent { MaterialTheme(
    colorScheme = darkColorScheme(
     primary = GoldBright,
