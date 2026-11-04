@@ -156,39 +156,33 @@ async function ingridCryptoKey(pin,salt){
  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:310000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
 }
 async function saveIngridVault(){
- const pin=ingridSessionPin||$("ingridPin")?.value||"";
- if(pin.length<8)return alert("Use uma senha de pelo menos 8 caracteres para proteger os dados.");
  if(!ingridData)return;
- const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await ingridCryptoKey(pin,salt);
- const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(ingridData)));
- localStorage.setItem(INGRID_VAULT_KEY,JSON.stringify({version:1,salt:toB64(salt),iv:toB64(iv),data:toB64(encrypted)}));
+ localStorage.setItem(INGRID_VAULT_KEY,JSON.stringify({version:2,encrypted:false,data:ingridData}));
 }
 async function unlockIngridVault(){
- if(!window.isSecureContext||!crypto?.subtle)return alert("A proteção criptográfica exige abrir o MEtanoia em uma conexão HTTPS segura.");
- if(!$("ingridConsent").checked)return alert("Só prossiga depois de Ingrid autorizar expressamente o registro e o uso dessas informações.");
- const pin=$("ingridPin").value;
- if(pin.length<8)return alert("Crie uma senha de pelo menos 8 caracteres. Ela não será armazenada.");
+ if(!$('ingridConsent')?.checked)return alert('Só prossiga depois de Ingrid autorizar expressamente o registro e o uso dessas informações.');
  const raw=localStorage.getItem(INGRID_VAULT_KEY);
- ingridSessionPin=pin;
- try{
-  if(raw){
-   const saved=JSON.parse(raw),key=await ingridCryptoKey(pin,fromB64(saved.salt));
-   const clear=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(saved.iv)},key,fromB64(saved.data));
-   ingridData=JSON.parse(new TextDecoder().decode(clear));
-  }else{
-   ingridData={cycle:{lastPeriodStart:"",cycleLength:28,periodDays:5,regularity:"unknown"},entries:[],consentConfirmedAt:new Date().toISOString()};
-   await saveIngridVault();
-  }
-  ingridUnlocked=true;renderIngrid();
- }catch(e){ingridSessionPin="";alert("Não foi possível abrir o cofre. Confira a senha. Se ela foi perdida, os dados criptografados não poderão ser recuperados.");}
+ if(raw){
+  try{
+   const saved=JSON.parse(raw);
+   if(saved.encrypted!==false||saved.version===1){
+    const accepted=confirm('Os dados antigos estão protegidos pela senha esquecida. Não é possível abri-los sem ela. Como você autorizou reiniciar sem senha, continuar apagará esses dados antigos e criará um novo cadastro. Deseja continuar?');
+    if(!accepted)return;
+    localStorage.removeItem(INGRID_VAULT_KEY);
+   }else{
+    ingridData=saved.data;
+    if(!ingridData||typeof ingridData!=='object')throw new Error('Dados inválidos');
+    ingridUnlocked=true;renderIngrid();return;
+   }
+  }catch(e){return alert('Não foi possível ler os dados locais. Nenhuma informação foi alterada.');}
+ }
+ ingridData={cycle:{lastPeriodStart:'',cycleLength:28,periodDays:5,regularity:'unknown'},entries:[],consentConfirmedAt:new Date().toISOString()};
+ await saveIngridVault();ingridUnlocked=true;renderIngrid();
 }
 function resetIngridVault(){
- const accepted=confirm("ATENÇÃO: esta ação apagará definitivamente o cofre criptografado da Ingrid armazenado neste navegador, incluindo registros do ciclo e diário. Não será possível recuperar os dados antigos. Deseja continuar?");
+ const accepted=confirm('Apagar definitivamente os dados da Ingrid armazenados neste navegador? Esta ação não pode ser desfeita.');
  if(!accepted)return;
- localStorage.removeItem(INGRID_VAULT_KEY);
- ingridData=null;ingridUnlocked=false;ingridSessionPin="";
- renderIngrid();
- alert("Cofre antigo removido deste navegador. Para criar um novo, marque a autorização da Ingrid, informe uma nova senha com pelo menos 8 caracteres e toque em Criar cofre protegido.");
+ localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin='';renderIngrid();
 }
 function dayOffset(date,days){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+days);return key(d)}
 function cycleStatus(data){
@@ -216,8 +210,8 @@ function renderIngrid(){
  const root=$("ingridContent");if(!root)return;
  if(!ingridUnlocked){
   const exists=!!localStorage.getItem(INGRID_VAULT_KEY);
-  root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Um lembrete visual para cultivar presença, carinho e parceria.</p></div></div><div class="daily-challenge"><div class="eyebrow">Desafio de cuidado de hoje</div><p>Pergunte à Ingrid como ela está e o que seria uma demonstração de cuidado para ela hoje. Escute a resposta sem tentar adivinhar.</p></div><div class="ingrid-lock"><div class="eyebrow">Privacidade em primeiro lugar</div><p>O acompanhamento menstrual e os relatos sobre Ingrid envolvem dados pessoais sensíveis. Só habilite esta área com a autorização expressa dela. Os dados serão criptografados neste aparelho com uma senha que não fica salva no aplicativo.</p><label class="consent-line"><input id="ingridConsent" type="checkbox"> Ingrid autorizou o registro e o uso destas informações no MEtanoia.</label><label>Senha do cofre (mínimo 8 caracteres)</label><input id="ingridPin" class="field" type="password" autocomplete="new-password" placeholder="Crie ou informe a senha"><button id="ingridUnlock" class="btn gold">'+(exists?"Desbloquear acompanhamento":"Criar cofre protegido")+'</button><p class="muted">Sem autorização, não registre datas do ciclo, sintomas ou reações pessoais. Se a senha for perdida, não será possível recuperar o conteúdo criptografado.</p></div>';
-  $("ingridUnlock").onclick=unlockIngridVault;if(exists){const reset=document.createElement("button");reset.type="button";reset.className="btn";reset.textContent="Esqueci a senha · redefinir cofre";reset.style.marginTop="10px";reset.onclick=resetIngridVault;$("ingridUnlock").after(reset);}return;
+  root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Um lembrete visual para cultivar presença, carinho e parceria.</p></div></div><div class="daily-challenge"><div class="eyebrow">Desafio de cuidado de hoje</div><p>Pergunte à Ingrid como ela está e o que seria uma demonstração de cuidado para ela hoje. Escute a resposta sem tentar adivinhar.</p></div><div class="ingrid-lock"><div class="eyebrow">Acesso aos dados pessoais</div><p>O acesso será direto, sem senha. Os registros ficam neste navegador, sem criptografia. Qualquer pessoa com acesso ao seu aparelho e perfil do navegador poderá visualizá-los. Registre somente informações que Ingrid autorizar.</p><label class="consent-line"><input id="ingridConsent" type="checkbox"> Ingrid autorizou o registro e o uso destas informações no MEtanoia.</label><button id="ingridUnlock" class="btn gold">'+(exists?"Acessar dados da Ingrid":"Criar cadastro da Ingrid")+'</button>'+(exists?'<p class="muted">Se os dados anteriores estavam protegidos pela senha esquecida, será necessário reiniciar o cadastro e os registros antigos serão perdidos.</p>':"")+'</div>';
+  $("ingridUnlock").onclick=unlockIngridVault;return;
  }
  const c=ingridData.cycle||{},status=cycleStatus(ingridData),todayEntry=(ingridData.entries||[]).find(x=>x.date===today());
  const nextDate=status?.nextStart?fmt(status.nextStart):"sem previsão confiável";
