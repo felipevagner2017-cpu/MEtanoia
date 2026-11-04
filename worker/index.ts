@@ -6,6 +6,7 @@ interface Env {
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const ALLOWED_ORIGINS = new Set([
+  "https://metanoia.restaura-lar.workers.dev",
   "https://metonoia.felipevagner2017.workers.dev",
 ]);
 
