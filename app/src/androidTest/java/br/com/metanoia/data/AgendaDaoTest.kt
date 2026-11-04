@@ -60,4 +60,18 @@ class AgendaDaoTest {
         assertTrue(dao.observeRange(start, end).first().isEmpty())
         assertFalse(dao.observeAll().first().isEmpty())
     }
+    @Test
+    fun dailyDiaryLookupDoesNotConfuseDimensionRecordsWithDiary() = runBlocking {
+        val dayKey = "2026-11-04"
+        database.journalDao().insert(
+            JournalEntry(title = "Estudo bíblico", content = "Registro espiritual", dimension = LifeDimension.SPIRITUAL, dayKey = dayKey)
+        )
+        assertEquals(null, database.journalDao().findForDay(dayKey))
+
+        database.journalDao().insert(
+            JournalEntry(title = "Relato diário", content = "Como foi meu dia", dimension = LifeDimension.INDIVIDUAL, dayKey = dayKey)
+        )
+        assertEquals("Relato diário", database.journalDao().findForDay(dayKey)?.title)
+    }
+
 }
