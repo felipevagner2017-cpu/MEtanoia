@@ -555,13 +555,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var diary by remember(todayKey,entries) { mutableStateOf(todayEntry?.content.orEmpty()) }
  var confession by remember(todayKey,confessions) { mutableStateOf(todayConfession?.content.orEmpty()) }
  var confessionExpanded by remember(todayKey,confessions) { mutableStateOf(todayConfession!=null) }
- val violet=GoldBright
+ val violet=Ivory
  val gold=GoldChampagne
  val todayAgenda=agenda.filter {
   Instant.ofEpochMilli(it.scheduledAt).atZone(ZoneId.systemDefault()).toLocalDate()==LocalDate.now()
  }
  Column(Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=12.dp)) {
-  Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=violet,fontWeight=FontWeight.Bold)
+  Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
   Text("Um único relato para compreender o dia por inteiro.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=violet)) {
    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -605,35 +605,35 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
     Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
      Text("LEITURA CONTEXTUAL DO DIA",color=gold,fontWeight=FontWeight.Bold)
-     Text("O que aconteceu hoje",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("O que aconteceu hoje",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.summary,color=violet)
-     Text("Como você está",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Como você está",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.emotionalState,color=violet)
-     Text("Dimensões identificadas",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Dimensões identificadas",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.dimensions.ifBlank{"Nenhuma dimensão específica foi identificada."},color=violet)
-     Text("Pontos de atenção",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Pontos de atenção",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.attention,color=violet)
-     Text("Aprendizados",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Aprendizados",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.learning,color=violet)
-     Text("Direcionamento",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Direcionamento",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.direction,color=violet)
      if(todayAnalysis.scriptureReference.isNotBlank()) {
       Text(todayAnalysis.scriptureReference,color=gold,fontWeight=FontWeight.Bold)
       Text(todayAnalysis.scriptureContext,color=violet,style=MaterialTheme.typography.bodySmall)
      }
-     Text("Próximo passo",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Próximo passo",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.nextStep,color=violet)
      Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
     }
    }
   }
   if(todayAgenda.isNotEmpty()) {
-   Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=violet,fontWeight=FontWeight.SemiBold)
+   Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=GoldBright,fontWeight=FontWeight.SemiBold)
    todayAgenda.sortedBy{it.scheduledAt}.forEach { item->
     Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
    }
   }
-  Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=violet,fontWeight=FontWeight.Bold)
+  Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=GoldBright,fontWeight=FontWeight.Bold)
   LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
    items(entries.filter{it.dayKey!=todayKey},key={it.id}) { entry->
     Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
@@ -671,10 +671,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      Text("Comparação com a revisão anterior",color=Navy,fontWeight=FontWeight.Bold)
      Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
      Text("Mais recente · "+formatDate(periodEntries[0].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
-     Text(periodEntries[0].reflection,color=Navy)
+     Text(periodEntries[0].reflection,color=Ivory)
      Divider(color=Paper)
      Text("Anterior · "+formatDate(periodEntries[1].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
-     Text(periodEntries[1].reflection,color=Navy)
+     Text(periodEntries[1].reflection,color=Ivory)
     }
    }
   }
