@@ -1,5 +1,6 @@
 package br.com.metanoia.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -11,5 +12,5 @@ data class JournalEntry(
     val dimension: LifeDimension = LifeDimension.INDIVIDUAL,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val dayKey: String = ""
+    @ColumnInfo(defaultValue = "''") val dayKey: String = ""
 )
