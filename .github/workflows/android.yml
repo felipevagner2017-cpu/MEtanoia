@@ -82,13 +82,4 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: |
-            adb wait-for-device
-            for attempt in $(seq 1 60); do
-              if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && adb shell service check package | grep -q found; then
-                break
-              fi
-              sleep 2
-            done
-            adb shell service check package | grep -q found
-            gradle connectedDebugAndroidTest --stacktrace
+          script: gradle connectedDebugAndroidTest --stacktrace
