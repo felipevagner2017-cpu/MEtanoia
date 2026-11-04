@@ -1,24 +1,39 @@
-name: Deploy MEtanoia PWA to Cloudflare Workers
+name: Deploy MEtanoia PWA and downloads to Cloudflare Workers
 on:
   push:
     branches: [main]
     paths: ["web/**", "wrangler.jsonc", ".github/workflows/deploy-cloudflare.yml"]
+  workflow_run:
+    workflows: ["Android build"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          ref: main
+      - name: Download latest verified Android release files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p web/downloads
+          gh release download android-latest --repo "${GITHUB_REPOSITORY}" --pattern "MEtonoia-Android.apk" --pattern "MEtonoia-codigo-fonte.zip" --dir web/downloads
+          test -s web/downloads/MEtonoia-Android.apk
+          test -s web/downloads/MEtonoia-codigo-fonte.zip
       - name: Install Wrangler
         run: npm install --global wrangler
       - name: Validate Worker configuration
         run: wrangler deploy --dry-run
-      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy PWA and downloadable files
         run: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
