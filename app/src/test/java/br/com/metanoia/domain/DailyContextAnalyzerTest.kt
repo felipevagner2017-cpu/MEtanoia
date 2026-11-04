@@ -2,7 +2,6 @@ package br.com.metanoia.domain
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DailyContextAnalyzerTest {
@@ -11,7 +10,7 @@ class DailyContextAnalyzerTest {
         assertTrue(result.categories.contains("Expressão emocional"))
         assertFalse(result.categories.contains("Reconhecimento de erro"))
         assertFalse(result.categories.contains("Culpa ou arrependimento"))
-        assertEquals("", result.scriptureReference.let { if (it == "1 João 1:9") it else "" })
+        assertFalse(result.scriptureReference == "1 João 1:9")
         assertTrue(result.direction.contains("Salmo 34:18"))
     }
 
