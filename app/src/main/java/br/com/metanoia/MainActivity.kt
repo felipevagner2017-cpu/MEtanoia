@@ -30,15 +30,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.com.metanoia.data.*
 import br.com.metanoia.domain.RecurrenceEngine
 import br.com.metanoia.domain.RecurrenceFrequency
 import br.com.metanoia.reminders.ReminderScheduler
+import br.com.metanoia.reminders.NotificationPreferences
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
@@ -63,7 +66,7 @@ class MainActivity : ComponentActivity() {
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
   scheduler.scheduleDailyReminders()
-  db.agendaDao().pendingReminders(System.currentTimeMillis()).let { pending -> pending.forEach(scheduler::schedule) }
+  lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
   setContent { MaterialTheme(colorScheme = lightColorScheme(primary=Navy, secondary=Gold, background=Paper)) {
@@ -133,8 +136,15 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
   if (result.resultCode == android.app.Activity.RESULT_OK) {
    val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-             else @Suppress("DEPRECATION") result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+             else result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
    if (uri != null) NotificationPreferences(context).setDailySound(uri.toString())
+  }
+ }
+ val eventRingtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+  if (result.resultCode == android.app.Activity.RESULT_OK) {
+   val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+             else result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+   if (uri != null) NotificationPreferences(context).setEventSound(uri.toString())
   }
  }
  Column(Modifier.fillMaxSize()) {
@@ -146,7 +156,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   Row(Modifier.fillMaxWidth().background(Color.White),horizontalArrangement=Arrangement.SpaceEvenly) {
    listOf("Agenda","Diário","Revisões","Alertas").forEach { label -> TextButton(onClick={tab=label}) { Text(label,color=if(tab==label) Navy else Color.Gray) } }
   }
-  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda) {
+  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda, {
     val prefs = NotificationPreferences(context)
     val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
      putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
@@ -156,6 +166,16 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
     }
     ringtoneLauncher.launch(pick)
+   }, {
+    val eventPrefs = NotificationPreferences(context)
+    val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+     putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
+     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(eventPrefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(eventPrefs.eventSound()))
+    }
+    eventRingtoneLauncher.launch(pick)
    } }
  }
 }
@@ -361,7 +381,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
 }
 
 
-@Composable private fun NotificationSettingsPage(context:Context, items:List<AgendaItem>, onPickDailySound:()->Unit) {
+@Composable private fun NotificationSettingsPage(context:Context, items:List<AgendaItem>, onPickDailySound:()->Unit, onPickEventSound:()->Unit) {
  val prefs = remember { NotificationPreferences(context) }
  val scheduler = remember { ReminderScheduler(context) }
  var d7 by remember { mutableStateOf(prefs.dailyEnabled(7)) }
@@ -419,17 +439,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
     Text("Som dos compromissos: "+when(eventSound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
     Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-     OutlinedButton(onClick={
-      val intent=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
-       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
-      }
-      try {
-       val chooser=context.startActivityForResultUnsupported()
-      } catch (_:Exception) { }
-     }){Text("Escolher toque")}
+     OutlinedButton(onClick=onPickEventSound){Text("Escolher toque")}
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SYSTEM_SOUND);eventSound=prefs.eventSound()}){Text("Padrão")}
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
     }
