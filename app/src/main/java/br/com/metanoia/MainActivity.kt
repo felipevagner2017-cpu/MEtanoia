@@ -82,11 +82,32 @@ class MainActivity : ComponentActivity() {
   lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
-  setContent { MaterialTheme(colorScheme = darkColorScheme(
-   primary=GoldBright, secondary=GoldChampagne, background=DeepViolet, surface=CardSurface,
-   onPrimary=DeepViolet, onSecondary=DeepViolet, onBackground=Ivory, onSurface=Ivory,
-   surfaceVariant=VioletSurface, onSurfaceVariant=Ivory
-  ), typography=MetanoiaTypography, shapes=MetanoiaShapes) {
+  setContent { MaterialTheme(
+   colorScheme = darkColorScheme(
+    primary = GoldBright,
+    onPrimary = DeepViolet,
+    primaryContainer = VioletSecondary,
+    onPrimaryContainer = Ivory,
+    secondary = GoldChampagne,
+    onSecondary = DeepViolet,
+    secondaryContainer = VioletSurface,
+    onSecondaryContainer = Ivory,
+    tertiary = GoldChampagne,
+    onTertiary = DeepViolet,
+    background = DeepViolet,
+    onBackground = Ivory,
+    surface = CardSurface,
+    onSurface = Ivory,
+    surfaceVariant = VioletSurface,
+    onSurfaceVariant = Ivory,
+    outline = GoldChampagne.copy(alpha = 0.48f),
+    outlineVariant = GoldChampagne.copy(alpha = 0.24f),
+    error = Color(0xFFFF9A8B),
+    onError = DeepViolet
+   ),
+   typography = MetanoiaTypography,
+   shapes = MetanoiaShapes
+  ) {
    Surface(Modifier.fillMaxSize(), color=DeepViolet) { MetanoiaApp(db, scheduler) }
   } }
  }
