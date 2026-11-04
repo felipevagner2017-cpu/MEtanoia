@@ -21,7 +21,8 @@ class MainActivityNavigationTest {
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
         composeRule.onNodeWithText("Devoção", substring = false).performClick()
-        composeRule.onNodeWithText("Contexto histórico, cultural e literário").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Devocional / Espiritual", substring = false).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("NOVO REGISTRO", substring = false).performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
         composeRule.onNodeWithText("DESAFIO MATRIMONIAL").performScrollTo().assertIsDisplayed()
