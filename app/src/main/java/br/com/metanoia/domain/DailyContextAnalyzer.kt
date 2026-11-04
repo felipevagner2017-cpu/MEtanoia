@@ -69,7 +69,7 @@ object DailyContextAnalyzer {
 
         val attention = when {
             explicitError || categories.contains("Culpa ou arrependimento") -> "Há um erro ou sentimento de culpa explicitamente mencionado. Compreenda os fatos, a responsabilidade e possíveis reparações antes de concluir."
-            categories.contains("Relacionamento conjugal") -> "O vínculo conjugal merece escuta, clareza e responsabilidade mútua. Este registro não permite presumir o que Ingrid sente nem atribuir culpa sem compreender os fatos."
+            categories.contains("Relacionamento conjugal") -> "O vínculo conjugal merece escuta, clareza e responsabilidade mútua. Este registro não permite presumir o que Ingrid sente; é preciso compreender os fatos sem atribuir culpa antecipadamente."
             categories.contains("Dificuldade financeira") -> "A preocupação financeira merece separar valores, vencimentos, necessidades essenciais e alternativas possíveis, sem culpa ou promessas fáceis."
             categories.contains("Questão profissional") -> "A situação profissional pode ser organizada em fatos, influência possível, recursos disponíveis e uma próxima decisão."
             categories.contains("Expressão emocional") -> "O sofrimento relatado merece acolhimento e escuta. Ele não é, por si só, evidência de falha espiritual."
