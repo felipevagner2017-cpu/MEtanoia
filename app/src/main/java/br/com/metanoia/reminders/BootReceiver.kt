@@ -11,7 +11,9 @@ import kotlinx.coroutines.launch
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val supported = setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED)
+        if (intent.action !in supported) return
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
@@ -19,9 +21,7 @@ class BootReceiver : BroadcastReceiver() {
                 val scheduler = ReminderScheduler(context)
                 scheduler.scheduleDailyReminders()
                 dao.pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule)
-            } finally {
-                pendingResult.finish()
-            }
+            } finally { pendingResult.finish() }
         }
     }
 }
