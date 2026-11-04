@@ -177,6 +177,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
     eventRingtoneLauncher.launch(pick)
    })
+  }
  }
 }
 @Composable private fun AgendaPage(items:List<AgendaItem>,vm:AppViewModel) {
