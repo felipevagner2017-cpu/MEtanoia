@@ -14,6 +14,9 @@ interface ConfessionDao {
     @Query("SELECT * FROM confession_entries WHERE dayKey = :dayKey ORDER BY updatedAt DESC LIMIT 1")
     suspend fun findForDay(dayKey: String): ConfessionEntry?
 
+    @Query("DELETE FROM confession_entries WHERE dayKey = :dayKey")
+    suspend fun deleteForDay(dayKey: String)
+
     @Insert
     suspend fun insert(entry: ConfessionEntry): Long
 
