@@ -44,7 +44,7 @@ const patterns=[
 {words:["procrast","atras","desorgan","tempo","priorid"],name:"Tempo e prioridades",ref:"Efésios 5:15–17; Provérbios 6:6–11",advice:"A sabedoria bíblica chama a viver com atenção e discernimento, aproveitando bem o tempo. Planejamento deve servir à fidelidade, não à ansiedade.",step:"Escolha a prioridade mais importante, defina quando será feita e reduza uma distração concreta."},
 {words:["oração","orar","bíblia","palavra","devoc","jejum","igreja"],name:"Vida espiritual",ref:"Salmo 1:1–3; João 15:4–5; Tiago 1:22",advice:"A vida com Deus envolve permanecer na Palavra e responder a ela em obediência. Prática espiritual não é desempenho para impressionar, mas relacionamento e fidelidade.",step:"Volte ao texto bíblico, observe o que ele realmente ensina e transforme uma verdade em obediência prática."}
 ];
-let activeWordArea=null,selectedWordAreas=[];const wordOrder=["Espiritual","Matrimonial","Cotidiano","Profissional"];
+let activeWordArea=null,selectedWordAreas=[];const wordOrder=["Espiritual","Matrimonial","Profissional","Cotidiano"];
 function normalizeText(value){return String(value||"").toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function bestPattern(records,areaName){
  const ranked=patterns.map((p,index)=>({p,index,score:records.reduce((total,record,position)=>{const text=normalizeText((record.title||"")+" "+(record.body||"")),weight=Math.max(1,8-position);return total+p.words.reduce((n,w)=>n+(text.includes(normalizeText(w))?weight:0),0)},0)}))
