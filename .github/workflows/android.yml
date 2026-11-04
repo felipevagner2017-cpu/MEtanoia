@@ -29,27 +29,55 @@ jobs:
         run: gradle assembleDebug
       - name: Run unit tests
         run: gradle testDebugUnitTest
-      - name: Package source code
-        run: git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
+      - name: Package complete source
+        run: |
+          git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtonoia-Android.apk
       - name: Upload source code
         uses: actions/upload-artifact@v4
         with:
-          name: metanoia-source-code
+          name: metonoia-source-code
           path: MEtanoia-codigo-fonte.zip
           if-no-files-found: error
-      - name: Name Android installer
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtanoia-Android.apk
-      - name: Publish direct Android installer
+          retention-days: 30
+      - name: Upload Android installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-android-apk
+          path: app/build/outputs/apk/debug/MEtonoia-Android.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish durable release files
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
           name: MEtanoia Android — versão de teste
           prerelease: true
           overwrite_files: true
-          files: app/build/outputs/apk/debug/MEtanoia-Android.apk
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+          files: |
+            app/build/outputs/apk/debug/MEtonoia-Android.apk
+            MEtanoia-codigo-fonte.zip
+
+  room-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          name: metanoia-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Run Room integration tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: gradle connectedDebugAndroidTest
