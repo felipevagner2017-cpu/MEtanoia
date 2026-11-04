@@ -27,18 +27,18 @@ class MainActivityNavigationTest {
         composeRule.onNodeWithText("Matrimônio / Ingrid", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Profissional", substring = false).performClick()
-        composeRule.onNodeWithText("Meta, projeto ou desafio profissional").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("DIMENSÃO 03", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Cotidiano", substring = false).performClick()
-        composeRule.onNodeWithText("Minha agenda").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Minha agenda", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Diário", substring = false).performClick()
-        composeRule.onNodeWithText("Diário de hoje").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Diário de hoje", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Revisões", substring = false).performClick()
-        composeRule.onNodeWithText("Revisões históricas").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Revisões históricas", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Alertas", substring = false).performClick()
-        composeRule.onNodeWithText("LEMBRETES DIÁRIOS").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Notificações e alarmes", substring = false).assertIsDisplayed()
     }
 }
