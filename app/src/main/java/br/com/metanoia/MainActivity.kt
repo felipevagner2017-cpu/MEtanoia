@@ -3,6 +3,10 @@ import android.os.Bundle
 import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
 import br.com.metanoia.wallpaper.LockScreenWallpaperWorker
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.media.RingtoneManager
+import android.provider.Settings
 import android.content.res.Configuration
 import android.app.DatePickerDialog
 import android.os.Build
@@ -59,6 +63,7 @@ class MainActivity : ComponentActivity() {
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
   scheduler.scheduleDailyReminders()
+  db.agendaDao().pendingReminders(System.currentTimeMillis()).let { pending -> pending.forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
   setContent { MaterialTheme(colorScheme = lightColorScheme(primary=Navy, secondary=Gold, background=Paper)) {
@@ -76,7 +81,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    val zone=ZoneId.systemDefault()
    val start=Instant.ofEpochMilli(scheduledAt).atZone(zone)
    val dates=if(kind==AgendaKind.HABIT && recurrenceRule!=null) {
-    RecurrenceEngine.datesUntil(start.toLocalDate(),RecurrenceFrequency.valueOf(recurrenceRule),start.toLocalDate().plusDays(90))
+    RecurrenceEngine.datesUntil(start.toLocalDate(),RecurrenceFrequency.valueOf(recurrenceRule),start.toLocalDate().plusDays(365))
    } else listOf(start.toLocalDate())
    dates.forEach { date->
     val occurrenceAt=date.atTime(start.hour,start.minute).atZone(zone).toInstant().toEpochMilli()
@@ -96,7 +101,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    LockScreenAgendaWallpaper.refresh(appContext, db)
   }
  }
- fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed); LockScreenAgendaWallpaper.refresh(appContext, db) } }
+ fun toggle(item:AgendaItem) { viewModelScope.launch {
+  val completed = !item.completed
+  db.agendaDao().setCompleted(item.id,completed)
+  if (completed) scheduler.cancel(item) else scheduler.schedule(item)
+  LockScreenAgendaWallpaper.refresh(appContext, db)
+ } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
  fun addJournal(title:String, body:String, dimension:LifeDimension) {
   if(body.isBlank()) return
@@ -120,6 +130,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val journal by vm.journal.collectAsStateWithLifecycle()
  val reviews by vm.reviews.collectAsStateWithLifecycle()
  var tab by remember { mutableStateOf("Agenda") }
+ val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+  if (result.resultCode == android.app.Activity.RESULT_OK) {
+   val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+             else @Suppress("DEPRECATION") result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+   if (uri != null) NotificationPreferences(context).setDailySound(uri.toString())
+  }
+ }
  Column(Modifier.fillMaxSize()) {
   Column(Modifier.fillMaxWidth().background(Navy).padding(22.dp)) {
    Text("MEtanoia",color=Gold,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
@@ -127,9 +144,19 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Text("Uma mente renovada. Uma vida intencional.",color=Color.White.copy(alpha=.8f))
   }
   Row(Modifier.fillMaxWidth().background(Color.White),horizontalArrangement=Arrangement.SpaceEvenly) {
-   listOf("Agenda","Diário","Revisões").forEach { label -> TextButton(onClick={tab=label}) { Text(label,color=if(tab==label) Navy else Color.Gray) } }
+   listOf("Agenda","Diário","Revisões","Alertas").forEach { label -> TextButton(onClick={tab=label}) { Text(label,color=if(tab==label) Navy else Color.Gray) } }
   }
-  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,vm); else->ReviewPage(reviews,vm) }
+  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda) {
+    val prefs = NotificationPreferences(context)
+    val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+     putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som das notificações diárias")
+     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+     putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
+    }
+    ringtoneLauncher.launch(pick)
+   } }
  }
 }
 @Composable private fun AgendaPage(items:List<AgendaItem>,vm:AppViewModel) {
@@ -227,7 +254,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
       }
-      Text("Os próximos 90 dias serão organizados automaticamente.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+      Text("As próximas ocorrências serão organizadas automaticamente.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
      }
     }
     Box {
@@ -247,7 +274,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      val scheduled=selectedDate.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
      vm.addAgenda(title,kind,dimension,scheduled,reminder,recurrenceFrequency?.name)
      title=""
-     reminder=false
+     reminder=true
     },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
      Text("Adicionar em ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
     }
@@ -331,6 +358,97 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   },
   dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color=Color.Gray) }}
  )
+}
+
+
+@Composable private fun NotificationSettingsPage(context:Context, items:List<AgendaItem>, onPickDailySound:()->Unit) {
+ val prefs = remember { NotificationPreferences(context) }
+ val scheduler = remember { ReminderScheduler(context) }
+ var d7 by remember { mutableStateOf(prefs.dailyEnabled(7)) }
+ var d12 by remember { mutableStateOf(prefs.dailyEnabled(12)) }
+ var d18 by remember { mutableStateOf(prefs.dailyEnabled(18)) }
+ var l120 by remember { mutableStateOf(prefs.leadEnabled(120)) }
+ var l60 by remember { mutableStateOf(prefs.leadEnabled(60)) }
+ var l30 by remember { mutableStateOf(prefs.leadEnabled(30)) }
+ var eventSound by remember { mutableStateOf(prefs.eventSound()) }
+ var dailySound by remember { mutableStateOf(prefs.dailySound()) }
+ val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+  (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
+ Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+  Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color=Color.Gray)
+  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Column(Modifier.padding(14.dp)) {
+    Text("LEMBRETES DIÁRIOS",color=Gold,fontWeight=FontWeight.Bold)
+    listOf(Triple("07:00 · Planeje seu dia",d7,7),Triple("12:00 · Confira sua agenda",d12,12),Triple("18:00 · Organize o restante",d18,18)).forEach { row ->
+     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+      Text(row.first,color=Navy)
+      Switch(checked=row.second,onCheckedChange={enabled->
+       prefs.setDailyEnabled(row.third,enabled)
+       when(row.third){7->d7=enabled;12->d12=enabled;18->d18=enabled}
+       scheduler.cancelDaily(row.third)
+       if(enabled) scheduler.scheduleNextDailyReminder(row.third)
+      })
+     }
+    }
+   }
+  }
+  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Column(Modifier.padding(14.dp)) {
+    Text("ALARMES DE COMPROMISSOS",color=Gold,fontWeight=FontWeight.Bold)
+    listOf(Triple("2 horas antes",l120,120),Triple("1 hora antes",l60,60),Triple("30 minutos antes",l30,30)).forEach { row ->
+     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+      Text(row.first,color=Navy)
+      Switch(checked=row.second,onCheckedChange={enabled->
+       prefs.setLeadEnabled(row.third,enabled)
+       when(row.third){120->l120=enabled;60->l60=enabled;30->l30=enabled}
+       items.filter{it.reminderAt!=null}.forEach(scheduler::schedule)
+      })
+     }
+    }
+   }
+  }
+  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+    Text("TOQUES",color=Gold,fontWeight=FontWeight.Bold)
+    Text("Som diário: "+when(dailySound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
+    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+     OutlinedButton(onClick=onPickDailySound){Text("Escolher toque")}
+     OutlinedButton(onClick={prefs.setDailySound(NotificationPreferences.SYSTEM_SOUND);dailySound=prefs.dailySound()}){Text("Padrão")}
+     OutlinedButton(onClick={prefs.setDailySound(NotificationPreferences.SILENT_SOUND);dailySound=prefs.dailySound()}){Text("Silencioso")}
+    }
+    Text("Som dos compromissos: "+when(eventSound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
+    Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+     OutlinedButton(onClick={
+      val intent=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+       putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
+       putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
+       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+       putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+      }
+      try {
+       val chooser=context.startActivityForResultUnsupported()
+      } catch (_:Exception) { }
+     }){Text("Escolher toque")}
+     OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SYSTEM_SOUND);eventSound=prefs.eventSound()}){Text("Padrão")}
+     OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
+    }
+    Text("O volume é controlado pelos botões e configurações de som do Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+   }
+  }
+  if(!exactAllowed && Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
+   Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFFFF4DF))) {
+    Column(Modifier.padding(12.dp)) {
+     Text("Horário exato limitado pelo Android",color=Navy,fontWeight=FontWeight.Bold)
+     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Navy,style=MaterialTheme.typography.bodySmall)
+     TextButton(onClick={context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}){Text("Configurar alarmes exatos",color=Gold)}
+    }
+   }
+  } else {
+   Text("Alarmes exatos permitidos neste aparelho.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  }
+  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+ }
 }
 
 @Composable private fun JournalPage(entries:List<JournalEntry>,vm:AppViewModel) {
