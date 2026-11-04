@@ -1,23 +1,44 @@
 # MEtanoia
 
-**A transformação é uma construção diária.**  
-Uma mente renovada. Uma vida intencional. (Romanos 12:2)
+**Uma mente renovada. Uma vida intencional.** (Romanos 12:2)
 
-Aplicativo Android nativo, com prioridade offline e armazenamento local. O projeto é independente do Restaura Lar.
+Aplicativo Android nativo, Kotlin + Jetpack Compose, com prioridade offline e armazenamento local em Room. O projeto é independente do Restaura Lar.
 
-## Diretrizes
-- Kotlin + Jetpack Compose
-- Room como banco de dados local
-- Identidade visual: azul-marinho `#102542`, branco `#FFFFFF`, dourado `#C5A15A`
-- Cinco dimensões: espiritual, matrimonial, profissional, individual e agenda/rotina
-- Escritura como autoridade; a aplicação não é chatbot nem conselheiro espiritual automatizado
-- Ausência de registros nunca deve ser interpretada como negligência ou falta de maturidade
+## Organização do produto
 
-## Escopo do produto
-Agenda diária/semanal/mensal; tarefas, compromissos, hábitos recorrentes e lembretes; diário e reflexões; revisões semanais e mensais com histórico.
+O aplicativo organiza a jornada em quatro dimensões integradas:
 
-## Estado
-Fundação do projeto iniciada. Esta primeira estrutura ainda precisa de implementação incremental, compilação, testes em emulador/dispositivo e homologação. Não considerar o APK homologado até que o workflow Android seja concluído com sucesso.
+1. **Devocional / Espiritual** — estudos, reflexões, perguntas e aplicação das Escrituras.
+2. **Matrimônio / Ingrid** — cuidado, desafios práticos, atitudes registradas e histórico.
+3. **Profissional** — metas, projetos, competências e resultados.
+4. **Cotidiano** — agenda, calendário, tarefas, hábitos, diário unificado, confissão opcional, revisões e alertas.
 
-## Compilação
-O workflow em `.github/workflows/android.yml` prepara Gradle e executa `assembleDebug` e testes unitários em cada push.
+A navegação principal é uma única jornada horizontal, com páginas deslizáveis: Mensagens e desafios, Devocional, Matrimônio, Profissional e Cotidiano. O painel inicial usa um cabeçalho premium, indicadores do dia e atalhos em grade para as quatro dimensões. Dentro de Cotidiano permanecem Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
+
+## Identidade visual
+
+Design tokens centralizados em `MetanoiaDesignSystem.kt`:
+- Violeta principal: `#35105F`
+- Violeta profundo: `#1B092B`
+- Violeta de superfície: `#2A1243`
+- Dourado champanhe: `#D9BC83`
+- Dourado luminoso: `#F0D9A1`
+- Branco marfim: `#F3F0E7`
+
+A escala tipográfica é centralizada. Títulos e indicadores usam dourado; descrições e conteúdo usam branco marfim.
+
+## Dados e agenda
+
+Room mantém agenda, diário, revisões, confissões e análises. A migração mais recente registrada é a versão 3. A agenda usa AlarmManager, com lembretes diários configuráveis às 07h, 12h e 18h e alarmes individuais configuráveis para 2h, 1h e 30min antes. As notificações de compromissos declaram visibilidade pública para permitir sua apresentação na tela bloqueada; o Android ainda exige que notificações e conteúdo na tela de bloqueio estejam permitidos nas configurações do aparelho. A tela de bloqueio também recebe um papel de parede gerado a partir dos compromissos do Room; esse papel de parede é estático, não um widget interativo.
+
+## Inteligência contextual
+
+O analisador diário atual é local, baseado em regras explícitas e executado offline. Ele identifica temas e dimensões a partir do texto informado, integra títulos de compromissos e evita tratar a palavra “confesso” isoladamente como admissão de pecado. Não é um modelo generativo conectado nem substitui aconselhamento pastoral, psicológico ou profissional.
+
+## Limites visuais conhecidos
+
+A área matrimonial contém um marcador visual temporário para o avatar. A imagem 3D final depende da referência visual aprovada para não inventar a aparência de Ingrid. O símbolo oficial deve ser mantido sem alteração geométrica.
+
+## Compilação e validação
+
+O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A versão de desenvolvimento atual é 0.4.1 (versionCode 5). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
