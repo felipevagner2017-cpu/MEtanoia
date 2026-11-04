@@ -18,15 +18,15 @@ class MainActivityNavigationTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun allFiveHorizontalSectionsAndEveryDailyAreaAreReachable() {
-        composeRule.onNodeWithText("Devocional", substring = false).performClick()
-        composeRule.onNodeWithText("Passagem ou tema estudado").assertExists()
+    fun fourDimensionsAndDailyAreasAreReachable() {
+        composeRule.onNodeWithText("Devoção", substring = false).performClick()
+        composeRule.onNodeWithText("Texto bíblico ou tema pastoral").assertExists()
 
         composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
         composeRule.onNodeWithText("DESAFIO MATRIMONIAL").assertExists()
 
         composeRule.onNodeWithText("Profissional", substring = false).performClick()
-        composeRule.onNodeWithText("Meta ou projeto").assertExists()
+        composeRule.onNodeWithText("Meta, projeto ou desafio profissional").assertExists()
 
         composeRule.onNodeWithText("Cotidiano", substring = false).performClick()
         composeRule.onNodeWithText("Minha agenda").assertExists()
