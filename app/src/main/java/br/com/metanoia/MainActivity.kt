@@ -504,20 +504,111 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  }
 }
 
-@Composable private fun JournalPage(entries:List<JournalEntry>,vm:AppViewModel) {
- var title by remember { mutableStateOf("") }; var body by remember { mutableStateOf("") }
- var dimension by remember { mutableStateOf(LifeDimension.INDIVIDUAL) }; var menu by remember { mutableStateOf(false) }
- Column(Modifier.fillMaxSize().padding(16.dp)) {
-  Text("Diário pessoal",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
-  OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Título (opcional)")})
-  Box { OutlinedButton(onClick={menu=true}) { Text(dimensionLabel(dimension)) }
-   DropdownMenu(menu,{menu=false}) { LifeDimension.entries.forEach { v->DropdownMenuItem(text={Text(dimensionLabel(v))},onClick={dimension=v;menu=false})} }
+@Composable private fun JournalPage(
+ entries:List<JournalEntry>,
+ confessions:List<ConfessionEntry>,
+ analyses:List<DailyAnalysisEntry>,
+ agenda:List<AgendaItem>,
+ vm:AppViewModel
+) {
+ val todayKey=LocalDate.now().toString()
+ val todayEntry=entries.firstOrNull{it.dayKey==todayKey}
+ val todayConfession=confessions.firstOrNull{it.dayKey==todayKey}
+ val todayAnalysis=analyses.firstOrNull{it.dayKey==todayKey}
+ var diary by remember(todayKey,entries) { mutableStateOf(todayEntry?.content.orEmpty()) }
+ var confession by remember(todayKey,confessions) { mutableStateOf(todayConfession?.content.orEmpty()) }
+ var confessionExpanded by remember(todayKey,confessions) { mutableStateOf(todayConfession!=null) }
+ val violet=Color(0xFF24113F)
+ val gold=Color(0xFFC5A15A)
+ val todayAgenda=agenda.filter {
+  Instant.ofEpochMilli(it.scheduledAt).atZone(ZoneId.systemDefault()).toLocalDate()==LocalDate.now()
+ }
+ Column(Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=12.dp)) {
+  Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=violet,fontWeight=FontWeight.Bold)
+  Text("Um único relato para compreender o dia por inteiro.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=violet)) {
+   Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+    Text("DIÁRIO DE HOJE",color=gold,fontWeight=FontWeight.Bold)
+    Text("Como foi seu dia? Conte o que aconteceu, o que sentiu, o que aprendeu e o que gostaria de compartilhar.",color=Color.White)
+    OutlinedTextField(
+     value=diary,onValueChange={diary=it},modifier=Modifier.fillMaxWidth().heightIn(min=170.dp),
+     placeholder={Text("Escreva livremente. Não precisa separar por áreas.")},
+     minLines=6,colors=OutlinedTextFieldDefaults.colors(
+      focusedTextColor=Color.White,unfocusedTextColor=Color.White,
+      focusedBorderColor=gold,unfocusedBorderColor=Color.White.copy(alpha=.55f),
+      focusedLabelColor=gold,unfocusedLabelColor=Color.White.copy(alpha=.75f),
+      cursorColor=gold
+     )
+    )
+    TextButton(onClick={confessionExpanded=!confessionExpanded}) {
+     Text(if(confessionExpanded) "Ocultar confissão opcional" else "＋ Incluir confissão diária (opcional)",color=gold)
+    }
+    if(confessionExpanded) {
+     Text("O que você deseja revelar, reconhecer ou colocar em palavras?",color=Color.White)
+     OutlinedTextField(
+      value=confession,onValueChange={confession=it},modifier=Modifier.fillMaxWidth().heightIn(min=110.dp),
+      placeholder={Text("Pode ser uma emoção, uma preocupação, uma dúvida, um erro ou qualquer coisa que queira compartilhar.")},
+      minLines=4,colors=OutlinedTextFieldDefaults.colors(
+       focusedTextColor=Color.White,unfocusedTextColor=Color.White,
+       focusedBorderColor=gold,unfocusedBorderColor=Color.White.copy(alpha=.55f),
+       cursorColor=gold
+      )
+     )
+    }
+    Text("A agenda do dia fornece contexto, sem presumir que um compromisso foi realizado.",color=Color.White.copy(alpha=.75f),style=MaterialTheme.typography.bodySmall)
+    Button(
+     onClick={vm.saveDailyReflection(diary,if(confessionExpanded) confession else "")},
+     enabled=diary.isNotBlank() || (confessionExpanded && confession.isNotBlank()),
+     modifier=Modifier.fillMaxWidth(),
+     colors=ButtonDefaults.buttonColors(containerColor=gold,contentColor=violet)
+    ) { Text("Salvar e consolidar meu dia",fontWeight=FontWeight.Bold) }
+   }
   }
-  OutlinedTextField(body,{body=it},Modifier.fillMaxWidth().heightIn(min=110.dp),label={Text("Escreva sua reflexão")})
-  Button(onClick={vm.addJournal(title,body,dimension).also{title="";body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Guardar registro") }
-  LazyColumn { items(entries,key={it.id}) { e-> Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
-   Column(Modifier.padding(12.dp)) { Text(e.title.ifBlank{"Registro pessoal"},color=Navy,fontWeight=FontWeight.Bold); Text(dimensionLabel(e.dimension),color=Gold); Text(e.content) }
-  } } }
+  if(todayAnalysis!=null) {
+   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=Color(0xFFF7F3FA))) {
+    Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+     Text("LEITURA CONTEXTUAL DO DIA",color=gold,fontWeight=FontWeight.Bold)
+     Text("Como você está",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.emotionalState,color=violet)
+     Text("Dimensões identificadas",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.dimensions.ifBlank{"Nenhuma dimensão específica foi identificada."},color=violet)
+     Text("Pontos de atenção",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.attention,color=violet)
+     Text("Aprendizados",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.learning,color=violet)
+     Text("Direcionamento",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.direction,color=violet)
+     if(todayAnalysis.scriptureReference.isNotBlank()) {
+      Text(todayAnalysis.scriptureReference,color=gold,fontWeight=FontWeight.Bold)
+      Text(todayAnalysis.scriptureContext,color=violet,style=MaterialTheme.typography.bodySmall)
+     }
+     Text("Próximo passo",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.nextStep,color=violet)
+     Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+    }
+   }
+  }
+  if(todayAgenda.isNotEmpty()) {
+   Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=violet,fontWeight=FontWeight.SemiBold)
+   todayAgenda.sortedBy{it.scheduledAt}.forEach { item->
+    Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+   }
+  }
+  Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=violet,fontWeight=FontWeight.Bold)
+  LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+   items(entries.filter{it.dayKey!=todayKey},key={it.id}) { entry->
+    Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+     Column(Modifier.padding(12.dp)) {
+      Text(if(entry.dayKey.isBlank()) formatDate(entry.createdAt) else entry.dayKey,color=gold,fontWeight=FontWeight.Bold)
+      Text(entry.content,color=violet,maxLines=5)
+      confessions.firstOrNull{it.dayKey==entry.dayKey}?.let { old->
+       Text("Confissão integrada",color=gold,fontWeight=FontWeight.SemiBold)
+       Text(old.content,color=violet,maxLines=3)
+      }
+     }
+    }
+   }
+  }
  }
 }
 @Composable private fun ReviewPage(entries:List<ReviewEntry>,vm:AppViewModel) {
