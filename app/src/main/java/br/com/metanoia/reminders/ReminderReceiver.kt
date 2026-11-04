@@ -7,65 +7,113 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import br.com.metanoia.MainActivity
+import br.com.metanoia.data.MetanoiaDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val isDaily = intent.getBooleanExtra(EXTRA_DAILY, false)
-        val hour = intent.getIntExtra(EXTRA_HOUR, -1)
-        val id = if (isDaily) DAILY_NOTIFICATION_BASE + hour else {
-            val eventId = intent.getLongExtra(EXTRA_ID, 0L).toInt()
-            val lead = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
-            eventId * 10 + when (lead) { 120 -> 0; 60 -> 1; else -> 2 }
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val daily = intent.getBooleanExtra(EXTRA_DAILY, false)
+                val hour = intent.getIntExtra(EXTRA_HOUR, -1)
+                val title: String
+                val message: String
+                val sound: String
+                val category: String
+                val notificationId: Int
+
+                if (daily) {
+                    if (hour !in listOf(7, 12, 18)) return@launch
+                    val preferences = NotificationPreferences(context)
+                    if (!preferences.dailyEnabled(hour)) return@launch
+                    title = when (hour) { 7 -> "Planeje seu dia"; 12 -> "Confira sua agenda"; else -> "Organize o restante do dia" }
+                    message = dailyMessage(hour)
+                    sound = preferences.dailySound()
+                    category = "daily"
+                    notificationId = DAILY_NOTIFICATION_BASE + hour
+                } else {
+                    val eventId = intent.getLongExtra(EXTRA_ID, 0L)
+                    val lead = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
+                    if (eventId <= 0 || lead !in listOf(120, 60, 30)) return@launch
+                    val item = MetanoiaDatabase.get(context).agendaDao().findById(eventId) ?: return@launch
+                    if (item.completed || item.scheduledAt <= System.currentTimeMillis()) return@launch
+                    if (item.reminderAt == null || !NotificationPreferences(context).leadEnabled(lead)) return@launch
+                    val whenText = when (lead) { 120 -> "Faltam 2 horas"; 60 -> "Falta 1 hora"; else -> "Faltam 30 minutos" }
+                    title = item.title
+                    message = "$whenText para o compromisso."
+                    sound = NotificationPreferences(context).eventSound()
+                    category = "event"
+                    notificationId = (eventId * 10L + when (lead) { 120 -> 0; 60 -> 1; else -> 2 }).toInt()
+                }
+
+                showNotification(context, category, notificationId, title, message, sound)
+                if (daily) ReminderScheduler(context).scheduleNextDailyReminder(hour)
+            } finally { pending.finish() }
         }
-        val title = if (isDaily && hour == 7) "MEtanoia · Desafio com Ingrid"
-            else if (isDaily) "MEtanoia · Cotidiano" else "MEtanoia · Compromisso próximo"
-        val message = if (isDaily) dailyMessage(hour) else {
-            val lead = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
-            val whenText = when (lead) { 120 -> "em 2 horas"; 60 -> "em 1 hora"; else -> "em 30 minutos" }
-            "${intent.getStringExtra(EXTRA_TITLE) ?: "Compromisso agendado"} — começa $whenText."
-        }
+    }
+
+    private fun showNotification(context: Context, category: String, id: Int, title: String, message: String, sound: String) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = channelId(category, sound)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Lembretes MEtanoia", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Lembretes diários e compromissos da sua agenda"
+            val channel = NotificationChannel(
+                channelId,
+                if (category == "daily") "MEtonoia · Lembretes diários" else "MEtonoia · Alarmes de compromissos",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificações da agenda MEtonoia"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 250, 120, 250)
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                setSound(soundUri(sound), if (sound == NotificationPreferences.SILENT_SOUND) null else
                     AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-                )
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
             }
             manager.createNotificationChannel(channel)
         }
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val open = android.app.PendingIntent.getActivity(
+            context, id, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle(title)
+            .setContentTitle("MEtonoia · $title")
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
-            .setVibrate(longArrayOf(0, 250, 120, 250))
-            .setAutoCancel(true).build()
-        try { NotificationManagerCompat.from(context).notify(id, notification) }
-        catch (_: SecurityException) { }
-        if (isDaily && hour in listOf(7, 12, 18)) ReminderScheduler(context).scheduleNextDailyReminder(hour)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            builder.setSound(soundUri(sound)).setDefaults(if (sound == NotificationPreferences.SILENT_SOUND) 0 else NotificationCompat.DEFAULT_VIBRATE)
+        }
+        try { NotificationManagerCompat.from(context).notify(id, builder.build()) } catch (_: SecurityException) { }
+    }
+
+    private fun channelId(category: String, sound: String): String =
+        "metanoia_${category}_${sound.hashCode().toUInt().toString(16)}"
+
+    private fun soundUri(sound: String): Uri? = when (sound) {
+        NotificationPreferences.SILENT_SOUND -> null
+        NotificationPreferences.SYSTEM_SOUND -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        else -> Uri.parse(sound)
     }
 
     private fun dailyMessage(hour: Int): String = when (hour) {
-        7 -> "Pergunte à Ingrid como ela está e o que seria cuidado para ela hoje. Escute sem presumir e transforme a resposta em uma atitude concreta."
-        12 -> "Faça uma pausa: revise o que está sob sua responsabilidade e reorganize o restante com sabedoria."
-        18 -> "Encerre o dia: reconheça o que avançou, registre o que ficou e desacelere."
-        else -> "Pare um momento e revise suas prioridades com sabedoria."
+        7 -> "Bom dia! Seu dia começa com intenção. Confira seus compromissos no MEtonoia."
+        12 -> "Uma pausa para se organizar. Confira o que vem pela frente."
+        else -> "Organize suas próximas horas. Sua transformação é construída diariamente."
     }
 
     companion object {
-        const val CHANNEL_ID = "metanoia_reminders_v2"
-        const val EXTRA_TITLE = "extra_title"
         const val EXTRA_ID = "extra_id"
         const val EXTRA_DAILY = "extra_daily"
         const val EXTRA_HOUR = "extra_hour"
