@@ -116,10 +116,11 @@ header{background:linear-gradient(145deg,#06152b,#102542 68%,#17385a);border-bot
 .ingrid-lock p,.ingrid-profile p,.book-page span:not(.book-number),.area p,.reading-page p{color:#dce5ef}
 .danger{background:#351b24}
 
-</style></head>
+.home-reminder{max-width:720px;margin:12px auto 0;padding:0 16px}.home-reminder-card{background:linear-gradient(120deg,#173656,#0a1c34);border:1px solid #c5a15a99;border-radius:16px;padding:13px 15px;color:#fff;box-shadow:0 8px 24px #07172f20}.home-reminder-kicker{font-size:10px;letter-spacing:.14em;color:#e2c47e;font-weight:800}.home-reminder-title{font-size:15px;font-weight:750;margin:4px 0}.home-reminder-line{font-size:12px;color:#e2eaf2;margin-top:4px}.home-reminder-line strong{color:#f1d69a}.weekday-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0 12px}.weekday-picker label{display:flex;align-items:center;gap:5px;border:1px solid #c5a15a66;border-radius:9px;padding:8px;font-size:12px}.weekday-picker input{accent-color:#c5a15a}</style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
 <main>
+<div id="homeReminderCard" class="home-reminder" aria-live="polite"></div>
 <section id="word"><div class="panel"><div class="eyebrow">Livro da Palavra</div><h2>Uma página por vez. Uma direção para cada área.</h2><p class="muted">Escolha a área que deseja consultar. Os relatos do diário ajudam a relacionar a Palavra ao assunto que está vivendo.</p><div id="wordAreas"></div></div></section>
 <section id="agenda" class="hidden">
 <div class="panel calendar-panel">
