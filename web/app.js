@@ -303,6 +303,7 @@ async function sendAiQuestion(){
  }
 }
 $("aiToken").value=aiSession.token;
+$("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
 $("aiSend").onclick=sendAiQuestion;
 $("aiQuestion").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiQuestion()}});
 $("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatus").textContent="Conversa limpa. Os registros locais não foram alterados."};
