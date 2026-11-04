@@ -44,7 +44,7 @@ export default {
 
     const origin = request.headers.get("Origin") || undefined;
     if (origin && !ALLOWED_ORIGINS.has(origin)) return json({ error: "Origem não autorizada." }, 403);
-    if (request.method === "OPTIONS") return json({ ok: true }, 204, origin);
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": origin || "", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" } });
     if (url.pathname !== "/api/ai/chat") return json({ error: "Rota não encontrada." }, 404, origin);
     if (request.method !== "POST") return json({ error: "Método não permitido." }, 405, origin);
     if (!env.METANOIA_AI_TOKEN) return json({ error: "A IA ainda não foi configurada no servidor." }, 503, origin);
@@ -59,7 +59,11 @@ export default {
     if (declaredLength > 24000) return json({ error: "Contexto muito extenso. Reduza os registros enviados." }, 413, origin);
 
     let body: any;
-    try { body = await request.json(); } catch { return json({ error: "Solicitação inválida." }, 400, origin); }
+    try {
+      const rawBody = await request.text();
+      if (rawBody.length > 24000) return json({ error: "Contexto muito extenso. Reduza os registros enviados." }, 413, origin);
+      body = JSON.parse(rawBody);
+    } catch { return json({ error: "Solicitação inválida." }, 400, origin); }
     const dimension = String(body?.dimension || "Visão integrada");
     const context = String(body?.context || "");
     const question = String(body?.question || "").trim();
