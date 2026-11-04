@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.sp
 internal val DeepViolet = Color(0xFF1B092B)
 internal val VioletPrimary = Color(0xFF35105F)
 internal val VioletSurface = Color(0xFF2A1243)
+internal val VioletSecondary = Color(0xFF54218A)
 internal val CardSurface = Color(0xFF32194B)
 internal val GoldChampagne = Color(0xFFD9BC83)
 internal val GoldBright = Color(0xFFF0D9A1)
