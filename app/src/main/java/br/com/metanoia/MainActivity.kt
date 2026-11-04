@@ -31,6 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -272,6 +277,21 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var selectedDate by remember { mutableStateOf(LocalDate.now()) }
  var editingItem by remember { mutableStateOf<AgendaItem?>(null) }
  var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
+ val lifecycleOwner = LocalLifecycleOwner.current
+ var lastObservedDate by remember { mutableStateOf(LocalDate.now(zone)) }
+ LaunchedEffect(lifecycleOwner) {
+  lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+   while (isActive) {
+    val today = LocalDate.now(zone)
+    if (today != lastObservedDate) {
+     if (selectedDate == lastObservedDate) selectedDate = today
+     if (displayedMonth == YearMonth.from(lastObservedDate)) displayedMonth = YearMonth.from(today)
+     lastObservedDate = today
+    }
+    delay(30_000)
+   }
+  }
+ }
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var recurrenceFrequency by remember { mutableStateOf<RecurrenceFrequency?>(null) }
