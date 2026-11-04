@@ -60,7 +60,7 @@ internal fun DashboardPage(
                     verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     Text("METANOIA  /  PAINEL PESSOAL", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
-                    Text("Mensagens e desafios", color = Ivory, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("Mensagens e desafios", color = GoldBright, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     Text(dateLabel, color = GoldBright, style = MaterialTheme.typography.titleMedium)
                     Text("Uma mente renovada. Uma vida intencional.", color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(3.dp))
@@ -80,7 +80,7 @@ internal fun DashboardPage(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("SUAS QUATRO DIMENSÕES", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
-                Text("Escolha onde deseja investir sua atenção.", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
+                Text("Escolha onde deseja investir sua atenção.", color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
             }
         }
         item {
@@ -104,10 +104,10 @@ internal fun DashboardPage(
                 Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("LEITURA DO DIA", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     if (todayAnalysis != null) {
-                        Text(todayAnalysis.emotionalState, color = Ivory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(todayAnalysis.emotionalState, color = GoldBright, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(todayAnalysis.nextStep, color = Ivory.copy(alpha = .84f), style = MaterialTheme.typography.bodyMedium)
                     } else {
-                        Text("Seu dia ainda está em construção.", color = Ivory, style = MaterialTheme.typography.titleMedium)
+                        Text("Seu dia ainda está em construção.", color = GoldBright, style = MaterialTheme.typography.titleMedium)
                         Text("Registre sua reflexão no Diário para reunir acontecimentos, sentimentos e próximos passos em uma visão integrada.", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
                     }
                     Text("${journal.count { it.dayKey == today.toString() }} registro(s) feitos hoje", color = GoldBright, style = MaterialTheme.typography.labelSmall)
@@ -118,7 +118,7 @@ internal fun DashboardPage(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text("AGENDA DE HOJE", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    Text(if (todayItems.isEmpty()) "Seu dia está livre de registros." else "$pending pendente(s) · $completed concluído(s)", color = Ivory.copy(alpha = .76f), style = MaterialTheme.typography.bodySmall)
+                    Text(if (todayItems.isEmpty()) "Seu dia está livre de registros." else "$pending pendente(s) · $completed concluído(s)", color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
                 }
                 TextButton(onClick = { onNavigate("Cotidiano") }) {
                     Text("VER AGENDA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
@@ -146,7 +146,7 @@ internal fun DashboardPage(
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(item.title, color = Ivory, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-                        Text(if (item.completed) "Concluído" else "Previsto · ${dimensionName(item.dimension)}", color = Ivory.copy(alpha = .72f), style = MaterialTheme.typography.bodySmall)
+                        Text(if (item.completed) "Concluído" else "Previsto · ${dimensionName(item.dimension)}", color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodySmall)
                     }
                     if (item.completed) Text("✓", color = Color(0xFF9ED6B5), fontWeight = FontWeight.Bold)
                 }
@@ -338,7 +338,7 @@ private fun DimensionHero(eyebrow: String, title: String, description: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(eyebrow, color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
-            Text(title, color = Ivory, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(description, color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
             Box(Modifier.width(38.dp).height(3.dp).background(GoldChampagne, CircleShape))
         }
