@@ -192,6 +192,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
  var cotidianoTab by remember { mutableStateOf("Agenda") }
+ var showAiAssistant by remember { mutableStateOf(false) }
  val sectionLabels = listOf("Devoção","Matrimônio","Profissional","Cotidiano")
  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
  val pagerScope = rememberCoroutineScope()
@@ -214,6 +215,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
    Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",Locale("pt","BR"))).replaceFirstChar { it.uppercase(Locale("pt","BR")) },color=Ivory,fontWeight=FontWeight.SemiBold)
    Text("Uma mente renovada. Uma vida intencional.",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.bodyMedium)
+   TextButton(onClick={showAiAssistant=true}) { Text("Conversar com a IA",color=GoldBright,fontWeight=FontWeight.Bold) }
   }
   Row(
    Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState())
@@ -281,6 +283,9 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
     }
    }
+  }
+  if(showAiAssistant) {
+   AiAssistantDialog(context,journal,confessions,agenda) { showAiAssistant=false }
   }
  }
 }
