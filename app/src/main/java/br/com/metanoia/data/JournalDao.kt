@@ -12,6 +12,9 @@ interface JournalDao {
     @Query("SELECT * FROM journal_entries ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<JournalEntry>>
 
+    @Query("SELECT * FROM journal_entries WHERE dayKey = :dayKey ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun findForDay(dayKey: String): JournalEntry?
+
     @Insert
     suspend fun insert(entry: JournalEntry): Long
 
