@@ -17,6 +17,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -81,7 +85,7 @@ class MainActivity : ComponentActivity() {
    primary=GoldBright, secondary=GoldChampagne, background=DeepViolet, surface=CardSurface,
    onPrimary=DeepViolet, onSecondary=DeepViolet, onBackground=Ivory, onSurface=Ivory,
    surfaceVariant=VioletSurface, onSurfaceVariant=Ivory
-  ), typography=MetanoiaTypography) {
+  ), typography=MetanoiaTypography, shapes=MetanoiaShapes) {
    Surface(Modifier.fillMaxSize(), color=DeepViolet) { MetanoiaApp(db, scheduler) }
   } }
  }
@@ -212,11 +216,31 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
  }
  Column(Modifier.fillMaxSize().background(DeepViolet)) {
-  Column(Modifier.fillMaxWidth().background(DeepViolet).padding(horizontal=22.dp, vertical=18.dp)) {
-   Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
-   Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",Locale("pt","BR"))).replaceFirstChar { it.uppercase(Locale("pt","BR")) },color=Ivory,fontWeight=FontWeight.SemiBold)
+  Column(
+   Modifier.fillMaxWidth()
+    .background(Brush.verticalGradient(listOf(VioletPrimary.copy(alpha=.94f), DeepViolet)))
+    .padding(horizontal=20.dp, vertical=14.dp)
+  ) {
+   Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+    Image(
+     painter=painterResource(id=R.drawable.metanoia_symbol),
+     contentDescription="Símbolo oficial MEtanoia",
+     modifier=Modifier.size(48.dp),
+     contentScale=ContentScale.Fit
+    )
+    Column(Modifier.weight(1f)) {
+     Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
+     Text("UMA MENTE RENOVADA",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.labelSmall,letterSpacing=1.2.sp)
+    }
+    TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Devoção";1->"Matrimônio";2->"Profissional";else->"Cotidiano"};showAiAssistant=true}) {
+     Text("IA",color=DeepViolet,fontWeight=FontWeight.Bold,modifier=Modifier.background(GoldChampagne,MaterialTheme.shapes.large).padding(horizontal=15.dp,vertical=8.dp))
+    }
+   }
+   Text(
+    LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",Locale("pt","BR"))).replaceFirstChar { it.uppercase(Locale("pt","BR")) },
+    color=Ivory,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(top=10.dp)
+   )
    Text("Uma mente renovada. Uma vida intencional.",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.bodyMedium)
-   TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Devoção";1->"Matrimônio";2->"Profissional";else->"Cotidiano"};showAiAssistant=true}) { Text("Conversar com a IA",color=GoldBright,fontWeight=FontWeight.Bold) }
   }
   Row(
    Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState())
