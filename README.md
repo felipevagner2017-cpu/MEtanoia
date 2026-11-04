@@ -13,7 +13,7 @@ O aplicativo organiza a jornada em quatro dimensões integradas:
 3. **Profissional** — metas, projetos, competências e resultados.
 4. **Cotidiano** — agenda, calendário, tarefas, hábitos, diário unificado, confissão opcional, revisões e alertas.
 
-A navegação principal agora é uma única jornada horizontal, com páginas deslizáveis: Mensagens e desafios, Devocional, Matrimônio, Profissional e Cotidiano. O painel inicial apresenta o resumo do dia e atalhos que levam diretamente à dimensão escolhida. Dentro de Cotidiano permanecem Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
+A navegação principal é uma única jornada horizontal, com páginas deslizáveis: Mensagens e desafios, Devocional, Matrimônio, Profissional e Cotidiano. O painel inicial usa um cabeçalho premium, indicadores do dia e atalhos em grade para as quatro dimensões. Dentro de Cotidiano permanecem Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
 
 ## Identidade visual
 
@@ -29,7 +29,7 @@ A escala tipográfica é centralizada. Títulos e indicadores usam dourado; desc
 
 ## Dados e agenda
 
-Room mantém agenda, diário, revisões, confissões e análises. A migração mais recente registrada é a versão 3. A agenda usa AlarmManager, com lembretes diários configuráveis às 07h, 12h e 18h e alarmes individuais configuráveis para 2h, 1h e 30min antes. Alarmes exatos dependem da permissão do Android; há fallback inexato. A tela de bloqueio é gerada a partir dos compromissos do Room no aplicativo Android.
+Room mantém agenda, diário, revisões, confissões e análises. A migração mais recente registrada é a versão 3. A agenda usa AlarmManager, com lembretes diários configuráveis às 07h, 12h e 18h e alarmes individuais configuráveis para 2h, 1h e 30min antes. As notificações de compromissos declaram visibilidade pública para permitir sua apresentação na tela bloqueada; o Android ainda exige que notificações e conteúdo na tela de bloqueio estejam permitidos nas configurações do aparelho. A tela de bloqueio também recebe um papel de parede gerado a partir dos compromissos do Room; esse papel de parede é estático, não um widget interativo.
 
 ## Inteligência contextual
 
@@ -41,4 +41,4 @@ A área matrimonial contém um marcador visual temporário para o avatar. A imag
 
 ## Compilação e validação
 
-O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A versão de desenvolvimento atual é 0.4.0 (versionCode 4). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
+O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A versão de desenvolvimento atual é 0.4.1 (versionCode 5). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
