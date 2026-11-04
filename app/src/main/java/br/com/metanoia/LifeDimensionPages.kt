@@ -55,7 +55,7 @@ internal fun DashboardPage(
             ) {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSurface)))
+                        .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSecondary)))
                         .padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
