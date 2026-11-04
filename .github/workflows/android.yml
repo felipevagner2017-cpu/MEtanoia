@@ -29,13 +29,6 @@ jobs:
         run: gradle assembleDebug
       - name: Run unit tests
         run: gradle testDebugUnitTest
-      - name: Run Room integration tests on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          script: gradle connectedDebugAndroidTest
       - name: Package complete source
         run: |
           git archive --format=zip --output=MEtonoia-codigo-fonte.zip HEAD
@@ -65,3 +58,26 @@ jobs:
           files: |
             app/build/outputs/apk/debug/MEtonoia-Android.apk
             MEtanoia-codigo-fonte.zip
+
+  room-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Run Room integration tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: gradle connectedDebugAndroidTest
