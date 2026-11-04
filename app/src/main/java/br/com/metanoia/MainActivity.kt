@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
    primary=GoldBright, secondary=GoldChampagne, background=DeepViolet, surface=CardSurface,
    onPrimary=DeepViolet, onSecondary=DeepViolet, onBackground=Ivory, onSurface=Ivory,
    surfaceVariant=VioletSurface, onSurfaceVariant=Ivory
-  )) {
+  ), typography=MetanoiaTypography) {
    Surface(Modifier.fillMaxSize(), color=DeepViolet) { MetanoiaApp(db, scheduler) }
   } }
  }
@@ -311,7 +311,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
          val isToday=date==LocalDate.now()
          val count=monthItems[date]?.size?:0
          Column(Modifier.fillMaxSize().background(if(isSelected) Navy else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-          Text(date.dayOfMonth.toString(),color=if(isSelected) Color.White else Navy,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
+          Text(date.dayOfMonth.toString(),color=if(isSelected) DeepViolet else Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
           if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
            repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
           } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
