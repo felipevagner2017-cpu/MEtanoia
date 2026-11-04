@@ -42,8 +42,8 @@ internal fun DashboardPage(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Sua jornada, por inteiro", color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Quatro dimensões. Uma vida integrada.", color = Ivory, style = MaterialTheme.typography.bodyMedium)
+            Text("Mensagens e desafios", color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("Seu ponto de partida para uma vida intencional: visão do dia, mensagens, desafios e acesso às quatro dimensões.", color = Ivory, style = MaterialTheme.typography.bodyMedium)
         }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
