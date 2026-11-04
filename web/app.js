@@ -182,6 +182,14 @@ async function unlockIngridVault(){
   ingridUnlocked=true;renderIngrid();
  }catch(e){ingridSessionPin="";alert("Não foi possível abrir o cofre. Confira a senha. Se ela foi perdida, os dados criptografados não poderão ser recuperados.");}
 }
+function resetIngridVault(){
+ const accepted=confirm("ATENÇÃO: esta ação apagará definitivamente o cofre criptografado da Ingrid armazenado neste navegador, incluindo registros do ciclo e diário. Não será possível recuperar os dados antigos. Deseja continuar?");
+ if(!accepted)return;
+ localStorage.removeItem(INGRID_VAULT_KEY);
+ ingridData=null;ingridUnlocked=false;ingridSessionPin="";
+ renderIngrid();
+ alert("Cofre antigo removido deste navegador. Para criar um novo, marque a autorização da Ingrid, informe uma nova senha com pelo menos 8 caracteres e toque em Criar cofre protegido.");
+}
 function dayOffset(date,days){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+days);return key(d)}
 function cycleStatus(data){
  const c=data?.cycle||{};if(!c.lastPeriodStart)return null;
@@ -209,7 +217,7 @@ function renderIngrid(){
  if(!ingridUnlocked){
   const exists=!!localStorage.getItem(INGRID_VAULT_KEY);
   root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Um lembrete visual para cultivar presença, carinho e parceria.</p></div></div><div class="daily-challenge"><div class="eyebrow">Desafio de cuidado de hoje</div><p>Pergunte à Ingrid como ela está e o que seria uma demonstração de cuidado para ela hoje. Escute a resposta sem tentar adivinhar.</p></div><div class="ingrid-lock"><div class="eyebrow">Privacidade em primeiro lugar</div><p>O acompanhamento menstrual e os relatos sobre Ingrid envolvem dados pessoais sensíveis. Só habilite esta área com a autorização expressa dela. Os dados serão criptografados neste aparelho com uma senha que não fica salva no aplicativo.</p><label class="consent-line"><input id="ingridConsent" type="checkbox"> Ingrid autorizou o registro e o uso destas informações no MEtanoia.</label><label>Senha do cofre (mínimo 8 caracteres)</label><input id="ingridPin" class="field" type="password" autocomplete="new-password" placeholder="Crie ou informe a senha"><button id="ingridUnlock" class="btn gold">'+(exists?"Desbloquear acompanhamento":"Criar cofre protegido")+'</button><p class="muted">Sem autorização, não registre datas do ciclo, sintomas ou reações pessoais. Se a senha for perdida, não será possível recuperar o conteúdo criptografado.</p></div>';
-  $("ingridUnlock").onclick=unlockIngridVault;return;
+  $("ingridUnlock").onclick=unlockIngridVault;if(exists){const reset=document.createElement("button");reset.type="button";reset.className="btn";reset.textContent="Esqueci a senha · redefinir cofre";reset.style.marginTop="10px";reset.onclick=resetIngridVault;$("ingridUnlock").after(reset);}return;
  }
  const c=ingridData.cycle||{},status=cycleStatus(ingridData),todayEntry=(ingridData.entries||[]).find(x=>x.date===today());
  const nextDate=status?.nextStart?fmt(status.nextStart):"sem previsão confiável";
