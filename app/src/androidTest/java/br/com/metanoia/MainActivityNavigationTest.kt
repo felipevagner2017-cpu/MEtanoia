@@ -38,6 +38,6 @@ class MainActivityNavigationTest {
         composeRule.onNodeWithText("Revisões históricas").assertIsDisplayed()
 
         composeRule.onNodeWithText("Alertas", substring = false).performClick()
-        composeRule.onNodeWithText("Notificações e alarmes").assertIsDisplayed()
+        composeRule.onNodeWithText("LEMBRETES DIÁRIOS").assertIsDisplayed()
     }
 }
