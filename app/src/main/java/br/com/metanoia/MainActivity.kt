@@ -549,7 +549,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  vm:AppViewModel
 ) {
  val todayKey=LocalDate.now().toString()
- val todayEntry=entries.firstOrNull{it.dayKey==todayKey}
+ val todayEntry=entries.firstOrNull{it.dayKey==todayKey && it.dimension==LifeDimension.INDIVIDUAL}
  val todayConfession=confessions.firstOrNull{it.dayKey==todayKey}
  val todayAnalysis=analyses.firstOrNull{it.dayKey==todayKey}
  var diary by remember(todayKey,entries) { mutableStateOf(todayEntry?.content.orEmpty()) }
@@ -635,7 +635,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
   Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=GoldBright,fontWeight=FontWeight.Bold)
   LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-   items(entries.filter{it.dayKey!=todayKey},key={it.id}) { entry->
+   items(entries.filter{it.dayKey!=todayKey && it.dimension==LifeDimension.INDIVIDUAL},key={it.id}) { entry->
     Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
      Column(Modifier.padding(12.dp)) {
       Text(if(entry.dayKey.isBlank()) formatDate(entry.createdAt) else entry.dayKey,color=gold,fontWeight=FontWeight.Bold)
