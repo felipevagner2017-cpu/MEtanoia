@@ -227,6 +227,12 @@ main{max-width:790px;padding:16px 16px 26px}
 }
 @media(max-width:360px){.word-topic{flex-basis:108px}.word-progress{flex-basis:58px;height:58px}}
 
+
+/* Estado inicial neutro: nenhuma dimensão marcada automaticamente */
+.word-topic.active{position:relative;background:linear-gradient(145deg,#322043,#1b1027);border-color:#F0D9A1;color:#F0D9A1;box-shadow:inset 0 0 0 1px #F0D9A155,0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b,.word-topic.active small,.word-topic.active>span{color:#F0D9A1}
+.word-topic.active::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:1px;background:#F0D9A1;transform:rotate(45deg);opacity:.78;box-shadow:0 0 9px #F0D9A1aa}
+
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="aiOpen" class="btn gold">Assistente IA</button><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
@@ -266,4 +272,4 @@ main{max-width:790px;padding:16px 16px 26px}
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
 <nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="ingrid"><b>♡</b>Ingrid</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
-<div id="modal"></div><script src="/app.js?v=20261104-37"></script></body></html>
+<div id="modal"></div><script src="/app.js?v=20261104-38"></script></body></html>
