@@ -568,6 +568,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=Color(0xFFF7F3FA))) {
     Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
      Text("LEITURA CONTEXTUAL DO DIA",color=gold,fontWeight=FontWeight.Bold)
+     Text("O que aconteceu hoje",color=violet,fontWeight=FontWeight.SemiBold)
+     Text(todayAnalysis.summary,color=violet)
      Text("Como você está",color=violet,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.emotionalState,color=violet)
      Text("Dimensões identificadas",color=violet,fontWeight=FontWeight.SemiBold)
