@@ -1,5 +1,7 @@
 package br.com.metanoia
 import android.os.Bundle
+import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
+import br.com.metanoia.wallpaper.LockScreenWallpaperWorker
 import android.content.Context
 import android.content.res.Configuration
 import android.app.DatePickerDialog
@@ -57,12 +59,14 @@ class MainActivity : ComponentActivity() {
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
   scheduler.scheduleDailyReminders()
+  LockScreenWallpaperWorker.schedule(this)
+  LockScreenAgendaWallpaper.refresh(this, db)
   setContent { MaterialTheme(colorScheme = lightColorScheme(primary=Navy, secondary=Gold, background=Paper)) {
    Surface(Modifier.fillMaxSize(), color=Paper) { MetanoiaApp(db, scheduler) }
   } }
  }
 }
-private class AppViewModel(private val db: MetanoiaDatabase, private val scheduler: ReminderScheduler): ViewModel() {
+private class AppViewModel(private val appContext: Context, private val db: MetanoiaDatabase, private val scheduler: ReminderScheduler): ViewModel() {
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -80,6 +84,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
     val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=occurrenceAt,reminderAt=reminderAt,recurrenceRule=recurrenceRule)
     val id=db.agendaDao().insert(item)
     if(reminder && reminderAt!=null && occurrenceAt>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id))
+    LockScreenAgendaWallpaper.refresh(appContext, db)
    }
   }
  }
@@ -88,10 +93,11 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
    scheduler.cancel(item)
    db.agendaDao().update(item)
    if (item.reminderAt != null && item.scheduledAt > System.currentTimeMillis()) scheduler.schedule(item)
+   LockScreenAgendaWallpaper.refresh(appContext, db)
   }
  }
- fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed) } }
- fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item) } }
+ fun toggle(item:AgendaItem) { viewModelScope.launch { db.agendaDao().setCompleted(item.id,!item.completed); LockScreenAgendaWallpaper.refresh(appContext, db) } }
+ fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
  fun addJournal(title:String, body:String, dimension:LifeDimension) {
   if(body.isBlank()) return
   viewModelScope.launch { db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension)) }
@@ -109,7 +115,7 @@ private class AppViewModel(private val db: MetanoiaDatabase, private val schedul
  val context=LocalContext.current
  val permissionLauncher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
  LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
- val vm=remember { AppViewModel(db,scheduler) }
+ val vm=remember { AppViewModel(context.applicationContext,db,scheduler) }
  val agenda by vm.agenda.collectAsStateWithLifecycle()
  val journal by vm.journal.collectAsStateWithLifecycle()
  val reviews by vm.reviews.collectAsStateWithLifecycle()
