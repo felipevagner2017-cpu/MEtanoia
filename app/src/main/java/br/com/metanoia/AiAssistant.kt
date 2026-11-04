@@ -227,7 +227,7 @@ internal fun AiAssistantDialog(
                 }
                 Text(status, color = Ivory.copy(alpha = .76f), style = MaterialTheme.typography.labelSmall)
                 Text(
-                    "A IA na nuvem exige internet e credencial ativa. Sem conexão, a leitura contextual local continua disponível.",
+                    "A IA na nuvem exige internet e credencial ativa. Sem conexão, a leitura contextual local continua disponível. O uso do modelo pode gerar cobrança conforme o volume de tokens.",
                     color = Ivory.copy(alpha = .65f), style = MaterialTheme.typography.labelSmall
                 )
             }
