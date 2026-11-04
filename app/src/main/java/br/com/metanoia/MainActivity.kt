@@ -192,7 +192,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
  var cotidianoTab by remember { mutableStateOf("Agenda") }
- val sectionLabels = listOf("Mensagens e desafios","Devocional","Matrimônio","Profissional","Cotidiano")
+ val sectionLabels = listOf("Devoção","Matrimônio","Profissional","Cotidiano")
  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
  val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -244,13 +244,9 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    modifier = Modifier.fillMaxSize().weight(1f)
   ) { page ->
    when(page) {
-    0 -> DashboardPage(agenda,journal,analyses) { destination ->
-     val target = sectionLabels.indexOf(destination).takeIf { it >= 0 } ?: 0
-     pagerScope.launch { pagerState.animateScrollToPage(target) }
-    }
-    1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
-    2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
-    3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
+    0 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
+    1 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
+    2 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
     else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
      Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
       listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
@@ -331,7 +327,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  Column(Modifier.fillMaxSize().padding(horizontal=14.dp, vertical=10.dp)) {
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
-    Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+    Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
     Text("Organize seus dias com intenção.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
    }
    TextButton(onClick={selectedDate=LocalDate.now();displayedMonth=YearMonth.now()}) { Text("Hoje",color=Gold) }
@@ -339,10 +335,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(12.dp)) {
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=Navy,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
+     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=GoldBright,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
      Row {
-      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=Navy,style=MaterialTheme.typography.headlineMedium) }
-      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=Navy,style=MaterialTheme.typography.headlineMedium) }
+      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
+      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
      }
     }
     Row(Modifier.fillMaxWidth()) {
@@ -375,7 +371,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
   Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
-    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=Navy,fontWeight=FontWeight.Bold)
+    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=GoldBright,fontWeight=FontWeight.Bold)
     Text("${selectedItems.count{!it.completed}} pendentes · ${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
    }
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
@@ -467,7 +463,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var dimensionMenu by remember { mutableStateOf(false) }
  AlertDialog(
   onDismissRequest=onDismiss,
-  title={Text("Editar registro",color=Navy,fontWeight=FontWeight.Bold)},
+  title={Text("Editar registro",color=GoldBright,fontWeight=FontWeight.Bold)},
   text={
    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
     OutlinedTextField(value=title,onValueChange={title=it},label={Text("Título")},singleLine=true)
@@ -519,7 +515,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
  Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-  Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+  Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
   Text("Configure cada lembrete e mantenha sua agenda sob controle.",color = Ivory.copy(alpha = .78f))
   val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
   Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
@@ -719,7 +715,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
 @Composable private fun ReviewPage(entries:List<ReviewEntry>,vm:AppViewModel) {
  var period by remember { mutableStateOf(ReviewPeriod.WEEKLY) }; var body by remember { mutableStateOf("") }
  Column(Modifier.fillMaxSize().padding(16.dp)) {
-  Text("Revisões históricas",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+  Text("Revisões históricas",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
   Text("Observe sua caminhada sem transformar registros em julgamento.")
   Row { ReviewPeriod.entries.forEach { v->FilterChip(period==v,{period=v},label={Text(if(v==ReviewPeriod.WEEKLY) "Semanal" else "Mensal")}) } }
   OutlinedTextField(body,{body=it},Modifier.fillMaxWidth().heightIn(min=120.dp),label={Text("O que aprendi? O que merece atenção? Qual será meu próximo passo?")})
@@ -728,7 +724,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   if(periodEntries.size>=2) {
    Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
     Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-     Text("Comparação com a revisão anterior",color=Navy,fontWeight=FontWeight.Bold)
+     Text("Comparação com a revisão anterior",color=GoldBright,fontWeight=FontWeight.Bold)
      Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
      Text("Mais recente · "+formatDate(periodEntries[0].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
      Text(periodEntries[0].reflection,color=Ivory)
@@ -739,7 +735,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    }
   }
   LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
-   Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=Navy,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
+   Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=GoldBright,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
   } } }
  }
 }
