@@ -29,6 +29,13 @@ jobs:
         run: gradle assembleDebug
       - name: Run unit tests
         run: gradle testDebugUnitTest
+      - name: Run Room integration tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          script: gradle connectedDebugAndroidTest
       - name: Package complete source
         run: |
           git archive --format=zip --output=MEtonoia-codigo-fonte.zip HEAD
