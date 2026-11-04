@@ -35,7 +35,7 @@ class MainActivityNavigationTest {
         composeRule.onNodeWithText("Diário de hoje").assertExists()
 
         composeRule.onNodeWithText("Revisões", substring = false).performClick()
-        composeRule.onNodeWithText("Revisões", substring = false).assertExists()
+        composeRule.onNodeWithText("Revisões históricas").assertExists()
 
         composeRule.onNodeWithText("Alertas", substring = false).performClick()
         composeRule.onNodeWithText("Notificações e alarmes").assertExists()
