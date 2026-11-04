@@ -34,6 +34,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.com.metanoia.data.*
+import br.com.metanoia.domain.DailyContextAnalyzer
 import br.com.metanoia.domain.RecurrenceEngine
 import br.com.metanoia.domain.RecurrenceFrequency
 import br.com.metanoia.reminders.ReminderScheduler
@@ -78,6 +79,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+ val confessions = db.confessionDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+ val analyses = db.dailyAnalysisDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean, recurrenceRule:String?) {
   if(title.isBlank()) return
   viewModelScope.launch {
@@ -111,9 +114,44 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   LockScreenAgendaWallpaper.refresh(appContext, db)
  } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
- fun addJournal(title:String, body:String, dimension:LifeDimension) {
-  if(body.isBlank()) return
-  viewModelScope.launch { db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension)) }
+ fun saveDailyReflection(diary:String, confession:String) {
+  if(diary.isBlank() && confession.isBlank()) return
+  viewModelScope.launch {
+   val dayKey=LocalDate.now().toString()
+   val now=System.currentTimeMillis()
+   val previousDiary=db.journalDao().findForDay(dayKey)
+   val effectiveDiary=diary.trim().ifBlank { previousDiary?.content.orEmpty() }
+   if(diary.isNotBlank()) {
+    if(previousDiary==null) db.journalDao().insert(JournalEntry(title="Diário de hoje",content=diary.trim(),dimension=LifeDimension.INDIVIDUAL,dayKey=dayKey))
+    else db.journalDao().update(previousDiary.copy(title="Diário de hoje",content=diary.trim(),updatedAt=now,dayKey=dayKey))
+   }
+   val previousConfession=db.confessionDao().findForDay(dayKey)
+   val effectiveConfession=if(confession.isNotBlank()) confession.trim() else previousConfession?.content.orEmpty()
+   if(confession.isNotBlank()) {
+    if(previousConfession==null) db.confessionDao().insert(ConfessionEntry(dayKey=dayKey,content=confession.trim()))
+    else db.confessionDao().update(previousConfession.copy(content=confession.trim(),updatedAt=now))
+   }
+   val zone=ZoneId.systemDefault()
+   val today=LocalDate.now(zone)
+   val start=today.atStartOfDay(zone).toInstant().toEpochMilli()
+   val end=today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()-1
+   val agendaToday=db.agendaDao().observeRange(start,end).stateIn(viewModelScope,SharingStarted.Eagerly,emptyList()).value
+   val result=DailyContextAnalyzer.analyze(effectiveDiary,effectiveConfession,agendaToday.filterNot{it.completed}.map{it.title})
+   db.dailyAnalysisDao().save(DailyAnalysisEntry(
+    dayKey=dayKey,
+    categories=result.categories.joinToString(" · "),
+    dimensions=result.dimensions.joinToString(" · "),
+    emotionalState=result.emotionalState,
+    summary=result.summary,
+    attention=result.attention,
+    learning=result.learning,
+    direction=result.direction,
+    nextStep=result.nextStep,
+    scriptureReference=result.scriptureReference,
+    scriptureContext=result.scriptureContext,
+    updatedAt=now
+   ))
+  }
  }
  fun addReview(period:ReviewPeriod, body:String) {
   if(body.isBlank()) return
@@ -132,6 +170,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val agenda by vm.agenda.collectAsStateWithLifecycle()
  val journal by vm.journal.collectAsStateWithLifecycle()
  val reviews by vm.reviews.collectAsStateWithLifecycle()
+ val confessions by vm.confessions.collectAsStateWithLifecycle()
+ val analyses by vm.analyses.collectAsStateWithLifecycle()
  var tab by remember { mutableStateOf("Agenda") }
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
   if (result.resultCode == android.app.Activity.RESULT_OK) {
@@ -156,7 +196,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   Row(Modifier.fillMaxWidth().background(Color.White),horizontalArrangement=Arrangement.SpaceEvenly) {
    listOf("Agenda","Diário","Revisões","Alertas").forEach { label -> TextButton(onClick={tab=label}) { Text(label,color=if(tab==label) Navy else Color.Gray) } }
   }
-  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda, {
+  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,confessions,analyses,agenda,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda, {
     val prefs = NotificationPreferences(context)
     val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
      putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
