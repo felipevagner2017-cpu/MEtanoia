@@ -32,7 +32,7 @@ jobs:
       - name: Package complete source
         run: |
           git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtonoia-Android.apk
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtanoia-Android.apk
       - name: Upload source code
         uses: actions/upload-artifact@v4
         with:
@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metonoia-android-apk
-          path: app/build/outputs/apk/debug/MEtonoia-Android.apk
+          path: app/build/outputs/apk/debug/MEtanoia-Android.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publish durable release files
@@ -56,7 +56,7 @@ jobs:
           prerelease: true
           overwrite_files: true
           files: |
-            app/build/outputs/apk/debug/MEtonoia-Android.apk
+            app/build/outputs/apk/debug/MEtanoia-Android.apk
             MEtanoia-codigo-fonte.zip
 
   room-integration:
