@@ -85,7 +85,7 @@ object LockScreenAgendaWallpaper {
         )
         val day = date.format(DateTimeFormatter.ofPattern("EEEE", Locale("pt", "BR")))
             .replaceFirstChar { it.uppercase(Locale("pt", "BR")) }
-        canvas.drawText(day, LEFT, 565f, textPaint(58f, white, Typeface.MEDIUM))
+        canvas.drawText(day, LEFT, 565f, textPaint(58f, white, Typeface.NORMAL))
         val dateLabel = date.format(DateTimeFormatter.ofPattern("dd MMM", Locale("pt", "BR")))
             .uppercase(Locale("pt", "BR"))
         canvas.drawText(dateLabel, LEFT, 715f, textPaint(116f, gold, Typeface.BOLD))
@@ -140,11 +140,11 @@ object LockScreenAgendaWallpaper {
 
         canvas.drawRoundRect(
             RectF(LEFT, 2200f, RIGHT, 2203f), 2f, 2f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(110, gold) }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(110, Color.red(gold), Color.green(gold), Color.blue(gold)) }
         )
         canvas.drawText(
             "Organize o dia. Viva com intenção.",
-            LEFT, 2260f, textPaint(29f, gold, Typeface.MEDIUM)
+            LEFT, 2260f, textPaint(29f, gold, Typeface.NORMAL)
         )
         canvas.drawText(
             "Romanos 12:2  •  Atualizado pelo MEtanoia",
