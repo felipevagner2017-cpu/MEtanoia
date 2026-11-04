@@ -124,6 +124,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    if(diary.isNotBlank()) {
     if(previousDiary==null) db.journalDao().insert(JournalEntry(title="Diário de hoje",content=diary.trim(),dimension=LifeDimension.INDIVIDUAL,dayKey=dayKey))
     else db.journalDao().update(previousDiary.copy(title="Diário de hoje",content=diary.trim(),updatedAt=now,dayKey=dayKey))
+   } else if(previousDiary==null && confession.isNotBlank()) {
+    db.journalDao().insert(JournalEntry(title="Registro diário",content="",dimension=LifeDimension.INDIVIDUAL,dayKey=dayKey))
    }
    val previousConfession=db.confessionDao().findForDay(dayKey)
    val effectiveConfession=if(confession.isNotBlank()) confession.trim() else previousConfession?.content.orEmpty()
