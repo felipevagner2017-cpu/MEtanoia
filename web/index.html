@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050505"><meta name="description" content="MEtanoia — Palavra, consciência e prática diária.">
+<meta name="theme-color" content="#102542"><meta name="description" content="MEtanoia — Palavra, consciência e prática diária.">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/metonoia.svg"><link rel="apple-touch-icon" href="/icons/metonoia.svg">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MEtanoia</title>
@@ -91,6 +91,30 @@ label{color:#E5D4AC}
 .word-pagination{display:flex;justify-content:center;gap:7px;padding:12px}.word-pagination button{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:#61748b}.word-pagination button.active{width:23px;border-radius:8px;background:#d7b66d}.word-disclaimer{font-size:10px;color:#8fa0b5;text-align:center;line-height:1.5;margin:0 4px 5px}
 @media(min-width:650px){.word-slide{min-height:350px;padding:24px}.word-welcome{padding:24px}.word-topic{flex:1 1 0}.word-carousel{border-radius:20px}}
 @media(max-width:380px){.word-welcome{padding:16px}.word-welcome h2{font-size:18px}.word-progress{flex-basis:58px;height:58px}.word-topic{flex-basis:100px;padding:8px}.word-slide{padding:16px;min-height:410px}}
+
+
+/* Padrão visual Restaura Lar — azul-marinho, dourado e branco em todas as áreas */
+:root{color-scheme:dark;--navy:#102542;--deep:#07172f;--gold:#C5A15A;--white:#fff;--muted:#b9c7d8;--line:#C5A15A66;--panel:#112b49}
+body{background:radial-gradient(ellipse at 50% -15%,#24466b 0%,#07172f 58%);color:#fff}
+header{background:linear-gradient(145deg,#06152b,#102542 68%,#17385a);border-bottom:1px solid #C5A15A;box-shadow:0 10px 30px #0005}
+.tag{color:#e5d2a8}.date,.muted{color:#b9c7d8}
+.panel,.reading-page,.word-slide{background:linear-gradient(155deg,#163454,#0d2039 60%,#091b32);border-color:#C5A15A66;box-shadow:0 8px 24px #0004}
+.intel,.area,.book-page,.item,.ingrid-lock,.word-choice,.event-emoji-picker{background:linear-gradient(145deg,#142e4b,#091b32);border-color:#C5A15A66;color:#fff}
+.hero,.word-welcome{background:linear-gradient(120deg,#1c4268,#102542 58%,#091b32);border-color:#C5A15A99}
+.word-topic{background:linear-gradient(145deg,#17385a,#091c34);border-color:#C5A15A77;color:#e7edf5}
+.word-topic.active{background:linear-gradient(135deg,#e2c47e,#b58a3d);color:#102542}
+.word-slide{background:linear-gradient(155deg,#173553 0%,#0c2039 58%,#07172f 100%)}
+.word-challenge,.daily-challenge{background:linear-gradient(110deg,#17395b,#0b1e37);border-color:#C5A15A77}
+.ingrid-profile{background:linear-gradient(145deg,#17385a,#091b32);border-color:#C5A15A88}
+.tabs{background:#07172ff2;border-top-color:#C5A15A88}.tab{color:#b9c7d8}.tab.active{background:#1b3858;color:#f2d99c}
+.field{background:#081a32;border-color:#C5A15A77;color:#fff}
+.btn{background:#17385c;border-color:#C5A15A88;color:#fff}.gold,.btn.gold{background:linear-gradient(135deg,#e2c47e,#b58a3d);color:#102542;border:0}
+.calendar-day,.calendar-nav{background:#091c34;color:#f4f6fa;border-color:#C5A15A55}.calendar-day.selected{background:linear-gradient(135deg,#e2c47e,#b58a3d);color:#102542}
+.modal{background:linear-gradient(155deg,#163454,#0d2039);border-color:#C5A15A88;color:#fff}.modalbg{background:#07172fcc}
+.item.done{background:linear-gradient(110deg,#123e35,#0d302c);border-color:#56b88a}.item.done .statusline{color:#a7efc5}
+.word-choice:has(input:checked){background:linear-gradient(100deg,#1b3a5c,#0b2038);border-color:#C5A15A}
+.ingrid-lock p,.ingrid-profile p,.book-page span:not(.book-number),.area p,.reading-page p{color:#dce5ef}
+.danger{background:#351b24}
 
 </style></head>
 <body>
