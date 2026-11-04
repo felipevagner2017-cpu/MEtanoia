@@ -24,7 +24,7 @@ class MainActivityNavigationTest {
         composeRule.onNodeWithText("Devocional / Espiritual", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
-        composeRule.onNodeWithText("DESAFIO MATRIMONIAL").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Matrimônio / Ingrid", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Profissional", substring = false).performClick()
         composeRule.onNodeWithText("Meta, projeto ou desafio profissional").performScrollTo().assertIsDisplayed()
