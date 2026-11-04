@@ -23,9 +23,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p web/downloads
-          gh release download android-latest --repo "${GITHUB_REPOSITORY}" --pattern "MEtonoia-Android.apk" --pattern "MEtonoia-codigo-fonte.zip" --dir web/downloads
-          test -s web/downloads/MEtonoia-Android.apk
-          test -s web/downloads/MEtonoia-codigo-fonte.zip
+          gh release download android-latest --repo "${GITHUB_REPOSITORY}" --pattern "MEtonoia-Android.apk" --pattern "MEtanoia-codigo-fonte.zip" --dir web/downloads
+          mv web/downloads/MEtonoia-Android.apk web/downloads/MEtonoia.apk
+          test -s web/downloads/MEtonoia.apk
+          test -s web/downloads/MEtanoia-codigo-fonte.zip
       - name: Install Wrangler
         run: npm install --global wrangler
       - name: Validate Worker configuration
