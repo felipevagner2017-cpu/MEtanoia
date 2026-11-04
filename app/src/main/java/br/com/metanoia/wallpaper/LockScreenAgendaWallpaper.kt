@@ -148,12 +148,12 @@ object LockScreenAgendaWallpaper {
         )
         canvas.drawText(
             "Romanos 12:2  •  Atualizado pelo MEtanoia",
-            LEFT, 2308f, textPaint(22f, Color.argb(175, white), Typeface.NORMAL)
+            LEFT, 2308f, textPaint(22f, Color.argb(175, 255, 255, 255), Typeface.NORMAL)
         )
         return bitmap
     }
 
-    private fun textPaint(size: Float, color: Int, style: Typeface): Paint =
+    private fun textPaint(size: Float, color: Int, style: Int): Paint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             textSize = size
