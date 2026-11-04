@@ -40,7 +40,7 @@ A inteligência do MEtanoia agora tem arquitetura híbrida: a leitura contextual
 
 A área devocional foi estruturada para estudos aprofundados, exegese, contexto histórico-cultural-teológico, interpretação, aplicação pastoral, caráter e histórico de estudos. A área matrimonial inclui trilhas de conversa sobre fidelidade, pornografia, finanças, seduções, comunicação, conflitos, perdão e intimidade. A área profissional estrutura metas, desafios, planejamento, competências e resultados.
 
-O analisador contextual permanece determinístico e offline. Ele não deve ser descrito como terapeuta, pastor ou coach humano, nem como inteligência generativa: para respostas abertas, exegese gerada ou aconselhamento conversacional real será necessária uma integração explícita com um modelo, com controles de privacidade e segurança.
+O analisador contextual determinístico permanece como alternativa local quando não há conexão. A assistente generativa conectada já está integrada ao Android e à PWA por meio do Worker Cloudflare; seu uso exige autorização explícita para o envio dos registros selecionados. A IA não deve ser descrita como terapeuta, pastor ou coach humano.
 
 ## Limites visuais conhecidos
 
