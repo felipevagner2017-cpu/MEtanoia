@@ -235,9 +235,11 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("DIMENSÃO 02", color = GoldChampagne, fontWeight = FontWeight.Bold)
-            Text("Matrimônio / Ingrid", color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Cuidado que se transforma em presença, escuta e parceria.", color = Ivory)
+            DimensionHero(
+                "DIMENSÃO 02",
+                "Matrimônio / Ingrid",
+                "Cuidado que se transforma em presença, escuta e parceria."
+            )
         }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
@@ -301,11 +303,7 @@ private fun DimensionRecordPage(
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Text(eyebrow, color = GoldChampagne, fontWeight = FontWeight.Bold)
-            Text(title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(description, color = Ivory)
-        }
+        item { DimensionHero(eyebrow, title, description) }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -323,6 +321,27 @@ private fun DimensionRecordPage(
         item { Text("HISTÓRICO DA DIMENSÃO", color = GoldChampagne, fontWeight = FontWeight.Bold) }
         if (entries.isEmpty()) item { Text("Seus registros serão preservados e apresentados nesta área.", color = Ivory) }
         items(entries.sortedByDescending { it.createdAt }, key = { it.id }) { entry -> RecordCard(entry) }
+    }
+}
+
+@Composable
+private fun DimensionHero(eyebrow: String, title: String, description: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = VioletPrimary)
+    ) {
+        Column(
+            Modifier.fillMaxWidth()
+                .background(Brush.linearGradient(listOf(VioletPrimary, Color(0xFF241039), Color(0xFF4B3264))))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(eyebrow, color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
+            Text(title, color = Ivory, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(description, color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
+            Box(Modifier.width(38.dp).height(3.dp).background(GoldChampagne, CircleShape))
+        }
     }
 }
 
