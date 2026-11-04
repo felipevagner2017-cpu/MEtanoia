@@ -6,6 +6,8 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,13 +48,15 @@ private data class AiChatMessage(val role: String, val content: String)
 private class AiTokenStore(context: Context) {
     private val prefs = context.getSharedPreferences("metonoia_ai_secure", Context.MODE_PRIVATE)
 
-    fun read(): String = try {
-        val parts = prefs.getString("credential", null)?.split(".") ?: return ""
-        if (parts.size != 2) return ""
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)))
-        String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
-    } catch (_: Exception) { "" }
+    fun read(): String {
+        return try {
+            val parts = prefs.getString("credential", null)?.split(".") ?: return ""
+            if (parts.size != 2) return ""
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)))
+            String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
+        } catch (_: Exception) { "" }
+    }
 
     fun save(value: String) {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
