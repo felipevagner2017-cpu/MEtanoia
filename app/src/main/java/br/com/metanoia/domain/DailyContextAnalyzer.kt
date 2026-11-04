@@ -20,7 +20,7 @@ object DailyContextAnalyzer {
             if (listOf("salario", "trabalho", "emprego", "empresa", "cliente", "comissao", "renda profissional", "venda").any(text::contains)) dimensions += "Profissional"
         }
         if (listOf("esposa", "marido", "casamento", "conjugal", "matrimonio", "discussao em casa", "filho", "familia").any(text::contains)) { categories += "Conflito ou vínculo familiar"; dimensions += "Matrimonial" }
-        if (listOf("trabalho", "emprego", "chefe", "colega", "cliente", "empresa", "profissional", "carreira").any(text::contains)) { categories += "Questão profissional"; dimensions += "Profissional" }
+        if (listOf("trabalho", "trabalhei", "trabalhando", "emprego", "chefe", "colega", "cliente", "empresa", "profissional", "carreira").any(text::contains)) { categories += "Questão profissional"; dimensions += "Profissional" }
         if (listOf("deus", "orar", "oracao", "fe", "biblia", "igreja", "espiritual", "pecado", "arrepend", "afastado de deus").any(text::contains)) { categories += "Questão espiritual"; dimensions += "Espiritual" }
         val explicitError = listOf("fiz algo errado", "cometi um erro", "menti", "contei uma mentira", "roubei", "trai", "pequei", "ofendi", "machuquei alguem", "quebrei minha palavra").any(text::contains)
         if (explicitError) categories += "Reconhecimento de erro"
