@@ -436,12 +436,14 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      OutlinedButton(onClick=onPickDailySound){Text("Escolher toque")}
      OutlinedButton(onClick={prefs.setDailySound(NotificationPreferences.SYSTEM_SOUND);dailySound=prefs.dailySound()}){Text("Padrão")}
      OutlinedButton(onClick={prefs.setDailySound(NotificationPreferences.SILENT_SOUND);dailySound=prefs.dailySound()}){Text("Silencioso")}
+     OutlinedButton(onClick={ val uri=when(dailySound){NotificationPreferences.SILENT_SOUND->null;NotificationPreferences.SYSTEM_SOUND->RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);else->Uri.parse(dailySound)}; if(uri!=null) RingtoneManager.getRingtone(context,uri)?.play() }){Text("Testar")}
     }
     Text("Som dos compromissos: "+when(eventSound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
     Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
      OutlinedButton(onClick=onPickEventSound){Text("Escolher toque")}
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SYSTEM_SOUND);eventSound=prefs.eventSound()}){Text("Padrão")}
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
+     OutlinedButton(onClick={ val uri=when(eventSound){NotificationPreferences.SILENT_SOUND->null;NotificationPreferences.SYSTEM_SOUND->RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);else->Uri.parse(eventSound)}; if(uri!=null) RingtoneManager.getRingtone(context,uri)?.play() }){Text("Testar")}
     }
     Text("O volume é controlado pelos botões e configurações de som do Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
    }
