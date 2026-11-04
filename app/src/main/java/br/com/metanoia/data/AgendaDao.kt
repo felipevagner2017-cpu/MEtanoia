@@ -28,6 +28,12 @@ interface AgendaDao {
     @Query("UPDATE agenda_items SET completed = :completed WHERE id = :id")
     suspend fun setCompleted(id: Long, completed: Boolean)
 
+    @Query("SELECT * FROM agenda_items WHERE reminderAt IS NOT NULL AND scheduledAt > :now AND completed = 0")
+    suspend fun pendingReminders(now: Long): List<AgendaItem>
+
+    @Query("SELECT * FROM agenda_items WHERE id = :id LIMIT 1")
+    suspend fun findById(id: Long): AgendaItem?
+
     @Query("SELECT * FROM agenda_items WHERE reminderAt IS NOT NULL AND reminderAt >= :now")
     suspend fun pendingReminders(now: Long): List<AgendaItem>
 }
