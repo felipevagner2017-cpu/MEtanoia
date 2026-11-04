@@ -215,10 +215,27 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",Locale("pt","BR"))).replaceFirstChar { it.uppercase(Locale("pt","BR")) },color=Ivory,fontWeight=FontWeight.SemiBold)
    Text("Uma mente renovada. Uma vida intencional.",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.bodyMedium)
   }
-  Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp, vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+  Row(
+   Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState())
+    .padding(horizontal=12.dp, vertical=9.dp),
+   horizontalArrangement=Arrangement.spacedBy(8.dp),
+   verticalAlignment=Alignment.CenterVertically
+  ) {
    sectionLabels.forEachIndexed { index, label ->
-    TextButton(onClick={ pagerScope.launch { pagerState.animateScrollToPage(index) } }) {
-     Text(label,color=if(pagerState.currentPage==index) GoldBright else Ivory,fontWeight=if(pagerState.currentPage==index) FontWeight.Bold else FontWeight.Medium)
+    val selected = pagerState.currentPage == index
+    TextButton(
+     onClick={ pagerScope.launch { pagerState.animateScrollToPage(index) } },
+     modifier=Modifier.background(
+      color=if(selected) CardSurface else Color.Transparent,
+      shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+     )
+    ) {
+     Text(
+      label,
+      color=if(selected) GoldBright else Ivory.copy(alpha=.76f),
+      fontWeight=if(selected) FontWeight.Bold else FontWeight.Medium,
+      style=MaterialTheme.typography.labelMedium
+     )
     }
    }
   }
