@@ -184,7 +184,7 @@ private fun DimensionAccessCard(modifier: Modifier, number: String, title: Strin
                 Text(number, color = DeepViolet, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             }
             Text(title, color = GoldChampagne, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            Text(description, color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
+            Text(description, color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
             Text("ABRIR ÁREA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = .7.sp)
         }
     }
@@ -195,10 +195,21 @@ internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String
     DimensionRecordPage(
         eyebrow = "DIMENSÃO 01",
         title = "Devocional / Espiritual",
-        description = "Formação fundamentada nas Escrituras: texto, contexto histórico, sentido teológico e aplicação responsável à vida.",
-        promptTitle = "Passagem ou tema estudado",
-        promptBody = "Registre a passagem, o contexto observado, suas perguntas e a aplicação que deseja praticar.",
-        saveLabel = "Salvar estudo ou reflexão",
+        description = "Devocional pastoral com estudo bíblico profundo, exegese responsável, contexto histórico-teológico e formação do caráter à luz das Escrituras.",
+        promptTitle = "Texto bíblico ou tema pastoral",
+        promptBody = "Registre a passagem, contexto histórico, observações do texto, palavras-chave, perguntas teológicas, interpretação e aplicação ao pastoreio.",
+        saveLabel = "Salvar estudo bíblico",
+        focusAreas = listOf(
+            "Estudos bíblicos aprofundados e exegese de passagens",
+            "Contextualização histórica, cultural e teológica",
+            "Estudo de livros, capítulos e textos bíblicos",
+            "Reflexões devocionais diárias",
+            "Aplicação prática das Escrituras ao pastoreio",
+            "Princípios, integridade e formação do caráter",
+            "Crescimento e maturidade espiritual",
+            "Histórico organizado de estudos",
+            "Acompanhamento da jornada espiritual"
+        ),
         entries = entries,
         onSave = onSave
     )
@@ -209,10 +220,20 @@ internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (Str
     DimensionRecordPage(
         eyebrow = "DIMENSÃO 03",
         title = "Profissional",
-        description = "Transforme objetivos em entregas: metas, projetos, responsabilidades, competências e resultados verificáveis.",
-        promptTitle = "Meta ou projeto",
-        promptBody = "Descreva o resultado desejado, o próximo passo, o prazo e os recursos necessários.",
+        description = "Uma jornada de desenvolvimento profissional: clareza de objetivos, coragem para enfrentar desafios e evolução por meio de ações verificáveis.",
+        promptTitle = "Meta, projeto ou desafio profissional",
+        promptBody = "Defina o resultado desejado, o obstáculo atual, o próximo passo concreto, o prazo, os recursos e como medirá o progresso.",
         saveLabel = "Registrar plano profissional",
+        focusAreas = listOf(
+            "Metas e resultados mensuráveis",
+            "Projetos, responsabilidades e prioridades",
+            "Planejamento e organização da execução",
+            "Desenvolvimento de competências",
+            "Enfrentamento de desafios e tomada de decisão",
+            "Resultados, conquistas e aprendizados",
+            "Histórico de evolução profissional",
+            "Próxima ação prática e prazo"
+        ),
         entries = entries,
         onSave = onSave
     )
@@ -227,7 +248,10 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         "Planeje um momento simples a dois e proteja esse tempo na agenda.",
         "Ofereça ajuda prática em uma responsabilidade que normalmente fica concentrada nela."
     )
-    val challenge = challenges[(LocalDate.now().dayOfYear - 1) % challenges.size]
+    // O histórico evita repetir imediatamente desafios já registrados; não presume emoções ou fatos de Ingrid.
+    val challenge = challenges.firstOrNull { candidate ->
+        entries.take(5).none { it.content.contains(candidate, ignoreCase = true) }
+    } ?: challenges.first()
     var note by remember(LocalDate.now()) { mutableStateOf("") }
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
@@ -257,7 +281,9 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         item {
             Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("CUIDADO DO DIA", color = GoldChampagne, fontWeight = FontWeight.Bold)
+                    Text("ESTUDOS E REFLEXÕES DO CASAMENTO", color = GoldBright, fontWeight = FontWeight.Bold)
+                    Text("Temas para estudo e conversa: fidelidade e confiança; pornografia e seus impactos no vínculo; finanças e transparência; seduções e limites; comunicação; conflitos; perdão; intimidade; parceria nas responsabilidades.", color = Ivory, style = MaterialTheme.typography.bodyMedium)
+                    Text("CUIDADO DO DIA", color = GoldBright, fontWeight = FontWeight.Bold)
                     Text("Presença vale mais do que uma atitude grandiosa. Escolha um gesto possível, sincero e atento.", color = Ivory)
                     Text("DESAFIO MATRIMONIAL", color = GoldBright, fontWeight = FontWeight.Bold)
                     Text(challenge, color = Ivory)
@@ -294,7 +320,8 @@ private fun DimensionRecordPage(
     promptBody: String,
     saveLabel: String,
     entries: List<JournalEntry>,
-    onSave: (String, String) -> Unit
+    onSave: (String, String) -> Unit,
+    focusAreas: List<String> = emptyList()
 ) {
     var recordTitle by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
@@ -304,6 +331,18 @@ private fun DimensionRecordPage(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { DimensionHero(eyebrow, title, description) }
+        if (focusAreas.isNotEmpty()) {
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("TRILHA DE DESENVOLVIMENTO", color = GoldBright, fontWeight = FontWeight.Bold)
+                        focusAreas.forEach { area ->
+                            Text("• $area", color = Ivory, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+        }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -333,7 +372,7 @@ private fun DimensionHero(eyebrow: String, title: String, description: String) {
     ) {
         Column(
             Modifier.fillMaxWidth()
-                .background(Brush.linearGradient(listOf(VioletPrimary, Color(0xFF241039), Color(0xFF4B3264))))
+                .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSurface)))
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
