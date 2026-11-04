@@ -2,7 +2,7 @@ name: Deploy MEtanoia PWA and downloads to Cloudflare Workers
 on:
   push:
     branches: [main]
-    paths: ["web/**", "wrangler.jsonc", ".github/workflows/deploy-cloudflare.yml"]
+    paths: ["web/**", "worker/**", "wrangler.jsonc", ".github/workflows/deploy-cloudflare.yml"]
   workflow_run:
     workflows: ["Android build"]
     types: [completed]
