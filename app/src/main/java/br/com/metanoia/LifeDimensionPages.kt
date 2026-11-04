@@ -333,6 +333,15 @@ private fun DimensionRecordPage(
 ) {
     var recordTitle by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
+    var contextNotes by remember { mutableStateOf("") }
+    var analysisNotes by remember { mutableStateOf("") }
+    var applicationNotes by remember { mutableStateOf("") }
+    var obstacle by remember { mutableStateOf("") }
+    var nextAction by remember { mutableStateOf("") }
+    var deadline by remember { mutableStateOf("") }
+    var successMeasure by remember { mutableStateOf("") }
+    val isSpiritual = eyebrow.contains("01")
+    val isProfessional = eyebrow.contains("03")
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
@@ -364,10 +373,34 @@ private fun DimensionRecordPage(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("NOVO REGISTRO", color = GoldChampagne, fontWeight = FontWeight.Bold)
                     OutlinedTextField(value = recordTitle, onValueChange = { recordTitle = it }, modifier = Modifier.fillMaxWidth(), label = { Text(promptTitle) }, singleLine = true)
-                    OutlinedTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth(), label = { Text(promptBody) }, minLines = 5)
+                    if (isSpiritual) {
+                        OutlinedTextField(value = contextNotes, onValueChange = { contextNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Contexto histórico, cultural e literário") }, minLines = 3)
+                        OutlinedTextField(value = analysisNotes, onValueChange = { analysisNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Observações do texto, estrutura e palavras-chave") }, minLines = 3)
+                        OutlinedTextField(value = applicationNotes, onValueChange = { applicationNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Interpretação, fundamento bíblico e aplicação pastoral") }, minLines = 4)
+                    } else if (isProfessional) {
+                        OutlinedTextField(value = obstacle, onValueChange = { obstacle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Obstáculo ou desafio atual") }, minLines = 2)
+                        OutlinedTextField(value = nextAction, onValueChange = { nextAction = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Próxima ação concreta") }, minLines = 2)
+                        OutlinedTextField(value = deadline, onValueChange = { deadline = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Prazo para executar") }, singleLine = true)
+                        OutlinedTextField(value = successMeasure, onValueChange = { successMeasure = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Como vou medir o resultado?") }, minLines = 2)
+                    } else {
+                        OutlinedTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth(), label = { Text(promptBody) }, minLines = 5)
+                    }
                     Button(
-                        onClick = { onSave(recordTitle, body); recordTitle = ""; body = "" },
-                        enabled = recordTitle.isNotBlank() && body.isNotBlank(),
+                        onClick = {
+                            val content = when {
+                                isSpiritual -> "Contexto: $contextNotes\\nObservações: $analysisNotes\\nInterpretação e aplicação pastoral: $applicationNotes"
+                                isProfessional -> "Meta ou projeto: $body\\nObstáculo: $obstacle\\nPróxima ação: $nextAction\\nPrazo: $deadline\\nMedida de resultado: $successMeasure"
+                                else -> body
+                            }
+                            onSave(recordTitle, content)
+                            recordTitle = ""; body = ""; contextNotes = ""; analysisNotes = ""; applicationNotes = ""
+                            obstacle = ""; nextAction = ""; deadline = ""; successMeasure = ""
+                        },
+                        enabled = recordTitle.isNotBlank() && when {
+                            isSpiritual -> contextNotes.isNotBlank() || analysisNotes.isNotBlank() || applicationNotes.isNotBlank()
+                            isProfessional -> body.isNotBlank() || obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
+                            else -> body.isNotBlank()
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(saveLabel) }
                 }
