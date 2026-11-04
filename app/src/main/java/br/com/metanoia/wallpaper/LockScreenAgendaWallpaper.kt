@@ -11,6 +11,7 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
+import br.com.metanoia.R
 import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.LifeDimension
 import br.com.metanoia.data.MetanoiaDatabase
@@ -48,7 +49,7 @@ object LockScreenAgendaWallpaper {
         val items = db.agendaDao().observeRange(start, end).first()
             .filterNot { it.completed }
             .sortedBy { it.scheduledAt }
-        val bitmap = render(items, today, zone)
+        val bitmap = render(context, items, today, zone)
         val manager = WallpaperManager.getInstance(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             manager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
@@ -59,7 +60,7 @@ object LockScreenAgendaWallpaper {
         bitmap.recycle()
     }
 
-    internal fun render(items: List<AgendaItem>, date: LocalDate, zone: ZoneId): Bitmap {
+    internal fun render(context: Context, items: List<AgendaItem>, date: LocalDate, zone: ZoneId): Bitmap {
         val bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val background = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -71,12 +72,12 @@ object LockScreenAgendaWallpaper {
         }
         canvas.drawRect(0f, 0f, WIDTH.toFloat(), HEIGHT.toFloat(), background)
 
-        val watermark = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(17, 220, 190, 130)
-            textSize = 900f
-            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        // Official MEtanoia brain mark, softened into a watermark behind the agenda.
+        context.getDrawable(R.drawable.metanoia_brain_mark)?.mutate()?.let { mark ->
+            mark.alpha = 24
+            mark.setBounds(350, 1030, 730, 1410)
+            mark.draw(canvas)
         }
-        canvas.drawText("M", 380f, 1470f, watermark)
 
         canvas.drawText("MEtonoia", LEFT, 315f, textPaint(30f, gold, Typeface.BOLD))
         canvas.drawText(
