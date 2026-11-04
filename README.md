@@ -13,7 +13,7 @@ O aplicativo organiza a jornada em quatro dimensões integradas:
 3. **Profissional** — metas, projetos, competências e resultados.
 4. **Cotidiano** — agenda, calendário, tarefas, hábitos, diário unificado, confissão opcional, revisões e alertas.
 
-O painel inicial apresenta um resumo do dia e atalhos para as quatro dimensões. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
+A navegação principal agora é uma única jornada horizontal, com páginas deslizáveis: Mensagens e desafios, Devocional, Matrimônio, Profissional e Cotidiano. O painel inicial apresenta o resumo do dia e atalhos que levam diretamente à dimensão escolhida. Dentro de Cotidiano permanecem Agenda, Diário, Revisões e Alertas. Os registros das dimensões reutilizam a tabela de diário existente no Room; não criam um segundo banco de dados.
 
 ## Identidade visual
 
@@ -41,4 +41,4 @@ A área matrimonial contém um marcador visual temporário para o avatar. A imag
 
 ## Compilação e validação
 
-O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso.
+O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A versão de desenvolvimento atual é 0.4.0 (versionCode 4). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
