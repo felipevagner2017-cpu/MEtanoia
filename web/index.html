@@ -176,12 +176,63 @@ label{color:#E8D7B4}
 .word-slide-actions{display:flex;justify-content:flex-end;margin-top:12px}.word-slide-actions .btn{min-width:145px;border-radius:12px}.word-slide-foot{margin-top:auto}
 
 .ai-assistant-panel{border-color:#D9BC83aa;background:linear-gradient(155deg,#211a0d,#0b0b0b)}.ai-consent{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #C5A15A66;border-radius:11px;color:#E5D4AC;font-size:11px;line-height:1.5}.ai-consent input{width:18px;height:18px;flex:0 0 18px;accent-color:#C5A15A}.ai-conversation{display:flex;flex-direction:column;gap:9px;max-height:360px;overflow:auto;padding:10px;border:1px solid #C5A15A44;border-radius:12px;background:#050505}.ai-message{padding:11px;border:1px solid #C5A15A44;border-radius:11px;background:#15120d}.ai-message.ai-user{background:#211b10;border-color:#C5A15A88}.ai-message b{font-size:10px;letter-spacing:.12em;color:#E2C47E}.ai-message p{margin:6px 0 0;color:#F3F0E7;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.6}.ai-assistant-panel .row{flex-wrap:wrap}
+
+/* Jornada premium — quatro dimensões em um único espaço horizontal */
+body{background:radial-gradient(ellipse at 50% -12%,#45245f 0%,#241333 38%,#0b0710 82%);color:#F3F0E7}
+header{background:linear-gradient(145deg,#100817 0%,#1B092B 62%,#2c1740 100%);border-bottom:1px solid #D9BC83;box-shadow:0 12px 34px #08030e99}
+main{max-width:790px;padding:16px 16px 26px}
+#word{display:flex;flex-direction:column;gap:15px}
+.word-welcome{min-height:145px;padding:22px 21px;border:1px solid #D9BC83aa;border-radius:22px;background:radial-gradient(circle at 92% 15%,#68417a66 0%,transparent 34%),linear-gradient(125deg,#42205E 0%,#28133E 58%,#160b22 100%);box-shadow:0 16px 34px #08030e88}
+.word-welcome h2{font-size:clamp(22px,5vw,27px);letter-spacing:-.035em;color:#F3F0E7;margin:5px 0 8px}
+.word-welcome p{font-size:12.5px;line-height:1.65;color:#E5DCEB}
+.word-progress{border-color:#D9BC83aa;background:#1B092B88;box-shadow:inset 0 0 0 5px #D9BC8310}
+.word-progress span{color:#F0D9A1}
+.word-topic-rail{gap:9px;padding:14px 1px 11px;scroll-padding-inline:8px}
+.word-topic{flex:1 0 0;min-width:0;min-height:76px;padding:11px 9px;border-radius:15px;background:linear-gradient(150deg,#2b193b,#160d20);border:1px solid #D9BC8355;box-shadow:0 5px 16px #08030e55;transition:transform .18s ease,border-color .18s ease}
+.word-topic b{font-size:11px;color:#F3F0E7}
+.word-topic small{color:#BDB0C6}
+.word-topic>span{color:#F0D9A1}
+.word-topic.active{background:linear-gradient(145deg,#F0D9A1,#C9A96D);border-color:#fff0bd;box-shadow:0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b{color:#211033}
+.word-swipe-hint{padding:5px 3px 10px;color:#BDB0C6;font-size:9px;letter-spacing:.16em}
+.word-hint-arrows{color:#F0D9A1;font-size:17px}
+.word-carousel{gap:12px;padding:0 0 5px;scroll-padding-inline:0;overscroll-behavior-x:contain}
+.word-slide{flex:0 0 100%;min-height:440px;padding:21px 19px;border-radius:22px;border:1px solid #D9BC83aa;background:radial-gradient(circle at 100% 0%,#54336a55 0%,transparent 35%),linear-gradient(155deg,#29183a 0%,#1b1027 60%,#100817 100%);box-shadow:0 15px 35px #08030e88}
+.word-slide-head{gap:14px;border-bottom:1px solid #D9BC8355}
+.word-slide-head h2{font-size:22px;color:#F0D9A1}
+.word-slide-head p{color:#CFC2D8}
+.word-icon,.word-dimension-avatar{width:52px;height:52px;flex:0 0 52px;border:1px solid #D9BC83aa;border-radius:16px;background:#160b21;display:grid;place-items:center;object-fit:contain;padding:5px;color:#F0D9A1;box-shadow:0 5px 15px #08030e66}
+.daily-word-source{padding:20px 2px 14px}
+.word-kicker,.challenge-mark{color:#F0D9A1}
+.word-challenge{padding:15px 16px;background:linear-gradient(120deg,#4a2860,#2a173b);border:1px solid #D9BC8388}
+.word-challenge p{color:#F3F0E7;line-height:1.6}
+.word-slide-actions .btn{min-height:44px;border-radius:13px;padding-inline:18px}
+.word-pagination{padding:8px 0 2px}
+.word-disclaimer{font-size:10px;line-height:1.55;margin:10px 2px 0;color:#BDB0C6}
+.home-reminder{margin:0}
+.home-reminder-card{background:linear-gradient(125deg,#28163a,#160b21);border-color:#D9BC8388}
+.tabs{background:#100817f5;border-top:1px solid #D9BC8388;box-shadow:0 -8px 24px #08030e55}
+.tab{color:#BDB0C6}
+.tab.active{background:linear-gradient(145deg,#42205E,#28133E);color:#F0D9A1;outline:1px solid #D9BC8355}
+@media(max-width:520px){
+ main{padding:12px 12px 22px}
+ .word-welcome{padding:18px 16px;min-height:136px}
+ .word-topic-rail{gap:7px;padding-top:12px}
+ .word-topic{min-height:72px;padding:9px 6px;grid-template-columns:20px 1fr;gap:0 5px}
+ .word-topic>span{font-size:18px}
+ .word-topic b{font-size:10px}
+ .word-topic small{font-size:8px}
+ .word-slide{min-height:440px;padding:18px 15px}
+ .word-slide-head h2{font-size:20px}
+}
+@media(max-width:360px){.word-topic{flex-basis:108px}.word-progress{flex-basis:58px;height:58px}}
+
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="aiOpen" class="btn gold">Assistente IA</button><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
 <main>
 
-<section id="word"><div class="panel"><div class="eyebrow">Jornada pessoal · MEtanoia</div><h2>Mensagens e desafios</h2><p class="muted">Uma única jornada com quatro dimensões. Deslize horizontalmente para acessar Devocional, Matrimônio, Profissional e Cotidiano.</p><div id="homeReminderCard" class="home-reminder"></div><div id="wordAreas"></div></div></section>
+<section id="word" aria-label="Jornada pessoal"><div id="wordAreas"></div><div id="homeReminderCard" class="home-reminder"></div></section>
 <section id="agenda" class="hidden">
 <div class="panel calendar-panel">
  <div class="eyebrow">Planejamento pessoal</div><h2>Minha agenda</h2>
