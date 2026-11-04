@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 760" role="img" aria-labelledby="title desc">
+<title id="title">Avatar Ingrid</title><desc id="desc">Mulher de pele morena, cabelos cacheados, vestido azul-marinho e violão nas costas.</desc>
+<defs>
+ <linearGradient id="dress" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#243d70"/><stop offset=".55" stop-color="#10234b"/><stop offset="1" stop-color="#08152f"/></linearGradient>
+ <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#bd805e"/><stop offset=".55" stop-color="#915338"/><stop offset="1" stop-color="#693b2d"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0b2"/><stop offset=".5" stop-color="#d6aa4f"/><stop offset="1" stop-color="#8b5a1d"/></linearGradient>
+ <radialGradient id="halo"><stop stop-color="#d9ae58" stop-opacity=".22"/><stop offset="1" stop-color="#d9ae58" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="260" cy="360" rx="235" ry="340" fill="url(#halo)"/>
+<!-- acoustic guitar behind her -->
+<path d="M365 270c-40-30-91-6-87 39 3 24 20 35 18 59-2 26-34 48-25 89 10 47 73 66 113 35 30-23 23-58 5-83-13-19-9-39 5-60 22-34 9-64-29-79z" fill="#87451f" stroke="url(#gold)" stroke-width="5"/>
+<path d="M326 260l-3-170 32-12 18 178" fill="#85471f" stroke="url(#gold)" stroke-width="5"/>
+<path d="M333 95l28-8m-29 22 30-8m-29 22 30-8m-29 22 30-8" stroke="#f2d79a" stroke-width="3"/>
+<circle cx="332" cy="378" r="17" fill="#23150f" stroke="#e1b66b" stroke-width="4"/>
+<!-- curls silhouette -->
+<path d="M160 171c-34-55 4-122 65-123 27-43 91-39 112-3 58-4 93 51 70 101 35 40 13 95-21 113 7 53-31 97-74 88-36 34-91 22-108-15-56 4-90-48-64-91-35-19-31-54 20-70z" fill="#17100f" stroke="#3d241b" stroke-width="8"/>
+<g fill="#251713" stroke="#68402c" stroke-width="4">
+ <circle cx="171" cy="105" r="35"/><circle cx="207" cy="67" r="34"/><circle cx="253" cy="51" r="33"/><circle cx="299" cy="65" r="36"/><circle cx="344" cy="95" r="36"/><circle cx="372" cy="140" r="32"/><circle cx="380" cy="189" r="34"/><circle cx="354" cy="236" r="33"/><circle cx="320" cy="262" r="32"/><circle cx="276" cy="273" r="34"/><circle cx="224" cy="259" r="33"/><circle cx="183" cy="230" r="34"/><circle cx="148" cy="188" r="32"/><circle cx="144" cy="145" r="31"/>
+</g>
+<!-- face -->
+<path d="M187 124c0-49 32-76 75-76 49 0 77 37 75 89l-8 68c-6 45-36 74-70 74-37 0-65-33-70-76z" fill="url(#skin)"/>
+<path d="M185 145c-11-44 8-97 62-110 54-13 93 20 99 62-25-5-43-22-51-40-18 27-59 39-102 39z" fill="#21130f"/>
+<path d="M204 162q18-12 34 0m38 0q18-12 34 0" fill="none" stroke="#2b1712" stroke-width="7" stroke-linecap="round"/>
+<ellipse cx="222" cy="177" rx="5" ry="7" fill="#17100d"/><ellipse cx="292" cy="177" rx="5" ry="7" fill="#17100d"/>
+<path d="M250 185q-7 23 5 26" fill="none" stroke="#70402e" stroke-width="4" stroke-linecap="round"/>
+<path d="M229 222q25 20 52-1" fill="none" stroke="#71352f" stroke-width="6" stroke-linecap="round"/>
+<path d="M234 225q20 12 42-2" fill="none" stroke="#f5d2bd" stroke-width="4" stroke-linecap="round"/>
+<circle cx="198" cy="202" r="6" fill="#d9a06e" opacity=".5"/><circle cx="319" cy="202" r="6" fill="#d9a06e" opacity=".5"/>
+<!-- neck and arms -->
+<path d="M235 258v55h54v-58" fill="url(#skin)"/>
+<path d="M184 297q-39 19-47 89l-15 132q-4 29 21 33 23 3 29-25l26-119 28 13 13-103z" fill="url(#skin)"/>
+<path d="M314 296q43 14 59 69l32 129q7 28-17 37-23 8-34-20l-39-110-30 13-13-103z" fill="url(#skin)"/>
+<!-- navy dress -->
+<path d="M192 286q29 23 54 24 28 0 57-24l36 20 39 142q22 89 39 188-108 42-319 0 18-97 37-190l24-140z" fill="url(#dress)" stroke="url(#gold)" stroke-width="4"/>
+<path d="M190 291q70 42 126 0l-13 48q-51 31-103 0z" fill="#182b55" stroke="#c69b4e" stroke-width="3"/>
+<path d="M252 313v31" stroke="#e0bd72" stroke-width="3"/>
+<path d="M210 354q48 20 96 0" fill="none" stroke="#49618c" stroke-width="3" opacity=".8"/>
+<!-- guitar strap across shoulder -->
+<path d="M322 285q-23 77-56 128" fill="none" stroke="#19130f" stroke-width="15"/>
+<path d="M322 285q-23 77-56 128" fill="none" stroke="url(#gold)" stroke-width="2"/>
+<!-- hands -->
+<path d="M133 523q-15 26-2 45 10 14 26 2l17-29-20-22zM351 516q-8 29 8 43 16 12 28-5l-11-39z" fill="url(#skin)"/>
+<!-- legs -->
+<path d="M178 638q-4 35-10 59l-5 26h51l12-82m79-1q7 35 16 59l8 24h-51l-20-81" fill="url(#skin)"/>
+<!-- heels -->
+<path d="M162 713h61l-9 18h-80q-8-8 28-18zm105 0h60l30 18h-83q-12-6-7-18z" fill="#10172c" stroke="url(#gold)" stroke-width="4"/>
+<!-- waist belt -->
+<path d="M163 471q110 27 229-2l8 23q-126 33-244 2z" fill="#101c3b" stroke="#c79e50" stroke-width="4"/>
+<rect x="257" y="472" width="36" height="28" rx="5" fill="none" stroke="url(#gold)" stroke-width="4"/>
+<!-- subtle jewelry -->
+<circle cx="338" cy="212" r="5" fill="url(#gold)"/><path d="M342 214v14" stroke="url(#gold)" stroke-width="3"/>
+<path d="M362 490q12 8 2 20" fill="none" stroke="url(#gold)" stroke-width="5"/>
+</svg>
