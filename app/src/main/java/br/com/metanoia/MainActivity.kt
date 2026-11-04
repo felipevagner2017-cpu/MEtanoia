@@ -240,7 +240,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      TextButton(onClick={TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()}) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
      Row(verticalAlignment=Alignment.CenterVertically) {
       Checkbox(checked=reminder,onCheckedChange={reminder=it})
-      Text("Avisar 15 min antes",style=MaterialTheme.typography.labelSmall,color=Navy)
+      Text("Lembretes: 2h, 1h e 30 min antes",style=MaterialTheme.typography.labelSmall,color=Navy)
      }
     }
     Button(onClick={
