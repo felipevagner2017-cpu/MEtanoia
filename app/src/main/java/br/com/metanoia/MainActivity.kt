@@ -137,14 +137,14 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   if (result.resultCode == android.app.Activity.RESULT_OK) {
    val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
              else result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-   if (uri != null) NotificationPreferences(context).setDailySound(uri.toString())
+   NotificationPreferences(context).setDailySound(uri?.toString() ?: NotificationPreferences.SILENT_SOUND)
   }
  }
  val eventRingtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
   if (result.resultCode == android.app.Activity.RESULT_OK) {
    val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
              else result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-   if (uri != null) NotificationPreferences(context).setEventSound(uri.toString())
+   NotificationPreferences(context).setEventSound(uri?.toString() ?: NotificationPreferences.SILENT_SOUND)
   }
  }
  Column(Modifier.fillMaxSize()) {
@@ -176,7 +176,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(eventPrefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(eventPrefs.eventSound()))
     }
     eventRingtoneLauncher.launch(pick)
-   } }
+   })
  }
 }
 @Composable private fun AgendaPage(items:List<AgendaItem>,vm:AppViewModel) {
