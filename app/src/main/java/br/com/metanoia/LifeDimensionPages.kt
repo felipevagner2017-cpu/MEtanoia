@@ -1,5 +1,8 @@
 package br.com.metanoia
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -276,13 +279,19 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         item {
             Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        Modifier.size(124.dp).background(Brush.verticalGradient(listOf(GoldBright, GoldChampagne)), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) { Text("I", color = DeepViolet, fontSize = 54.sp, fontWeight = FontWeight.Light) }
-                    Text("INGRID", color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                    Text("Espaço reservado para o avatar premium aprovado.", color = Ivory, style = MaterialTheme.typography.bodySmall)
-                    Text("A imagem 3D definitiva será aplicada a partir da referência visual, sem inventar a aparência de Ingrid.", color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ingrid_avatar),
+                            contentDescription = "Avatar oficial de Ingrid",
+                            modifier = Modifier.size(width = 116.dp, height = 142.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
+                            Text("INGRID", color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                            Text("Matrimônio", color = Ivory, style = MaterialTheme.typography.bodyMedium)
+                            Text("Avatar oficial preservado a partir da imagem aprovada.", color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
         }
