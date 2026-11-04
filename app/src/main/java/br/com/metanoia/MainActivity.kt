@@ -135,7 +135,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    val today=LocalDate.now(zone)
    val start=today.atStartOfDay(zone).toInstant().toEpochMilli()
    val end=today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()-1
-   val agendaToday=db.agendaDao().observeRange(start,end).stateIn(viewModelScope,SharingStarted.Eagerly,emptyList()).value
+   val agendaToday=agenda.value.filter { it.scheduledAt in start..end }
    val result=DailyContextAnalyzer.analyze(effectiveDiary,effectiveConfession,agendaToday.filterNot{it.completed}.map{it.title})
    db.dailyAnalysisDao().save(DailyAnalysisEntry(
     dayKey=dayKey,
