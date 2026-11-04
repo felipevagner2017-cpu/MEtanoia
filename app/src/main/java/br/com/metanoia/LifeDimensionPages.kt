@@ -266,6 +266,14 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
             )
         }
         item {
+            JourneyProgressCard(
+                totalRecords = entries.size,
+                latestDate = entries.maxByOrNull { it.createdAt }?.dayKey.orEmpty(),
+                title = "ACOMPANHAMENTO MATRIMONIAL",
+                description = "A evolução é observada pelas atitudes registradas, não por suposições sobre os sentimentos de Ingrid."
+            )
+        }
+        item {
             Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
@@ -331,6 +339,14 @@ private fun DimensionRecordPage(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { DimensionHero(eyebrow, title, description) }
+        item {
+            JourneyProgressCard(
+                totalRecords = entries.size,
+                latestDate = entries.maxByOrNull { it.createdAt }?.dayKey.orEmpty(),
+                title = if (eyebrow.contains("03")) "EVOLUÇÃO PROFISSIONAL" else "JORNADA DE DESENVOLVIMENTO",
+                description = "Acompanhe os registros, decisões, aprendizados e próximos passos documentados."
+            )
+        }
         if (focusAreas.isNotEmpty()) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
@@ -370,16 +386,47 @@ private fun DimensionHero(eyebrow: String, title: String, description: String) {
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = VioletPrimary)
     ) {
-        Column(
+        Box(
             Modifier.fillMaxWidth()
-                .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSurface)))
-                .padding(20.dp),
+                .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSecondary)))
+        ) {
+        Text(
+            "M",
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 2.dp),
+            color = GoldBright.copy(alpha = .09f),
+            fontSize = 112.sp,
+            fontWeight = FontWeight.Black
+        )
+        Column(
+            Modifier.fillMaxWidth().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(eyebrow, color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
             Text(title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(description, color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
             Box(Modifier.width(38.dp).height(3.dp).background(GoldChampagne, CircleShape))
+        }
+        }
+    }
+}
+
+@Composable
+private fun JourneyProgressCard(totalRecords: Int, latestDate: String, title: String, description: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = VioletSurface),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+            Text("$totalRecords registro(s) documentado(s)", color = Ivory, style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (latestDate.isBlank()) "O acompanhamento começa quando o primeiro registro for salvo."
+                else "Registro mais recente: $latestDate",
+                color = Ivory.copy(alpha = .9f),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(description, color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
