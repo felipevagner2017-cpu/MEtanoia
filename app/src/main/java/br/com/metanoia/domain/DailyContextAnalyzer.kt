@@ -69,7 +69,7 @@ object DailyContextAnalyzer {
 
         val attention = when {
             explicitError || categories.contains("Culpa ou arrependimento") -> "Há um erro ou sentimento de culpa explicitamente mencionado. Compreenda os fatos, a responsabilidade e possíveis reparações antes de concluir."
-            categories.contains("Relacionamento conjugal") -> "O vínculo conjugal merece escuta, clareza e responsabilidade mútua. Este registro não permite presumir o que Ingrid sente nem decidir quem está certo."
+            categories.contains("Relacionamento conjugal") -> "O vínculo conjugal merece escuta, clareza e responsabilidade mútua. Este registro não permite presumir o que Ingrid sente nem atribuir culpa sem compreender os fatos."
             categories.contains("Dificuldade financeira") -> "A preocupação financeira merece separar valores, vencimentos, necessidades essenciais e alternativas possíveis, sem culpa ou promessas fáceis."
             categories.contains("Questão profissional") -> "A situação profissional pode ser organizada em fatos, influência possível, recursos disponíveis e uma próxima decisão."
             categories.contains("Expressão emocional") -> "O sofrimento relatado merece acolhimento e escuta. Ele não é, por si só, evidência de falha espiritual."
@@ -104,7 +104,7 @@ object DailyContextAnalyzer {
             else -> "Para compreender melhor, o que mais pesou para você hoje e que tipo de apoio ou direção está buscando?"
         }
         val next = when {
-            explicitError -> "Descreva o fato sem justificativas precipitadas. Depois identifique uma reparação possível, respeitando a segurança e os limites de todos."
+            explicitError -> "Descreva o fato sem justificativas precipitadas. Depois identifique como reparar o dano, respeitando a segurança e os limites de todos."
             categories.contains("Relacionamento conjugal") -> "Escolha um momento tranquilo para ouvir sem interromper. Compartilhe sua experiência em primeira pessoa e pergunte qual atitude prática pode fortalecer a parceria."
             categories.contains("Dificuldade financeira") -> "Registre um valor, um vencimento e a prioridade correspondente. Escolha uma ação verificável para organizar essa pendência."
             categories.contains("Questão profissional") -> "Defina o resultado desejado, o obstáculo sob seu controle e uma ação de até 30 minutos com prazo."
