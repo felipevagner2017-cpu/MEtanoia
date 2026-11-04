@@ -31,7 +31,7 @@ jobs:
         run: gradle testDebugUnitTest
       - name: Package complete source
         run: |
-          git archive --format=zip --output=MEtonoia-codigo-fonte.zip HEAD
+          git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
           cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtonoia-Android.apk
       - name: Upload source code
         uses: actions/upload-artifact@v4
