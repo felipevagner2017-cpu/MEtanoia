@@ -272,7 +272,7 @@ function buildAiContext(){
  }
  records=records.slice(0,12).map(x=>({date:new Date(x.at).toLocaleDateString("pt-BR"),dimension:area(x.dimension),title:x.title||"",content:String(x.body||"").slice(0,1100),checkin:x.checkin||{}}));
  const now=today();
- const agenda=db.items.filter(x=>!x.date||x.date>=now).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,10).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto"}));
+ const agenda=db.items.filter(x=>(!allowed||allowed.includes(area(x.dimension)))&&(!x.date||x.date>=now)).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,10).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto"}));
  return JSON.stringify({registros:records,agenda},null,2).slice(0,12000);
 }
 function renderAiConversation(){
