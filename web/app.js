@@ -58,7 +58,7 @@ function wordContent(a){
  const body=match?'<div class="eyebrow">Tema identificado nos seus registros</div><h3>'+esc(match.name)+'</h3><p>'+esc(match.advice)+'</p><div class="goldtext">'+esc(match.ref)+'</div><p><b>Próximo passo:</b> '+esc(match.step)+'</p>':'<div class="eyebrow">Ensinamento bíblico</div><div class="goldtext">'+esc(g.ref)+'</div><p>'+esc(g.principle)+'</p><p><b>Examine:</b> '+esc(g.reflect)+'</p><p><b>Prática:</b> '+esc(g.action)+'</p>';
  return '<article class="reading-page"><div class="eyebrow">Item 0'+(wordOrder.indexOf(a)+1)+' · '+(a==="Espiritual"?"Devoção a Deus":a)+'</div><h2>'+(a==="Espiritual"?"Devoção a Deus":a)+'</h2><div class="reading-topic"><span class="muted">Ponto de partida dos seus registros</span><p>'+esc(topic)+'</p></div>'+body+'<p class="reading-note">Leia a passagem no contexto. A orientação considera o que você registrou e não substitui discernimento, cuidado profissional ou acompanhamento pastoral.</p></article>';
 }
-let activeWordIndex=0;
+let activeWordIndex=null;
 const wordChallenges={
  "Espiritual":"Separe 15 minutos sem distrações. Leia a passagem indicada, anote uma verdade sobre Deus e pratique hoje uma orientação que ela apresenta.",
  "Matrimonial":"Tome uma iniciativa concreta de cuidado: escute sem interromper, reconheça algo que precisa reparar ou demonstre gratidão de forma específica.",
