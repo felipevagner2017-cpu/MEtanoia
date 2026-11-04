@@ -300,7 +300,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
     }
     Row(Modifier.fillMaxWidth()) {
-     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color=Color.Gray,style=MaterialTheme.typography.labelSmall) } }
+     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall) } }
     }
     cells.chunked(7).forEach { week->
      Row(Modifier.fillMaxWidth()) {
@@ -322,7 +322,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
     }
     Row(Modifier.fillMaxWidth().padding(top=6.dp),horizontalArrangement=Arrangement.SpaceBetween) {
-     Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+     Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
      Text("${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
     }
    }
@@ -334,7 +334,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    }
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
   }
-  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Nova tarefa, hábito ou compromisso")},singleLine=true)
     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
@@ -352,7 +352,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
       }
-      Text("As próximas ocorrências serão organizadas automaticamente.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+      Text("As próximas ocorrências serão organizadas automaticamente.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
      }
     }
     Box {
@@ -373,29 +373,29 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      vm.addAgenda(title,kind,dimension,scheduled,reminder,recurrenceFrequency?.name)
      title=""
      reminder=true
-    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
+    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor = VioletPrimary)) {
      Text("Adicionar em ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
     }
    }
   }
   if(selectedItems.isEmpty()) {
    Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
-    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color=Color.Gray,style=MaterialTheme.typography.bodyMedium)
+    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodyMedium)
    }
   } else {
    LazyColumn(Modifier.weight(1f).padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     items(selectedItems,key={it.id}) { item->
-     Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+     Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
        Column(Modifier.weight(1f)) {
         Text(item.title,color=Navy,fontWeight=FontWeight.SemiBold)
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
-        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
        }
        Column(horizontalAlignment=Alignment.End) {
         TextButton(onClick={editingItem=item}) { Text("Editar",color=Gold) }
-        TextButton(onClick={vm.delete(item)}) { Text("Excluir",color=Color.Gray) }
+        TextButton(onClick={vm.delete(item)}) { Text("Excluir",color = Ivory.copy(alpha = .78f)) }
        }
       }
      }
@@ -454,7 +454,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     onSave(item.copy(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,reminderAt=reminderAt))
    }) { Text("Salvar alterações",color=Gold) }
   },
-  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color=Color.Gray) }}
+  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color = Ivory.copy(alpha = .78f)) }}
  )
 }
 
@@ -474,8 +474,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
  Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
   Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
-  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color=Color.Gray)
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color = Ivory.copy(alpha = .78f))
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("LEMBRETES DIÁRIOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("07:00 · Planeje seu dia",d7,7),Triple("12:00 · Confira sua agenda",d12,12),Triple("18:00 · Organize o restante",d18,18)).forEach { row ->
@@ -491,7 +491,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("ALARMES DE COMPROMISSOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("2 horas antes",l120,120),Triple("1 hora antes",l60,60),Triple("30 minutos antes",l30,30)).forEach { row ->
@@ -506,7 +506,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     Text("TOQUES",color=Gold,fontWeight=FontWeight.Bold)
     Text("Som diário: "+when(dailySound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
@@ -523,7 +523,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
      OutlinedButton(onClick={ val uri=when(eventSound){NotificationPreferences.SILENT_SOUND->null;NotificationPreferences.SYSTEM_SOUND->RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);else->Uri.parse(eventSound)}; if(uri!=null) RingtoneManager.getRingtone(context,uri)?.play() }){Text("Testar")}
     }
-    Text("O volume é controlado pelos botões e configurações de som do Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+    Text("O volume é controlado pelos botões e configurações de som do Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
    }
   }
   if(!exactAllowed && Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
@@ -535,9 +535,9 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   } else {
-   Text("Alarmes exatos permitidos neste aparelho.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+   Text("Alarmes exatos permitidos neste aparelho.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
   }
-  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
  }
 }
 
@@ -562,7 +562,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  }
  Column(Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=12.dp)) {
   Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=violet,fontWeight=FontWeight.Bold)
-  Text("Um único relato para compreender o dia por inteiro.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  Text("Um único relato para compreender o dia por inteiro.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=violet)) {
    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
     Text("DIÁRIO DE HOJE",color=gold,fontWeight=FontWeight.Bold)
@@ -623,20 +623,20 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
      Text("Próximo passo",color=violet,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.nextStep,color=violet)
-     Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+     Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
     }
    }
   }
   if(todayAgenda.isNotEmpty()) {
    Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=violet,fontWeight=FontWeight.SemiBold)
    todayAgenda.sortedBy{it.scheduledAt}.forEach { item->
-    Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+    Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
    }
   }
   Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=violet,fontWeight=FontWeight.Bold)
   LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
    items(entries.filter{it.dayKey!=todayKey},key={it.id}) { entry->
-    Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+    Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
      Column(Modifier.padding(12.dp)) {
       Text(if(entry.dayKey.isBlank()) formatDate(entry.createdAt) else entry.dayKey,color=gold,fontWeight=FontWeight.Bold)
       Text(entry.content,color=violet,maxLines=5)
@@ -663,13 +663,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   Text("Observe sua caminhada sem transformar registros em julgamento.")
   Row { ReviewPeriod.entries.forEach { v->FilterChip(period==v,{period=v},label={Text(if(v==ReviewPeriod.WEEKLY) "Semanal" else "Mensal")}) } }
   OutlinedTextField(body,{body=it},Modifier.fillMaxWidth().heightIn(min=120.dp),label={Text("O que aprendi? O que merece atenção? Qual será meu próximo passo?")})
-  Button(onClick={vm.addReview(period,body).also{body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Salvar revisão") }
+  Button(onClick={vm.addReview(period,body).also{body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor = VioletPrimary)) { Text("Salvar revisão") }
   val periodEntries=entries.filter { it.period==period }.sortedByDescending { it.periodStart }
   if(periodEntries.size>=2) {
-   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
     Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
      Text("Comparação com a revisão anterior",color=Navy,fontWeight=FontWeight.Bold)
-     Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+     Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
      Text("Mais recente · "+formatDate(periodEntries[0].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
      Text(periodEntries[0].reflection,color=Navy)
      Divider(color=Paper)
@@ -678,7 +678,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=Navy,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
   } } }
  }
