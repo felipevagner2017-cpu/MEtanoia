@@ -1,5 +1,5 @@
-const CACHE="metonoia-shell-v21";
-const ASSETS=["/","/index.html","/app.js?v=20261104-21","/manifest.webmanifest","/icons/metonoia.svg","/icons/ingrid-avatar.svg"];
+const CACHE="metonoia-shell-v22";
+const ASSETS=["/","/index.html","/app.js?v=20261104-22","/manifest.webmanifest","/icons/metonoia.svg","/icons/ingrid-avatar.svg"];
 self.addEventListener("install",event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
