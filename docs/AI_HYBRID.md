@@ -16,7 +16,9 @@
 - `POST /api/auth/logout`: revogação da sessão atual.
 - `GET /api/devices/list` e `DELETE /api/devices/{id}`: gerenciamento de dispositivos.
 - `POST /api/sync/push`: lote de até 50 operações, idempotência por operationId e controle otimista de revisão.
-- `GET /api/sync/pull?since={timestamp}`: busca incremental de alterações e tombstones.
+- `GET /api/sync/pull?since={timestamp}&afterId={recordId}`: busca incremental paginada de alterações e tombstones, com cursor estável.
+- `POST /api/backups/create`, `GET /api/backups/list`, `GET /api/backups/{id}` e `DELETE /api/backups/{id}`: backups cifrados, verificação de integridade e recuperação.
+- `GET /api/consents/list`, `POST /api/consents/grant` e `POST /api/consents/revoke`: registro de consentimento concedido e revogável pelo participante.
 - `POST /api/ai/chat`: exige sessão e aplica limite diário.
 
 ## Provisionamento ainda necessário
