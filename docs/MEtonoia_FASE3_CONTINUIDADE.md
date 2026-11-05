@@ -52,9 +52,19 @@ Princípios da migration:
 
 O Wrangler dry-run no CI foi aprovado: leu 10 arquivos de `web/`, empacotou Worker de 6,38 KiB e reconheceu bindings AI e ASSETS. Isso valida configuração local do Wrangler, não autenticação nem deploy.
 
-Workers Builds check para o SHA `0eb5f3c` falhou com build ID `acb6fba7-4e02-4a40-991d-873faabe8eba`. O check do GitHub fornece apenas o ID/link, sem logs de erro. O painel Cloudflare autenticado não está acessível pela integração atual; não é possível afirmar a causa. O Worker name `metanoia` coincide com `wrangler.jsonc` e o arquivo está na raiz, eliminando duas causas comuns, mas não confirma build settings, token ou preview command.
+Foi adicionado um diagnóstico de leitura à CI usando os secrets já configurados no GitHub. Resultado real em 05/11/2026:
+- O secret de API Token e o Account ID existem e são aceitos para listar Workers (HTTP 200).
+- A conta contém três Workers: `igrejaparacidade`, `metanoia` (tag `641780bf8f00438e9772d7481d53b6d4`) e `metonoia` (tag `91b542bb719049e39309be258c1122ce`). Portanto, há dois Workers com grafias distintas; nenhum foi excluído ou alterado.
+- Listagem de Worker Domains respondeu HTTP 200, sem domínios customizados retornados.
+- A API de builds respondeu HTTP 403 para os dois Workers e para os builds conhecidos (`acb6fba7-4e02-4a40-991d-873faabe8eba`, `99a49e20-ae4d-424d-8bb2-2a328fbd31fc)). A credencial atual não tem permissão Workers CI Read.
+- A API D1 respondeu HTTP 401; a credencial não possui acesso D1 suficiente para inventariar/provisionar banco.
+- O token atual, portanto, permite inventário de scripts, mas não permite obter os logs de build nem consultar bancos D1.
 
-Link dos logs: https://dash.cloudflare.com/69cf119d00a74c4fe5cd6960d2d9e5f9/workers/services/view/metanoia/production/builds/acb6fba7-4e02-4a40-991d-873faabe8eba
+A CI foi preparada para consultar também o subdomínio workers.dev da conta. O domínio oficial ainda não foi identificado com evidência suficiente; não deduzir apenas pela grafia do Worker.
+
+**Permissões que faltam para concluir a auditoria e infraestrutura:** atualizar o secret GitHub `CLOUDFLARE_API_TOKEN` com Workers CI Read, D1 Read e, para provisionar o banco, D1 Edit. Para corrigir as configurações Workers Builds, também é necessária Workers Builds Configuration Edit. Manter Workers Scripts Edit para publicação. Não enviar token pelo chat; atualizar o secret diretamente no GitHub.
+
+Link do build que falhou: https://dash.cloudflare.com/69cf119d00a74c4fe5cd6960d2d9e5f9/workers/services/view/metanoia/production/builds/acb6fba7-4e02-4a40-991d-873faabe8eba
 
 ## Bloqueios e limites
 
