@@ -34,7 +34,7 @@ class AccountCryptoInstrumentedTest {
         assertArrayEquals(bytes(64, 32), webKey)
         val webPlain = android.decryptRecord(
             "interop-user-pwa", "record-pwa-1", "MATRIMONIAL", "journal", webKey,
-            "v1.YGFiY2RlZmdoaWpr70dncWJXKsJmoRpEbOc4ZC9CjzFHadAua1qq2s6wc5QAgYI+OqW7+8eQxB+X3YwgYxmg6EHoBNKru5I="
+            "v1.YWJjZGVmZ2hpamtsI0w9uzTCk08vSfnCywtXbEmIGBiQEalSTO+70D1fvf0latMiNHx6XiOUBnn+m4xTg4dtXNMxPObIKzA="
         )
         assertArrayEquals("Conteúdo criado na PWA e aberto no Android".toByteArray(Charsets.UTF_8), webPlain)
     }
