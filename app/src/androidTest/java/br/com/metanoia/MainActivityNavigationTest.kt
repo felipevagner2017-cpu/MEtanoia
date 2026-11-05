@@ -28,6 +28,8 @@ class MainActivityNavigationTest {
         composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())[0]
             .assertIsDisplayed()
             .performClick()
+        composeRule.mainClock.advanceTimeBy(1_000)
+        composeRule.waitForIdle()
     }
 
     private fun assertPageVisible(tab: String, expected: String) {

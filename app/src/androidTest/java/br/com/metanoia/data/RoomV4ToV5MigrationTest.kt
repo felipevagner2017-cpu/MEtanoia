@@ -43,7 +43,7 @@ class RoomV4ToV5MigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_4_5)
+            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6)
             .build()
         try {
             assertEquals("Compromisso legado", migrated.agendaDao().findById(41L)?.title)
@@ -54,10 +54,10 @@ class RoomV4ToV5MigrationTest {
             assertEquals("v1.ciphertext", migrated.syncOutboxDao().historyForRecord("legacy-record").single().payloadCiphertext)
 
             val db = migrated.openHelper.readableDatabase
-            assertEquals(5, db.version)
+            assertEquals(6, db.version)
             val expectedTables = setOf(
                 "agenda_items", "journal_entries", "review_entries", "confession_entries",
-                "daily_analysis", "sync_outbox", "sync_nonce_counters", "android_metadata", "room_master_table"
+                "daily_analysis", "sync_outbox", "sync_nonce_counters", "sync_record_metadata", "sync_cursors", "sync_remote_records", "android_metadata", "room_master_table"
             )
             assertTrue(tableNames(db).containsAll(expectedTables))
             assertEquals(1, rowCount(db, "agenda_items"))
@@ -67,6 +67,9 @@ class RoomV4ToV5MigrationTest {
             assertEquals(1, rowCount(db, "daily_analysis"))
             assertEquals(1, rowCount(db, "sync_outbox"))
             assertEquals(0, rowCount(db, "sync_nonce_counters"))
+            assertEquals(5, rowCount(db, "sync_record_metadata"))
+            assertEquals(0, rowCount(db, "sync_cursors"))
+            assertEquals(0, rowCount(db, "sync_remote_records"))
 
             val nonceColumns = mutableListOf<Triple<String, String, Int>>()
             db.query("PRAGMA table_info(sync_nonce_counters)").use { cursor ->

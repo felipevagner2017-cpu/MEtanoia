@@ -47,6 +47,12 @@ class RoomV5ToV6MigrationTest {
    assertEquals(5,meta.count()); assertEquals("legacy-agenda_items-501",meta.find("agenda_items","501")?.recordId)
    assertEquals("DAILY",meta.find("agenda_items","501")?.dimension); assertEquals("local",meta.find("agenda_items","501")?.syncState)
    assertEquals(0,meta.find("agenda_items","501")?.encryptionVersion)
+   assertEquals(1,db.syncRemoteRecordDao().insertIfAbsent(SyncRemoteRecord(recordId="remote-v5-test",dimension="DAILY",recordType="journal",payloadCiphertext="v2.cipher",encryptionVersion=2,revision=3,clientUpdatedAt=1793890000000,serverUpdatedAt=1793890001000,deletedAt=null,sourceDeviceId="device-test")))
+   assertEquals("remote-v5-test",db.syncRemoteRecordDao().find("remote-v5-test")?.recordId)
+   assertEquals(1,db.syncRemoteRecordDao().pending().size)
+   db.syncCursorDao().save(SyncCursorEntity(accountId="account-test",deviceId="device-test",serverUpdatedAt=1793890001000,afterRecordId="remote-v5-test"))
+   assertEquals("remote-v5-test",db.syncCursorDao().get("account-test","device-test")?.afterRecordId)
+   assertEquals(1,db.syncRecordMetadataDao().pendingOrConflicted().size)
    val sqlite=db.openHelper.readableDatabase
    sqlite.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
    sqlite.query("PRAGMA integrity_check").use { assertTrue(it.moveToFirst()); assertEquals("ok",it.getString(0)) }
