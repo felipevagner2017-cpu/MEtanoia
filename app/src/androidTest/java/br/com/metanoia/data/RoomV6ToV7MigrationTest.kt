@@ -74,7 +74,30 @@ class RoomV6ToV7MigrationTest {
             sqlite.query("PRAGMA index_list(sync_remote_records)").use {
                 while(it.moveToNext()) indexes += it.getString(it.getColumnIndexOrThrow("name"))
             }
-            assertTrue(indexes.contains("index_sync_remote_records_accountId_serverUpdatedAt_recordId"))
+            val targetIndex = "index_sync_remote_records_accountId_serverUpdatedAt_recordId"
+            assertTrue(indexes.contains(targetIndex))
+            val indexColumns = mutableListOf<Pair<String, Int>>()
+            sqlite.query("PRAGMA index_info('$targetIndex')").use { cursor ->
+                while (cursor.moveToNext()) {
+                    indexColumns += cursor.getString(cursor.getColumnIndexOrThrow("name")) to
+                        cursor.getInt(cursor.getColumnIndexOrThrow("seqno"))
+                }
+            }
+            assertEquals(
+                listOf("accountId" to 0, "serverUpdatedAt" to 1, "recordId" to 2),
+                indexColumns
+            )
+
+            // The delete predicate must include accountId: deleting A cannot delete B.
+            assertEquals(1, dao.delete("account-A", "same-record"))
+            assertNull(dao.find("account-A", "same-record"))
+            assertEquals("ciphertext-B", dao.find("account-B", "same-record")?.payloadCiphertext)
+            assertEquals(1, dao.insertIfAbsent(accountA))
+            assertEquals("ciphertext-A", dao.find("account-A", "same-record")?.payloadCiphertext)
+
+            // A quarantined legacy row is never visible in either authenticated account scope.
+            assertFalse(dao.pending("account-A").any { it.accountId.isBlank() })
+            assertFalse(dao.pending("account-B").any { it.accountId.isBlank() })
             sqlite.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
             sqlite.query("PRAGMA integrity_check").use {
                 assertTrue(it.moveToFirst())

@@ -24,4 +24,5 @@ data class SyncRemoteRecord(
  @Query("UPDATE sync_remote_records SET status='applied',lastError=NULL WHERE accountId=:accountId AND recordId=:recordId AND revision=:revision") suspend fun markApplied(accountId:String,recordId:String,revision:Long):Int
  @Query("UPDATE sync_remote_records SET status='conflict',lastError=:reason WHERE accountId=:accountId AND recordId=:recordId") suspend fun markConflict(accountId:String,recordId:String,reason:String):Int
  @Query("SELECT * FROM sync_remote_records WHERE accountId=:accountId AND recordId=:recordId LIMIT 1") suspend fun find(accountId:String,recordId:String):SyncRemoteRecord?
+ @Query("DELETE FROM sync_remote_records WHERE accountId=:accountId AND recordId=:recordId") suspend fun delete(accountId:String,recordId:String):Int
 }
