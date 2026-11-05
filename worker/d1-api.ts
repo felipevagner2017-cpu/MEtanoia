@@ -43,7 +43,7 @@ export async function authenticate(request: Request, db: D1Database) {
   if (!token || token.length > 256) return null;
   const tokenHash = await sha256(token);
   const row = await db.prepare(
-    "SELECT s.id AS session_id, s.user_id, s.device_id, s.expires_at, u.status FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL LIMIT 1"
+    "SELECT s.id AS session_id, s.user_id, s.device_id, s.expires_at, u.status FROM sessions s JOIN users u ON u.id=s.user_id JOIN devices d ON d.id=s.device_id AND d.user_id=s.user_id AND d.revoked_at IS NULL WHERE s.token_hash=? AND s.revoked_at IS NULL LIMIT 1"
   ).bind(tokenHash).first<{ session_id: string; user_id: string; device_id: string | null; expires_at: number; status: string }>();
   if (!row || row.status !== "active" || row.expires_at <= Date.now()) return null;
   return row;
@@ -108,6 +108,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
 
     const session = await authenticate(request, db);
     if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, origin);
+    if (session.device_id) await db.prepare("UPDATE devices SET last_seen_at=? WHERE id=? AND user_id=? AND revoked_at IS NULL").bind(Date.now(),session.device_id,session.user_id).run();
 
     if (url.pathname === "/api/auth/logout" && request.method === "POST") {
       await db.prepare("UPDATE sessions SET revoked_at=? WHERE id=?").bind(Date.now(),session.session_id).run();
