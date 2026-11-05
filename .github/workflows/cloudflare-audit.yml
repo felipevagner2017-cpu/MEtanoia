@@ -1,8 +1,6 @@
 name: Cloudflare read-only audit
 
 on:
-  push:
-    branches: [work/phase1-integrated-main]
   workflow_dispatch:
 
 permissions:
