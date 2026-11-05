@@ -1,7 +1,11 @@
+import { handleD1Api } from "./d1-api";
+
 interface Env {
   AI: { run(model: string, input: Record<string, unknown>): Promise<unknown> };
   ASSETS: { fetch(request: Request): Promise<Response> };
   METANOIA_AI_TOKEN?: string;
+  METANOIA_REGISTRATION_KEY?: string;
+  DB?: D1Database;
 }
 
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
@@ -45,6 +49,8 @@ export default {
 
     const origin = request.headers.get("Origin") || undefined;
     if (origin && !ALLOWED_ORIGINS.has(origin)) return json({ error: "Origem não autorizada." }, 403);
+    const d1Response = await handleD1Api(request, env, url, origin);
+    if (d1Response) return d1Response;
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": origin || "", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" } });
     if (url.pathname !== "/api/ai/chat") return json({ error: "Rota não encontrada." }, 404, origin);
     if (request.method !== "POST") return json({ error: "Método não permitido." }, 405, origin);
