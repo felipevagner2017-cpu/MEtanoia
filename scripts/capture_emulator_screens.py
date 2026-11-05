@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Captures real screens from the running Android emulator through adb/UIAutomator."""
-import os, re, subprocess, time, xml.etree.ElementTree as ET
+"""Collects real emulator screenshots captured by the Compose instrumented test."""
+import os
+import subprocess
+import time
 
 OUT = "screenshots"
 PACKAGE = "br.com.metanoia"
 ACTIVITY = f"{PACKAGE}/.MainActivity"
+APK = "app/build/outputs/apk/debug/app-debug.apk"
 os.makedirs(OUT, exist_ok=True)
 
-def adb(*args, binary=False, check=True, timeout=20):
-    try:
-        p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(f"Timeout de {timeout}s em adb {' '.join(args)}") from exc
+def adb(*args, binary=False, check=True, timeout=30):
+    p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
     if check and p.returncode:
         raise RuntimeError(
             f"adb {' '.join(args)} falhou ({p.returncode}): "
@@ -20,79 +20,52 @@ def adb(*args, binary=False, check=True, timeout=20):
         )
     return p.stdout if binary else p.stdout.decode("utf-8", errors="replace")
 
-def dump_ui():
-    print("Atualizando árvore UIAutomator...", flush=True)
-    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", timeout=15)
-    return ET.fromstring(adb("exec-out", "cat", "/sdcard/window.xml"))
-
-def visible_node(root, label):
-    for node in root.iter("node"):
-        if node.attrib.get("text", "").strip() == label or node.attrib.get("content-desc", "").strip() == label:
-            m = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
-            if m:
-                return node, tuple(map(int, m.groups()))
-    return None, None
-
 def capture(name):
-    print("Capturando:", name, flush=True)
     with open(os.path.join(OUT, name + ".png"), "wb") as f:
         f.write(adb("exec-out", "screencap", "-p", binary=True))
 
-def find_and_tap(label):
-    print("Navegando para:", label, flush=True)
-    width, height = map(int, re.search(r"(\d+)x(\d+)", adb("shell", "wm", "size")).groups())
-    for attempt in range(4):
-        root = dump_ui()
-        _, bounds = visible_node(root, label)
-        if bounds:
-            x1, y1, x2, y2 = bounds
-            if x1 >= 0 and y1 >= 0 and x2 <= width and y2 <= height:
-                adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
-                time.sleep(2)
-                return
-        _, nav_bounds = visible_node(root, "Devoção")
-        if not nav_bounds:
-            _, nav_bounds = visible_node(root, "Painel")
-        if not nav_bounds:
-            raise RuntimeError("Não foi possível localizar a barra de navegação para revelar: " + label)
-        _, y1, _, y2 = nav_bounds
-        y = (y1 + y2) // 2
-        adb("shell", "input", "swipe", str(width - 40), str(y), "40", str(y), "350")
-        time.sleep(0.5)
-    raise RuntimeError("Não foi possível navegar para: " + label)
+def pull_test_capture(name):
+    remote = f"/sdcard/Download/MEtanoia-{name}.png"
+    local = os.path.join(OUT, name + ".png")
+    adb("pull", remote, local, timeout=45)
+    if not os.path.isfile(local) or os.path.getsize(local) < 1024:
+        raise RuntimeError("Captura instrumentada ausente ou inválida: " + remote)
 
+# connectedDebugAndroidTest may remove the target package after the test run.
+# Reinstall only on this disposable CI emulator; never on the user's phone.
 installed = adb("shell", "pm", "path", PACKAGE, check=False)
 if "package:" not in installed:
-    apk_path = "app/build/outputs/apk/debug/app-debug.apk"
-    if not os.path.isfile(apk_path):
-        raise RuntimeError(f"APK debug do mesmo commit não encontrado: {apk_path}")
-    print("Pacote ausente após os testes; instalando o APK recém-compilado no emulador:", apk_path, flush=True)
-    adb("install", "-r", apk_path, timeout=90)
+    if not os.path.isfile(APK):
+        raise RuntimeError("APK debug do mesmo commit não encontrado: " + APK)
+    print("Reinstalando APK recém-compilado no emulador para a captura da splash.", flush=True)
+    adb("install", "-r", APK, timeout=90)
     installed = adb("shell", "pm", "path", PACKAGE, check=False)
 if "package:" not in installed:
-    raise RuntimeError(f"Não foi possível confirmar a instalação de {PACKAGE}: {installed}")
+    raise RuntimeError("Não foi possível confirmar a instalação de " + PACKAGE)
 
-print("Pacote encontrado:", installed.strip(), flush=True)
 adb("shell", "am", "force-stop", PACKAGE)
 launch = adb("shell", "am", "start", "-n", ACTIVITY)
-print("Resultado da Activity principal:", launch.strip(), flush=True)
+print("Activity principal:", launch.strip(), flush=True)
 if "Error" in launch or "unable to resolve" in launch.lower():
     raise RuntimeError("Falha ao iniciar a Activity principal: " + launch)
 
 time.sleep(0.2)
 capture("00-splash-transicao")
 time.sleep(5)
-capture("01-dashboard")
 
-for label, name in [
-    ("Devoção", "02-devocao"),
-    ("Matrimônio", "03-matrimonio"),
-    ("Profissional", "04-profissional"),
-    ("Cotidiano", "05-cotidiano"),
+# The Compose instrumented test captures each page while it is displayed.
+# This avoids relying on UIAutomator's incomplete view of Compose semantics.
+for name in [
+    "01-dashboard",
+    "02-devocao",
+    "03-matrimonio",
+    "04-profissional",
+    "05-cotidiano",
+    "06-agenda-marca-dagua",
+    "07-diario",
+    "08-revisoes",
+    "09-alertas",
 ]:
-    find_and_tap(label)
-    capture(name)
+    pull_test_capture(name)
 
-find_and_tap("Agenda")
-capture("06-agenda-marca-dagua")
-print("Capturas reais:", ", ".join(sorted(os.listdir(OUT))), flush=True)
+print("Capturas reais do emulador:", ", ".join(sorted(os.listdir(OUT))), flush=True)
