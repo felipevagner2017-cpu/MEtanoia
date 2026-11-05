@@ -1,6 +1,7 @@
 package br.com.metanoia.security
 
-import android.util.Base64
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -37,6 +38,28 @@ class AccountCryptoInstrumentedTest {
             "v1.YWJjZGVmZ2hpamtsI0w9uzTCk08vSfnCywtXbEmIGBiQEalSTO+70D1fvf0latMiNHx6XiOUBnn+m4xTg4dtXNMxPObIKzA="
         )
         assertArrayEquals("Conteúdo criado na PWA e aberto no Android".toByteArray(Charsets.UTF_8), webPlain)
+    }
+
+    @Test fun accountDekIsWrappedByKeystoreAndSeparatedPerAccount() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val store = AccountKeyStore(context)
+        val a = "keystore-account-a-" + System.nanoTime()
+        val b = "keystore-account-b-" + System.nanoTime()
+        val keyA = ByteArray(32) { (it * 3).toByte() }
+        val keyB = ByteArray(32) { (it * 7).toByte() }
+        try {
+            store.save(a, keyA)
+            store.save(b, keyB)
+            assertArrayEquals(keyA, store.load(a))
+            assertArrayEquals(keyB, store.load(b))
+            assertThrows(Exception::class.java) {
+                val wrong = store.load(a)!!
+                assertArrayEquals(keyB, wrong)
+            }
+        } finally {
+            store.remove(a, deleteKeystoreKey = true)
+            store.remove(b, deleteKeystoreKey = true)
+        }
     }
 
     private fun parseEnvelope(value: String): AccountCrypto.KeyEnvelope {
