@@ -48,6 +48,16 @@ for worker_name in ("metanoia", "metonoia"):
         for b in builds[:8]
     ] if builds else ["- Build history unavailable or empty. Check Workers CI Read."])
 
+for worker_name in ("metanoia", "metonoia"):
+    status, data = get(f"/accounts/{account}/workers/scripts/{worker_name}/settings")
+    settings = data.get("result", {}) if status == 200 and data.get("success") else {}
+    bindings = settings.get("bindings", [])
+    add(f"Bindings for {worker_name} (HTTP {status})", [
+        f"- {b.get('type', 'unknown')} binding {b.get('name', 'unnamed')}" +
+        (f" — database {b.get('database_name', b.get('id', 'not returned'))}" if b.get("type", "").lower() == "d1" else "")
+        for b in bindings
+    ] if bindings else ["- No bindings returned or Worker settings are not accessible."])
+
 status, data = get(f"/accounts/{account}/workers/domains")
 domains = data.get("result", []) if status == 200 and data.get("success") else []
 add(f"Worker domain mapping (HTTP {status})", [
