@@ -33,3 +33,26 @@ await assert.rejects(() => api.openEnvelope("interop-user-01","wrong encryption 
 await assert.rejects(() => api.decryptRecord("another-account","record-interop-1","DEVOTION","journal",androidKey,androidRecord));
 await assert.rejects(() => api.decryptRecord("interop-user-01","record-other","DEVOTION","journal",androidKey,androidRecord));
 console.log("PASS: fixed Android→PWA and PWA→Android AES-256-GCM/PBKDF2 vectors; account and record AAD isolation.");
+
+const v2Dek = Uint8Array.from({length:32},(_,i)=>i);
+const v2Plain = "Conteúdo compartilhado Android/PWA — vetor v2";
+const v2Payload = await api.encryptRecordV2(
+  "interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","journal",
+  v2Dek,42n,v2Plain
+);
+assert.equal(v2Payload,"v2.AAAAAAAAACqcwwxL0VXPNJ4sfTkb+YRGhVourP2v6px5/LWgS4rMDmXu+zpsLHeQe/jyU9fnjsmwA3uglaviKRnXZW7SrhQe");
+assert.equal(new TextDecoder().decode(await api.decryptRecordV2(
+  "interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","journal",v2Dek,v2Payload
+)),v2Plain);
+for (const metadata of [
+  ["other-account","device-android-01","record","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","other-device","record","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","ai-history","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","record","other-record","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","record","record-v2-01","MATRIMONIAL","journal"],
+  ["interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","review"]
+]) {
+  await assert.rejects(() => api.decryptRecordV2(...metadata,v2Dek,v2Payload));
+}
+console.log("PASS: v2 RFC 5869 HKDF-SHA-256/AES-256-GCM deterministic vector and account/device/purpose/record metadata authentication.");
+

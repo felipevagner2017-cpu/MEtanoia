@@ -41,5 +41,58 @@ async function decryptRecord(userId,id,dimension,type,dataKey,value){
  const key=await crypto.subtle.importKey("raw",dataKey,{name:"AES-GCM"},false,["decrypt"]);
  return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv,additionalData:recordAad(userId,id,dimension,type),tagLength:128},key,cipher));
 }
-window.MEtanoiaAccountCrypto=Object.freeze({createEnvelope,openEnvelope,encryptRecord,decryptRecord,version:VERSION,kdfIterations:ITERATIONS});
+
+function encodeFields(...fields){
+ const chunks=[];
+ for(const field of fields){
+  const bytes=typeof field==="string"?enc.encode(field):field;
+  const length=new Uint8Array(4);new DataView(length.buffer).setUint32(0,bytes.length,false);
+  chunks.push(length,bytes);
+ }
+ const total=chunks.reduce((n,x)=>n+x.length,0),out=new Uint8Array(total);let offset=0;
+ for(const chunk of chunks){out.set(chunk,offset);offset+=chunk.length}
+ return out;
+}
+function counterBytes(value){
+ const counter=typeof value==="bigint"?value:BigInt(value);
+ if(counter<0n||counter>0x7fffffffffffffffn)throw Error("Contador de nonce fora do intervalo suportado.");
+ const out=new Uint8Array(8);new DataView(out.buffer).setBigUint64(0,counter,false);return out;
+}
+async function deriveSharedRecordMaterial(dataKey,accountId,sourceDeviceId,purpose){
+ if(!(dataKey instanceof Uint8Array)||dataKey.length!==KEY_BYTES)throw Error("DEK inválida.");
+ if(!accountId||!sourceDeviceId||!purpose)throw Error("Contexto de derivação incompleto.");
+ const key=await crypto.subtle.importKey("raw",dataKey,"HKDF",false,["deriveBits"]);
+ return new Uint8Array(await crypto.subtle.deriveBits({
+  name:"HKDF",hash:"SHA-256",salt:enc.encode("metonoia-sync-v2-hkdf-salt"),
+  info:encodeFields("metonoia-sync-record-v2",accountId,sourceDeviceId,purpose)
+ },key,288));
+}
+async function encryptRecordV2(accountId,sourceDeviceId,purpose,id,dimension,type,dataKey,counter,plaintext){
+ if(!id||!dimension||!type)throw Error("Metadados do registro incompletos.");
+ const count=counterBytes(counter),material=await deriveSharedRecordMaterial(dataKey,accountId,sourceDeviceId,purpose);
+ try{
+  const nonce=new Uint8Array(12);nonce.set(material.slice(32,36));nonce.set(count,4);
+  const key=await crypto.subtle.importKey("raw",material.slice(0,32),{name:"AES-GCM"},false,["encrypt"]);
+  const bytes=plaintext instanceof Uint8Array?plaintext:enc.encode(String(plaintext));
+  if(!bytes.length)throw Error("Payload vazio.");
+  const aad=encodeFields("metonoia-sync-record-v2",accountId,sourceDeviceId,purpose,id,dimension,type,count);
+  const cipher=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:nonce,additionalData:aad,tagLength:128},key,bytes));
+  const packed=new Uint8Array(8+cipher.length);packed.set(count);packed.set(cipher,8);
+  return "v2."+b64(packed);
+ }finally{material.fill(0)}
+}
+async function decryptRecordV2(accountId,sourceDeviceId,purpose,id,dimension,type,dataKey,value){
+ if(!value||!value.startsWith("v2."))throw Error("Registro v2 inválido.");
+ const packed=unb64(value.slice(3));if(packed.length<=24)throw Error("Registro v2 inválido.");
+ const count=packed.slice(0,8),counter=new DataView(count.buffer,count.byteOffset,8).getBigUint64(0,false);
+ if(counter>0x7fffffffffffffffn)throw Error("Contador de nonce fora do intervalo suportado.");
+ const material=await deriveSharedRecordMaterial(dataKey,accountId,sourceDeviceId,purpose);
+ try{
+  const nonce=new Uint8Array(12);nonce.set(material.slice(32,36));nonce.set(count,4);
+  const key=await crypto.subtle.importKey("raw",material.slice(0,32),{name:"AES-GCM"},false,["decrypt"]);
+  const aad=encodeFields("metonoia-sync-record-v2",accountId,sourceDeviceId,purpose,id,dimension,type,count);
+  return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:nonce,additionalData:aad,tagLength:128},key,packed.slice(8)));
+ }finally{material.fill(0)}
+}
+window.MEtanoiaAccountCrypto=Object.freeze({createEnvelope,openEnvelope,encryptRecord,decryptRecord,encryptRecordV2,decryptRecordV2,version:VERSION,kdfIterations:ITERATIONS});
 })();
