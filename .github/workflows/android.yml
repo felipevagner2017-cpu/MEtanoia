@@ -9,7 +9,7 @@ permissions:
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, work/phase1-integrated-main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -65,7 +65,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Publish durable release files
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
