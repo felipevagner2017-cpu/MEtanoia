@@ -2,7 +2,9 @@ package br.com.metanoia
 
 import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -19,10 +21,19 @@ class MainActivityNavigationTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
-    private fun navigateAndAssert(tab: String, expected: String) {
-        composeRule.onNodeWithText(tab, substring = false).assertIsDisplayed().performClick()
+    private fun clickNavigationControl(label: String) {
+        // The same label can also be rendered as a page title/content. Select the
+        // actual clickable navigation control rather than requiring global uniqueness.
+        composeRule.onAllNodesWithText(label, substring = false)
+            .filter(hasClickAction())
+            .onFirst()
+            .assertIsDisplayed()
+            .performClick()
+    }
+
+    private fun assertPageVisible(tab: String, expected: String) {
         try {
-            composeRule.waitUntil(timeoutMillis = 15_000) {
+            composeRule.waitUntil(timeoutMillis = 8_000) {
                 runCatching {
                     composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
                     true
@@ -30,21 +41,32 @@ class MainActivityNavigationTest {
             }
             composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
         } catch (failure: Throwable) {
-            // Keep the real UI hierarchy in CI logs to distinguish a navigation defect
-            // from an incorrect expected label or an emulator timing issue.
             composeRule.onRoot().printToLog("METoNOIA_NAV_FAILURE_$tab")
-            throw AssertionError("A aba '$tab' não exibiu o conteúdo esperado '$expected'.", failure)
+            throw AssertionError("A navegação para '$tab' não exibiu '$expected'.", failure)
         }
     }
 
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
-        navigateAndAssert("Devoção", "Devocional / Espiritual")
-        navigateAndAssert("Matrimônio", "Matrimônio / Ingrid")
-        navigateAndAssert("Profissional", "DIMENSÃO 03")
-        navigateAndAssert("Cotidiano", "Minha agenda")
-        navigateAndAssert("Diário", "Diário de hoje")
-        navigateAndAssert("Revisões", "Revisões históricas")
-        navigateAndAssert("Alertas", "Notificações e alarmes")
+        clickNavigationControl("Devoção")
+        assertPageVisible("Devoção", "Devocional / Espiritual")
+
+        clickNavigationControl("Matrimônio")
+        assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
+
+        clickNavigationControl("Profissional")
+        assertPageVisible("Profissional", "DIMENSÃO 03")
+
+        clickNavigationControl("Cotidiano")
+        assertPageVisible("Cotidiano", "Minha agenda")
+
+        clickNavigationControl("Diário")
+        assertPageVisible("Diário", "Diário de hoje")
+
+        clickNavigationControl("Revisões")
+        assertPageVisible("Revisões", "Revisões históricas")
+
+        clickNavigationControl("Alertas")
+        assertPageVisible("Alertas", "Notificações e alarmes")
     }
 }
