@@ -53,6 +53,34 @@ db.execute(
     "INSERT INTO records (user_id,record_id,dimension,record_type,payload_ciphertext,client_updated_at,server_updated_at) "
     "VALUES ('u1','r1','DEVOTION','journal','ciphertext',1,1)"
 )
+# Validate the exact atomic compare-and-swap pattern used by /api/sync/push.
+def apply_sync(operation_id: str, record_id: str, base_revision: int, next_revision: int, now: int):
+    write = db.execute(
+        "INSERT INTO records(user_id,record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at) "
+        "VALUES(?,?,?,'journal','ciphertext',1,?,?,?,NULL) "
+        "ON CONFLICT(user_id,record_id) DO UPDATE SET revision=excluded.revision,client_updated_at=excluded.client_updated_at,server_updated_at=excluded.server_updated_at "
+        "WHERE records.revision=?",
+        ("u1", record_id, "DEVOTION", next_revision, now, now, base_revision),
+    )
+    changed = write.rowcount
+    db.execute(
+        "INSERT INTO sync_operations(user_id,operation_id,device_id,record_id,operation,base_revision,result_revision,status,server_updated_at) "
+        "SELECT ?,?,?,?,?,?,?, 'applied', ? WHERE changes()=1",
+        ("u1", operation_id, "d1", record_id, "upsert", base_revision, next_revision, now),
+    )
+    return changed
+
+if apply_sync("op-first", "atomic-record", 0, 1, 10) != 1:
+    raise SystemExit("Initial atomic sync insert failed")
+if apply_sync("op-stale", "atomic-record", 0, 1, 11) != 0:
+    raise SystemExit("Stale revision was not rejected atomically")
+if db.execute("SELECT COUNT(*) FROM sync_operations WHERE operation_id='op-stale'").fetchone()[0] != 0:
+    raise SystemExit("Rejected stale operation was incorrectly recorded as applied")
+if apply_sync("op-second", "atomic-record", 1, 2, 12) != 1:
+    raise SystemExit("Valid next revision failed")
+if db.execute("SELECT revision FROM records WHERE record_id='atomic-record'").fetchone()[0] != 2:
+    raise SystemExit("Atomic sync revision did not advance correctly")
+
 try:
     db.execute(
         "INSERT INTO records (user_id,record_id,dimension,record_type,payload_ciphertext,client_updated_at,server_updated_at) "
@@ -73,4 +101,4 @@ except sqlite3.IntegrityError:
 else:
     raise SystemExit("Unique email constraint is missing")
 
-print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, idempotent re-application, device-bound sessions, and key constraints.")
+print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, idempotent re-application, device-bound sessions, atomic sync revision checks, and key constraints.")
