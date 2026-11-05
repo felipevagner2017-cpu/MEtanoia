@@ -38,7 +38,7 @@ jobs:
       - name: Test matrimonial vault encryption
         run: node scripts/test_ingrid_vault.mjs
       - name: Validate PWA JavaScript
-        run: node --check web/app.js && node --check web/sw.js
+        run: node --check web/app.js && node --check web/sw.js && node --check web/crypto.js && node scripts/test_account_crypto.mjs
       - name: Validate Cloudflare Worker bundle
         run: |
           npm install --global wrangler
