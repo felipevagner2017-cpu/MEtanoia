@@ -43,8 +43,8 @@ export async function authenticate(request: Request, db: D1Database) {
   if (!token || token.length > 256) return null;
   const tokenHash = await sha256(token);
   const row = await db.prepare(
-    "SELECT s.id AS session_id, s.user_id, s.expires_at, u.status FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL LIMIT 1"
-  ).bind(tokenHash).first<{ session_id: string; user_id: string; expires_at: number; status: string }>();
+    "SELECT s.id AS session_id, s.user_id, s.device_id, s.expires_at, u.status FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL LIMIT 1"
+  ).bind(tokenHash).first<{ session_id: string; user_id: string; device_id: string | null; expires_at: number; status: string }>();
   if (!row || row.status !== "active" || row.expires_at <= Date.now()) return null;
   return row;
 }
@@ -145,7 +145,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       if (!deviceId || !payload || payload.length > 6500000 || recordCount > 100000 || !Number.isSafeInteger(recordCount))
         return json({ error: "Backup inválido ou acima do limite de tamanho." }, 400, origin);
       const device = await db.prepare("SELECT id FROM devices WHERE id=? AND user_id=? AND revoked_at IS NULL").bind(deviceId,session.user_id).first();
-      if (!device) return json({ error: "Dispositivo inválido ou revogado." }, 403, origin);
+      if (!device || deviceId !== session.device_id) return json({ error: "Backup deve ser criado pelo dispositivo autenticado." }, 403, origin);
       const id = crypto.randomUUID(), digest = await sha256(payload), now = Date.now();
       await db.prepare("INSERT INTO backups(id,user_id,device_id,format_version,payload_ciphertext,sha256,record_count,created_at) VALUES(?,?,?,?,?,?,?,?)")
         .bind(id,session.user_id,deviceId,formatVersion,payload,digest,recordCount,now).run();
@@ -200,10 +200,14 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
 
     if (url.pathname === "/api/sync/pull" && request.method === "GET") {
       const since = Math.max(0, Number(url.searchParams.get("since") || 0));
-      const result = await db.prepare("SELECT record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at FROM records WHERE user_id=? AND server_updated_at>? ORDER BY server_updated_at LIMIT 500")
-        .bind(session.user_id,since).all();
+      const afterId = String(url.searchParams.get("afterId") || "");
+      const result = await db.prepare("SELECT record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at FROM records WHERE user_id=? AND (server_updated_at>? OR (server_updated_at=? AND record_id>?)) ORDER BY server_updated_at,record_id LIMIT 501")
+        .bind(session.user_id,since,since,afterId).all();
+      const records = result.results.slice(0,500);
+      const last = records[records.length - 1] as {server_updated_at:number;record_id:string} | undefined;
+      const hasMore = result.results.length > 500;
       await db.prepare("UPDATE sessions SET expires_at=? WHERE id=?").bind(Date.now()+30*86400000,session.session_id).run();
-      return json({ records: result.results, serverTime: Date.now(), hasMore: result.results.length === 500 }, 200, origin);
+      return json({ records, serverTime: Date.now(), hasMore, nextCursor: hasMore && last ? { since: last.server_updated_at, afterId: last.record_id } : null }, 200, origin);
     }
 
     if (url.pathname === "/api/sync/push" && request.method === "POST") {
@@ -225,7 +229,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
           results.push({ operationId, status: "rejected", reason: "invalid_operation" }); continue;
         }
         const device = await db.prepare("SELECT id FROM devices WHERE id=? AND user_id=? AND revoked_at IS NULL").bind(deviceId,session.user_id).first();
-        if (!device) { results.push({ operationId, status: "rejected", reason: "device_revoked" }); continue; }
+        if (!device || deviceId !== session.device_id) { results.push({ operationId, status: "rejected", reason: "device_revoked_or_mismatched" }); continue; }
         const previous = await db.prepare("SELECT status,result_revision FROM sync_operations WHERE user_id=? AND operation_id=?")
           .bind(session.user_id,operationId).first<{status:string;result_revision:number|null}>();
         if (previous) { results.push({ operationId, status: previous.status, revision: previous.result_revision, duplicate: true }); continue; }
