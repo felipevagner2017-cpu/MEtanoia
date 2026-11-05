@@ -3,10 +3,9 @@ package br.com.metanoia.security
 import android.util.Base64
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import javax.crypto.Mac
 
 /** Client-only account crypto matching web/crypto.js byte-for-byte. */
 class AccountCrypto(
@@ -59,9 +58,21 @@ class AccountCrypto(
         return cipher.doFinal(all.copyOfRange(12, all.size))
     }
     private fun derive(passphrase: CharArray, salt: ByteArray, rounds: Int): SecretKeySpec {
-        val spec = PBEKeySpec(passphrase, salt, rounds, 256)
-        return try { SecretKeySpec(SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded, "AES") }
-        finally { spec.clearPassword() }
+        // Explicit UTF-8 PBKDF2 avoids provider-specific PBEKeySpec character conversion
+        // and exactly matches Web Crypto's TextEncoder + PBKDF2 contract.
+        val passwordBytes = String(passphrase).toByteArray(Charsets.UTF_8)
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(passwordBytes, "HmacSHA256"))
+        val block = salt + byteArrayOf(0, 0, 0, 1)
+        var u = mac.doFinal(block)
+        val output = u.copyOf()
+        for (round in 2..rounds) {
+            u = mac.doFinal(u)
+            for (index in output.indices) output[index] = (output[index].toInt() xor u[index].toInt()).toByte()
+        }
+        passwordBytes.fill(0)
+        u.fill(0)
+        return SecretKeySpec(output, "AES")
     }
     private fun recordAad(userId: String, id: String, dimension: String, type: String) =
         "metanoia-record|1|$userId|$id|$dimension|$type".toByteArray(Charsets.UTF_8)
