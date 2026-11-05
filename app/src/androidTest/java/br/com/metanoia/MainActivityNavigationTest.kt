@@ -3,6 +3,7 @@ package br.com.metanoia
 import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -24,8 +25,7 @@ class MainActivityNavigationTest {
     private fun clickNavigationControl(label: String) {
         // The same label can also be rendered as a page title/content. Select the
         // actual clickable navigation control rather than requiring global uniqueness.
-        composeRule.onAllNodesWithText(label, substring = false)
-            .filter(hasClickAction())
+        composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())
             .onFirst()
             .assertIsDisplayed()
             .performClick()
