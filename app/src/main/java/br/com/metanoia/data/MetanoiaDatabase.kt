@@ -21,7 +21,8 @@ class AgendaConverters {
 @Database(
     entities = [
         AgendaItem::class, JournalEntry::class, ReviewEntry::class,
-        ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,\n        SyncNonceCounterEntity::class
+        ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
+        SyncNonceCounterEntity::class
     ],
     version = 5,
     exportSchema = false
@@ -33,7 +34,8 @@ abstract class MetanoiaDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
     abstract fun confessionDao(): ConfessionDao
     abstract fun dailyAnalysisDao(): DailyAnalysisDao
-    abstract fun syncOutboxDao(): SyncOutboxDao\n    abstract fun syncNonceCounterDao(): SyncNonceCounterDao
+    abstract fun syncOutboxDao(): SyncOutboxDao
+    abstract fun syncNonceCounterDao(): SyncNonceCounterDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -125,13 +127,13 @@ abstract class MetanoiaDatabase : RoomDatabase() {
         private val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    \"\"\"CREATE TABLE IF NOT EXISTS sync_nonce_counters (
+                    """CREATE TABLE IF NOT EXISTS sync_nonce_counters (
                         accountId TEXT NOT NULL,
                         deviceId TEXT NOT NULL,
                         purpose TEXT NOT NULL,
                         nextCounter INTEGER NOT NULL,
                         PRIMARY KEY(accountId, deviceId, purpose)
-                    )\"\"\"
+                    )"""
                 )
             }
         }
