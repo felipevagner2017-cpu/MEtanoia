@@ -106,3 +106,80 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: gradle connectedDebugAndroidTest --stacktrace
+
+  cloudflare-audit:
+    runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Report Cloudflare access availability
+        if: ${{ env.CF_TOKEN == '' || env.CF_ACCOUNT == '' }}
+        run: echo "Cloudflare audit skipped: CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not configured in GitHub Actions secrets." >> "$GITHUB_STEP_SUMMARY"
+      - name: Read-only Cloudflare inventory and failed build logs
+        if: ${{ env.CF_TOKEN != '' && env.CF_ACCOUNT != '' }}
+        shell: bash
+        run: |
+          set -u
+          API="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json")
+          get_api() {
+            local path="$1"
+            local response
+            response="$(curl -sS "${auth[@]}" -w $'\\n%{http_code}' "$API$path" || true)"
+            HTTP_CODE="${response##*$'\\n'}"
+            HTTP_BODY="${response%$'\\n'*}"
+          }
+          summary="$GITHUB_STEP_SUMMARY"
+          echo "## Cloudflare read-only audit" >> "$summary"
+          get_api "/accounts/$CF_ACCOUNT/workers/scripts"
+          echo "### Workers Scripts API (HTTP $HTTP_CODE)" >> "$summary"
+          if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+            echo "$HTTP_BODY" | jq -r '.result[] | "- **" + .id + "** — tag: (.tag // "not returned"), modified: (.modified_on // "unknown")"' >> "$summary"
+            for worker in metanoia metonoia; do
+              tag="$(echo "$HTTP_BODY" | jq -r --arg name "$worker" '.result[] | select(.id == $name) | .tag' | head -1)"
+              if [ -n "$tag" ] && [ "$tag" != "null" ]; then
+                get_api "/accounts/$CF_ACCOUNT/builds/workers/$tag/builds"
+                echo "### Builds for $worker (HTTP $HTTP_CODE)" >> "$summary"
+                if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+                  echo "$HTTP_BODY" | jq -r '.result[:8][]? | "- " + (.build_uuid // "no-id") + " — " + (.build_outcome // .status // "unknown") + " — " + (.created_on // "unknown") + " — commit " + (.build_trigger_metadata.commit_hash // "unknown")' >> "$summary"
+                else
+                  echo "Build history unavailable with this token scope." >> "$summary"
+                fi
+              else
+                echo "Worker $worker not present in this account inventory." >> "$summary"
+              fi
+            done
+          else
+            echo "Worker inventory unavailable. HTTP $HTTP_CODE. Check token scope: Workers Scripts Read." >> "$summary"
+          fi
+          get_api "/accounts/$CF_ACCOUNT/workers/domains"
+          echo "### Worker domains (HTTP $HTTP_CODE)" >> "$summary"
+          if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+            echo "$HTTP_BODY" | jq -r '.result[] | "- " + (.hostname // "unknown") + " → " + (.service // "unknown") + " (" + (if .enabled then "enabled" else "disabled" end) + ")"' >> "$summary"
+          else
+            echo "Domain inventory unavailable with this token scope." >> "$summary"
+          fi
+          get_api "/accounts/$CF_ACCOUNT/d1/database"
+          echo "### D1 databases (HTTP $HTTP_CODE)" >> "$summary"
+          if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+            echo "$HTTP_BODY" | jq -r '.result[] | "- **" + (.name // "unnamed") + "** — id: " + (.uuid // .id // "unknown") + " — created: " + (.created_at // "unknown")' >> "$summary"
+          else
+            echo "D1 inventory unavailable with this token scope." >> "$summary"
+          fi
+          for build_id in acb6fba7-4e02-4a40-991d-873faabe8eba 99a49e20-ae4d-424d-8bb2-2a328fbd31fc; do
+            get_api "/accounts/$CF_ACCOUNT/builds/builds/$build_id"
+            echo "### Build $build_id details (HTTP $HTTP_CODE)" >> "$summary"
+            if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+              echo "$HTTP_BODY" | jq -r '.result | "- outcome: " + (.build_outcome // "unknown") + "\n- status: " + (.status // "unknown") + "\n- branch: " + (.build_trigger_metadata.branch // "unknown") + "\n- build command: " + (.build_trigger_metadata.build_command // "default") + "\n- deploy command: " + (.build_trigger_metadata.deploy_command // "default") + "\n- root directory: " + (.build_trigger_metadata.root_directory // "root") + "\n- commit: " + (.build_trigger_metadata.commit_hash // "unknown")' >> "$summary"
+              get_api "/accounts/$CF_ACCOUNT/builds/builds/$build_id/logs"
+              echo "#### Error excerpts (HTTP $HTTP_CODE)" >> "$summary"
+              if [ "$HTTP_CODE" = "200" ] && echo "$HTTP_BODY" | jq -e '.success == true' >/dev/null; then
+                echo "$HTTP_BODY" | jq -r '.result.lines[]? | if type == "array" then .[-1] else tostring end' | grep -Ei 'error|failed|denied|invalid|missing|not found|exception|timed out' | sed -E 's/(Bearer )[A-Za-z0-9._~+\/-]+/\\1[REDACTED]/g; s/((TOKEN|SECRET|PASSWORD|API_KEY)[A-Z0-9_]*=)[^ ]+/\\1[REDACTED]/Ig' | tail -40 >> "$summary" || true
+              else
+                echo "Build logs unavailable. Required scope: Workers CI Read." >> "$summary"
+              fi
+            else
+              echo "Build details unavailable. Required scope: Workers CI Read." >> "$summary"
+            fi
+          done
