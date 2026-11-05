@@ -124,9 +124,13 @@ object SharedRecordCrypto {
         val info = encodeFields(DOMAIN, accountId, deviceId, purpose)
         val expand = Mac.getInstance("HmacSHA256")
         expand.init(SecretKeySpec(prk, "HmacSHA256"))
-        val block = expand.doFinal(info + byteArrayOf(1))
+        val firstBlock = expand.doFinal(info + byteArrayOf(1))
+        val secondBlock = expand.doFinal(firstBlock + info + byteArrayOf(2))
+        val material = firstBlock + secondBlock.copyOfRange(0, 4)
+        firstBlock.fill(0)
+        secondBlock.fill(0)
         prk.fill(0)
-        return block.copyOf(36).also { block.fill(0) }
+        return material
     }
 
     private fun aad(
