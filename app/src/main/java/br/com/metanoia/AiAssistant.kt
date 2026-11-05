@@ -225,7 +225,7 @@ internal fun AiAssistantDialog(
                             val cleanToken = token.trim()
                             val cleanQuestion = question.trim()
                             when {
-                                cleanToken.length < 24 -> status = "Informe a credencial privada configurada no servidor."
+                                cleanToken.length < 24 -> status = "Entre com sua conta MEtanoia antes de usar a IA."
                                 !consent -> status = "Autorize o envio dos registros antes de conversar com a IA."
                                 cleanQuestion.isBlank() -> status = "Escreva sua pergunta."
                                 else -> {
