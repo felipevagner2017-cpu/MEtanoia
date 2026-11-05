@@ -24,7 +24,7 @@ class AgendaConverters {
         ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
         SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -163,6 +163,29 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+
+        internal val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE sync_remote_records_new (
+                    accountId TEXT NOT NULL DEFAULT '', recordId TEXT NOT NULL, dimension TEXT NOT NULL,
+                    recordType TEXT NOT NULL, payloadCiphertext TEXT NOT NULL, encryptionVersion INTEGER NOT NULL,
+                    revision INTEGER NOT NULL, clientUpdatedAt INTEGER NOT NULL, serverUpdatedAt INTEGER NOT NULL,
+                    deletedAt INTEGER, sourceDeviceId TEXT, status TEXT NOT NULL, lastError TEXT,
+                    PRIMARY KEY(accountId, recordId)
+                )""")
+                db.execSQL("""INSERT INTO sync_remote_records_new(
+                    accountId,recordId,dimension,recordType,payloadCiphertext,encryptionVersion,revision,
+                    clientUpdatedAt,serverUpdatedAt,deletedAt,sourceDeviceId,status,lastError
+                ) SELECT '',recordId,dimension,recordType,payloadCiphertext,encryptionVersion,revision,
+                    clientUpdatedAt,serverUpdatedAt,deletedAt,sourceDeviceId,'quarantined',
+                    COALESCE(lastError,'Legacy inbox item has no authenticated account binding; re-fetch after sign-in')
+                    FROM sync_remote_records""")
+                db.execSQL("DROP TABLE sync_remote_records")
+                db.execSQL("ALTER TABLE sync_remote_records_new RENAME TO sync_remote_records")
+                db.execSQL("CREATE INDEX index_sync_remote_records_accountId_serverUpdatedAt_recordId ON sync_remote_records(accountId,serverUpdatedAt,recordId)")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -170,7 +193,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build().also { INSTANCE = it }
             }
     }
