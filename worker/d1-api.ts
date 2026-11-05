@@ -79,7 +79,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         await db.batch([
           db.prepare("INSERT INTO users(id,email_normalized,password_salt_b64,password_hash_b64,password_kdf,status,created_at,updated_at) VALUES(?,?,?,?,?,'active',?,?)").bind(id,email,b64(salt),hash,"PBKDF2-SHA256-310000",now,now),
           db.prepare("INSERT INTO devices(id,user_id,platform,label,last_seen_at) VALUES(?,?,?,?,?)").bind(deviceId,id,platform,label,now),
-          db.prepare("INSERT INTO sessions(id,user_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?)").bind(sessionId,id,await sha256(token),now,expires),
+          db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)").bind(sessionId,id,deviceId,await sha256(token),now,expires),
         ]);
       } catch {
         return json({ error: "Não foi possível criar a conta. Verifique se o e-mail já está cadastrado." }, 409, origin);
@@ -101,7 +101,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       const platform = ["android","pwa","web"].includes(body.platform) ? body.platform : "web";
       await db.batch([
         db.prepare("INSERT INTO devices(id,user_id,platform,label,last_seen_at) VALUES(?,?,?,?,?)").bind(deviceId,row.id,platform,String(body.deviceLabel || platform).slice(0,80),now),
-        db.prepare("INSERT INTO sessions(id,user_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?)").bind(sessionId,row.id,await sha256(token),now,expires),
+        db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)").bind(sessionId,row.id,deviceId,await sha256(token),now,expires),
       ]);
       return json({ token, expiresAt: expires, userId: row.id, deviceId }, 200, origin);
     }
@@ -125,7 +125,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       if (!deviceId) return json({ error: "Dispositivo inválido." }, 400, origin);
       await db.batch([
         db.prepare("UPDATE devices SET revoked_at=? WHERE id=? AND user_id=?").bind(Date.now(),deviceId,session.user_id),
-        db.prepare("UPDATE sessions SET revoked_at=? WHERE user_id=? AND id IN (SELECT id FROM sessions WHERE user_id=? AND revoked_at IS NULL) AND id IN (SELECT id FROM sessions WHERE user_id=?)").bind(Date.now(),session.user_id,session.user_id,session.user_id),
+        db.prepare("UPDATE sessions SET revoked_at=? WHERE user_id=? AND device_id=? AND revoked_at IS NULL").bind(Date.now(),session.user_id,deviceId),
       ]);
       return json({ ok: true, note: "Dispositivo revogado; sessões ativas devem ser encerradas no próximo ciclo." }, 200, origin);
     }
