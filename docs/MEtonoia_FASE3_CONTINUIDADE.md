@@ -26,7 +26,9 @@ Run: https://github.com/felipevagner2017-cpu/MEtanoia/actions/runs/42028926794
 - Manifest declara INTERNET, POST_NOTIFICATIONS, SET_WALLPAPER, RECEIVE_BOOT_COMPLETED e SCHEDULE_EXACT_ALARM.
 - Assinatura APK v2 verificada estruturalmente; certificado encontrado: Android Debug, SHA-256 `47:E7:66:E7:62:4C:F3:C2:F7:53:59:64:6D:45:25:A4:B6:3E:21:24:8E:12:D9:12:B0:1F:F5:BD:DE:E1:93:71`.
 - É uma assinatura debug, não uma chave de distribuição persistente. Não prometer atualização sobre instalação existente até validar assinatura do APK instalado e configurar chave de release estável.
-- O source ZIP original não continha Gradle Wrapper. O workflow foi corrigido para gerar Gradle Wrapper 8.9 e incluí-lo no próximo artefato. Esse novo artefato ainda depende da execução do CI após o commit dessa correção.
+- O source ZIP original não continha Gradle Wrapper. O workflow foi corrigido para gerar Gradle Wrapper 8.9 e incluí-lo no próximo artefato. Também foi adicionado teste automatizado para validar as migrations D1 com SQLite.
+- A PWA foi atualizada para proteger o cofre matrimonial com AES-256-GCM e PBKDF2-SHA256 (310.000 iterações), senha digitada localmente e chave mantida somente em memória durante a sessão. A migração de registros antigos em plaintext é não destrutiva; o app preserva o original se a criptografia falhar. Senhas incorretas não desbloqueiam nem alteram o ciphertext. Formatos antigos não reconhecidos são preservados, nunca apagados automaticamente.
+- Foi adicionado teste automatizado que extrai os helpers reais do app e verifica criptografia, ausência de plaintext, rejeição de senha incorreta, desbloqueio e migração não destrutiva. O teste aguarda o CI do HEAD atual.
 
 ## Arquitetura de dados — preparação
 
@@ -59,8 +61,8 @@ Link dos logs: https://dash.cloudflare.com/69cf119d00a74c4fe5cd6960d2d9e5f9/work
 1. Acesso autenticado Cloudflare ausente: necessário para ler logs completos, comparar Workers e ajustar Build settings/preview e provisionar D1.
 2. Nenhum banco central MEtanoia provisionado.
 3. IA atual ainda exige `METANOIA_AI_TOKEN` no cliente e não persiste histórico; substituir somente após implementar auth e armazenamento seguro.
-4. Cofre matrimonial ainda não tem criptografia e autorização ponta a ponta comprovadas; não publicar nem sincronizar esse domínio.
-5. APK atual usa assinatura debug; compatibilidade de atualização com o aplicativo já instalado não foi verificada.
+4. Cofre matrimonial da PWA agora tem criptografia local AES-GCM; ainda não existe sincronização, consentimento autenticado de Ingrid nem criptografia ponta a ponta multi-dispositivo. Não sincronizar esse domínio até implementar e validar essas camadas.
+5. APK atual usa assinatura debug; compatibilidade de atualização com o aplicativo já instalado não foi verificada. O source ZIP passará a incluir Gradle Wrapper gerado no CI.
 
 ## Próximas ações
 
