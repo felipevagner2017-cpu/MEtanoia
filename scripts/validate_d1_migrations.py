@@ -40,6 +40,16 @@ db.execute(
     "INSERT INTO devices (id,user_id,platform,last_seen_at) VALUES ('d1','u1','android',1)"
 )
 db.execute(
+    "INSERT INTO sessions (id,user_id,device_id,token_hash,created_at,expires_at) "
+    "VALUES ('s1','u1','d1','token-hash',1,9999999999)"
+)
+session_device = db.execute(
+    "SELECT device_id FROM sessions WHERE id='s1'"
+).fetchone()[0]
+if session_device != "d1":
+    raise SystemExit("Session-to-device binding is missing")
+
+db.execute(
     "INSERT INTO records (user_id,record_id,dimension,record_type,payload_ciphertext,client_updated_at,server_updated_at) "
     "VALUES ('u1','r1','DEVOTION','journal','ciphertext',1,1)"
 )
@@ -63,4 +73,4 @@ except sqlite3.IntegrityError:
 else:
     raise SystemExit("Unique email constraint is missing")
 
-print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, idempotent re-application, and key constraints.")
+print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, idempotent re-application, device-bound sessions, and key constraints.")
