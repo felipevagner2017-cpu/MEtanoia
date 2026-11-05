@@ -38,6 +38,8 @@ class RoomV6ToV7MigrationTest {
             assertEquals("quarantined", legacyRow.status)
             assertTrue(legacyRow.lastError!!.contains("no authenticated account binding"))
             assertTrue(dao.pending("").isEmpty())
+            assertEquals(0, dao.markApplied("", "same-record", 4))
+            assertEquals("quarantined", dao.find("", "same-record")?.status)
 
             val accountA = SyncRemoteRecord(
                 accountId="account-A", recordId="same-record", dimension="DAILY",
