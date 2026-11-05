@@ -27,6 +27,8 @@ class SyncApiClient(
 ) {
     fun push(token: String, operations: List<SyncOutboxOperation>, deviceId: String): JSONArray {
         require(operations.isNotEmpty() && operations.size <= 50)
+        require(deviceId.isNotBlank())
+        require(operations.all { it.accountId.isNotBlank() }) { "Operação sem conta autenticada não pode ser enviada." }
         val payload = JSONObject().put("operations", JSONArray().apply {
             operations.forEach { operation ->
                 put(JSONObject()
@@ -36,8 +38,11 @@ class SyncApiClient(
                     .put("recordType", operation.recordType)
                     .put("operation", operation.operation)
                     .put("payloadCiphertext", operation.payloadCiphertext)
+                    .put("encryptionVersion", operation.encryptionVersion)
                     .put("baseRevision", operation.baseRevision)
                     .put("clientUpdatedAt", operation.clientUpdatedAt)
+                    .put("sourceDeviceId", operation.sourceDeviceId.ifBlank { deviceId })
+                    .put("purpose", operation.purpose)
                     .put("deviceId", deviceId))
             }
         })
@@ -75,22 +80,21 @@ class SyncApiClient(
     companion object { const val API_BASE_URL = "https://metanoia.restaura-lar.workers.dev" }
 }
 
-/**
- * Drains a durable encrypted outbox. Network errors are retried with bounded exponential
- * backoff; conflicts remain visible and are never converted into last-write-wins updates.
- * Pull records are returned for transactional domain-specific application.
- */
+/** Outbox drain scoped to the authenticated account returned by the server. */
 class SyncCoordinator(
     private val outbox: SyncOutboxDao,
     private val api: SyncApiClient = SyncApiClient(),
     private val now: () -> Long = System::currentTimeMillis
 ) {
-    suspend fun synchronize(token: String, deviceId: String, since: Long = 0L, afterId: String = ""): SyncCycleResult {
-        require(token.isNotBlank() && deviceId.isNotBlank())
+    suspend fun synchronize(
+        accountId: String, token: String, deviceId: String,
+        since: Long = 0L, afterId: String = ""
+    ): SyncCycleResult {
+        require(accountId.isNotBlank() && token.isNotBlank() && deviceId.isNotBlank())
         var uploaded = 0
         var conflicts = 0
         var rejected = 0
-        val batch = outbox.nextBatch(now(), 50)
+        val batch = outbox.nextBatch(accountId, now(), 50)
         if (batch.isNotEmpty()) {
             val results = try {
                 api.push(token, batch, deviceId)
@@ -98,7 +102,7 @@ class SyncCoordinator(
                 batch.forEach { op ->
                     val exponent = op.attemptCount.coerceAtMost(10)
                     val delay = minOf(6 * 60 * 60 * 1000L, 5_000L * (1L shl exponent))
-                    outbox.scheduleRetry(op.operationId, now() + delay, error.message ?: "Falha de rede")
+                    outbox.scheduleRetry(accountId, op.operationId, now() + delay, error.message ?: "Falha de rede")
                 }
                 throw error
             }
@@ -108,9 +112,9 @@ class SyncCoordinator(
                 val id = item.optString("operationId")
                 if (id !in knownIds) continue
                 when (item.optString("status")) {
-                    "applied" -> { outbox.markApplied(id); uploaded++ }
-                    "conflict" -> { outbox.markConflict(id, "Revisão remota divergente: " + item.optInt("currentRevision")); conflicts++ }
-                    else -> { outbox.markConflict(id, item.optString("reason", "Operação rejeitada")); rejected++ }
+                    "applied" -> { outbox.markApplied(accountId, id); uploaded++ }
+                    "conflict" -> { outbox.markConflict(accountId, id, "Revisão remota divergente: " + item.optInt("currentRevision")); conflicts++ }
+                    else -> { outbox.markConflict(accountId, id, item.optString("reason", "Operação rejeitada")); rejected++ }
                 }
             }
         }

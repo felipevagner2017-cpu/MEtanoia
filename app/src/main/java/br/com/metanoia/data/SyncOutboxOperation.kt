@@ -3,14 +3,18 @@ package br.com.metanoia.data
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
-import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "sync_outbox",
-    indices = [Index(value = ["status", "nextAttemptAt"]), Index(value = ["recordId", "createdAt"])]
+    primaryKeys = ["accountId", "operationId"],
+    indices = [
+        Index(value = ["accountId", "status", "nextAttemptAt"]),
+        Index(value = ["accountId", "recordId", "createdAt"])
+    ]
 )
 data class SyncOutboxOperation(
-    @PrimaryKey val operationId: String,
+    @ColumnInfo(defaultValue = "''") val accountId: String,
+    val operationId: String,
     val recordId: String,
     val dimension: String,
     val recordType: String,

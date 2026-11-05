@@ -24,7 +24,7 @@ class AgendaConverters {
         ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
         SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -186,6 +186,44 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE sync_outbox_new (
+                    accountId TEXT NOT NULL DEFAULT '',
+                    operationId TEXT NOT NULL,
+                    recordId TEXT NOT NULL,
+                    dimension TEXT NOT NULL,
+                    recordType TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    payloadCiphertext TEXT NOT NULL,
+                    encryptionVersion INTEGER NOT NULL,
+                    baseRevision INTEGER NOT NULL,
+                    clientUpdatedAt INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    attemptCount INTEGER NOT NULL,
+                    nextAttemptAt INTEGER NOT NULL,
+                    lastError TEXT,
+                    createdAt INTEGER NOT NULL,
+                    sourceDeviceId TEXT NOT NULL DEFAULT '',
+                    purpose TEXT NOT NULL DEFAULT 'record',
+                    PRIMARY KEY(accountId, operationId)
+                )""")
+                db.execSQL("""INSERT INTO sync_outbox_new(
+                    accountId,operationId,recordId,dimension,recordType,operation,payloadCiphertext,
+                    encryptionVersion,baseRevision,clientUpdatedAt,status,attemptCount,nextAttemptAt,
+                    lastError,createdAt,sourceDeviceId,purpose
+                ) SELECT '',operationId,recordId,dimension,recordType,operation,payloadCiphertext,
+                    encryptionVersion,baseRevision,clientUpdatedAt,'quarantined',attemptCount,nextAttemptAt,
+                    COALESCE(lastError,'Legacy outbox operation has no authenticated account binding; manual recovery required'),
+                    createdAt,sourceDeviceId,purpose
+                FROM sync_outbox""")
+                db.execSQL("DROP TABLE sync_outbox")
+                db.execSQL("ALTER TABLE sync_outbox_new RENAME TO sync_outbox")
+                db.execSQL("CREATE INDEX index_sync_outbox_accountId_status_nextAttemptAt ON sync_outbox(accountId,status,nextAttemptAt)")
+                db.execSQL("CREATE INDEX index_sync_outbox_accountId_recordId_createdAt ON sync_outbox(accountId,recordId,createdAt)")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -193,7 +231,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build().also { INSTANCE = it }
             }
     }
