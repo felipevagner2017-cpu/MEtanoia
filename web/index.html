@@ -321,15 +321,28 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
  <p class="muted">A IA pode relacionar Devoção, Matrimônio, Profissional e Cotidiano. A análise local continua funcionando sem internet.</p>
  <label for="aiDimension">Foco da conversa</label>
  <select id="aiDimension" class="field"><option>Visão integrada</option><option>Devoção</option><option>Matrimônio</option><option>Profissional</option><option>Cotidiano</option></select>
- <label for="aiToken">Credencial privada de acesso à IA</label>
- <input id="aiToken" class="field" type="password" autocomplete="off" placeholder="Informe a credencial configurada no servidor">
+ <div class="area">
+  <div class="eyebrow">Conta MEtanoia</div>
+  <label for="accountEmail">E-mail da conta</label>
+  <input id="accountEmail" class="field" type="email" autocomplete="username" placeholder="seu@email.com">
+  <label for="accountPassword">Senha da conta</label>
+  <input id="accountPassword" class="field" type="password" autocomplete="current-password" placeholder="Senha com pelo menos 12 caracteres">
+  <label for="registrationKey">Código de convite (somente no primeiro cadastro)</label>
+  <input id="registrationKey" class="field" type="password" autocomplete="off" placeholder="Código de convite fornecido pelo administrador">
+  <div class="row" style="flex-wrap:wrap">
+   <button id="accountLogin" class="btn">Entrar</button>
+   <button id="accountRegister" class="btn">Criar conta</button>
+   <button id="accountLogout" class="btn" hidden>Sair</button>
+  </div>
+  <div id="accountStatus" class="muted" role="status">Entre com sua conta para usar a IA autenticada.</div>
+ </div>
  <p class="muted">A credencial fica apenas nesta sessão do navegador. Não a compartilhe. O uso do modelo na nuvem pode gerar cobrança conforme o volume de tokens.</p>
  <label class="ai-consent"><input id="aiConsent" type="checkbox"> <span>Autorizo o envio dos registros recentes relacionados ao foco escolhido e da pergunta digitada ao serviço de IA do MEtanoia, hospedado na Cloudflare. Os dados serão usados para gerar esta resposta e não serão gravados pelo endpoint do aplicativo.</span></label>
  <div id="aiConversation" class="ai-conversation" aria-live="polite"><div class="empty">Sua conversa aparecerá aqui. Nenhum registro será enviado até você autorizar e enviar uma pergunta.</div></div>
  <label for="aiQuestion">O que você deseja compreender ou planejar?</label>
  <textarea id="aiQuestion" class="field" rows="3" placeholder="Escreva sua pergunta..."></textarea>
  <div class="row"><button id="aiSend" class="btn gold">Enviar à IA</button><button id="aiClear" class="btn">Limpar conversa</button></div>
- <div id="aiStatus" class="muted" role="status">Aguardando configuração da credencial do servidor.</div>
+ <div id="aiStatus" class="muted" role="status">Entre com sua conta MEtanoia para autorizar a sessão.</div>
 </div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
