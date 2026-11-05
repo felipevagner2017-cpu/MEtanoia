@@ -22,9 +22,9 @@ class AgendaConverters {
     entities = [
         AgendaItem::class, JournalEntry::class, ReviewEntry::class,
         ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
-        SyncNonceCounterEntity::class
+        SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -36,6 +36,9 @@ abstract class MetanoiaDatabase : RoomDatabase() {
     abstract fun dailyAnalysisDao(): DailyAnalysisDao
     abstract fun syncOutboxDao(): SyncOutboxDao
     abstract fun syncNonceCounterDao(): SyncNonceCounterDao
+    abstract fun syncRecordMetadataDao(): SyncRecordMetadataDao
+    abstract fun syncCursorDao(): SyncCursorDao
+    abstract fun syncRemoteRecordDao(): SyncRemoteRecordDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -138,6 +141,28 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sync_outbox ADD COLUMN sourceDeviceId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE sync_outbox ADD COLUMN purpose TEXT NOT NULL DEFAULT 'record'")
+                db.execSQL("""CREATE TABLE sync_record_metadata (entityType TEXT NOT NULL,localId TEXT NOT NULL,recordId TEXT NOT NULL,dimension TEXT NOT NULL,recordType TEXT NOT NULL,revision INTEGER NOT NULL,syncState TEXT NOT NULL,sourceDeviceId TEXT,encryptionVersion INTEGER NOT NULL,remoteUpdatedAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,PRIMARY KEY(entityType,localId))""")
+                db.execSQL("CREATE UNIQUE INDEX index_sync_record_metadata_recordId ON sync_record_metadata(recordId)")
+                db.execSQL("CREATE INDEX index_sync_record_metadata_syncState_updatedAt ON sync_record_metadata(syncState,updatedAt)")
+                db.execSQL("""CREATE TABLE sync_cursors (accountId TEXT NOT NULL,deviceId TEXT NOT NULL,serverUpdatedAt INTEGER NOT NULL,afterRecordId TEXT NOT NULL,updatedAt INTEGER NOT NULL,PRIMARY KEY(accountId,deviceId))""")
+                db.execSQL("""CREATE TABLE sync_remote_records (recordId TEXT NOT NULL PRIMARY KEY,dimension TEXT NOT NULL,recordType TEXT NOT NULL,payloadCiphertext TEXT NOT NULL,encryptionVersion INTEGER NOT NULL,revision INTEGER NOT NULL,clientUpdatedAt INTEGER NOT NULL,serverUpdatedAt INTEGER NOT NULL,deletedAt INTEGER,sourceDeviceId TEXT,status TEXT NOT NULL,lastError TEXT)""")
+                db.execSQL("CREATE INDEX index_sync_remote_records_serverUpdatedAt_recordId ON sync_remote_records(serverUpdatedAt,recordId)")
+                val now=System.currentTimeMillis()
+                fun seed(table:String,id:String,dim:String,type:String) {
+                    db.execSQL("""INSERT INTO sync_record_metadata(entityType,localId,recordId,dimension,recordType,revision,syncState,sourceDeviceId,encryptionVersion,remoteUpdatedAt,updatedAt) SELECT '$table',CAST($id AS TEXT),'legacy-$table-'||CAST($id AS TEXT),$dim,'$type',0,'local',NULL,0,0,$now FROM $table""")
+                }
+                seed("agenda_items","id","CASE dimension WHEN 'SPIRITUAL' THEN 'DEVOTION' WHEN 'MATRIMONIAL' THEN 'MATRIMONIAL' WHEN 'PROFESSIONAL' THEN 'PROFESSIONAL' ELSE 'DAILY' END","agenda")
+                seed("journal_entries","id","CASE dimension WHEN 'SPIRITUAL' THEN 'DEVOTION' WHEN 'MATRIMONIAL' THEN 'MATRIMONIAL' WHEN 'PROFESSIONAL' THEN 'PROFESSIONAL' ELSE 'DAILY' END","journal")
+                seed("review_entries","id","'DAILY'","review")
+                seed("confession_entries","id","'DAILY'","confession")
+                seed("daily_analysis","dayKey","'DAILY'","daily_analysis")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -145,7 +170,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build().also { INSTANCE = it }
             }
     }

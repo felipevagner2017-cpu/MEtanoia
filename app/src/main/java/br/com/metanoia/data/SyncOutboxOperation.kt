@@ -1,5 +1,6 @@
 package br.com.metanoia.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -22,5 +23,7 @@ data class SyncOutboxOperation(
     val attemptCount: Int = 0,
     val nextAttemptAt: Long = 0,
     val lastError: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "''") val sourceDeviceId: String = "",
+    @ColumnInfo(defaultValue = "'record'") val purpose: String = "record"
 )
