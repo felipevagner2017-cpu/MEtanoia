@@ -38,7 +38,7 @@ const parseBody = async (request: Request, max = 30000) => {
   return JSON.parse(raw);
 };
 
-async function authenticate(request: Request, db: D1Database) {
+export async function authenticate(request: Request, db: D1Database) {
   const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token || token.length > 256) return null;
   const tokenHash = await sha256(token);
