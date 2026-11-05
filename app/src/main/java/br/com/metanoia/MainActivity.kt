@@ -1,5 +1,6 @@
 package br.com.metanoia
 import android.os.Bundle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
 import br.com.metanoia.wallpaper.LockScreenWallpaperWorker
 import android.content.Context
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
   super.attachBaseContext(newBase.createConfigurationContext(configuration))
  }
  override fun onCreate(savedInstanceState: Bundle?) {
+  installSplashScreen()
   super.onCreate(savedInstanceState)
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
