@@ -50,4 +50,4 @@ A área matrimonial contém um marcador visual temporário para o avatar. A imag
 
 ## Compilação e validação
 
-O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A versão de desenvolvimento atual é 0.4.1 (versionCode 5). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
+O workflow `.github/workflows/android.yml` executa `gradle assembleDebug`, `gradle testDebugUnitTest` e testes instrumentados Room em emulador Android API 35. A candidato de desenvolvimento atual é 0.5.0 (versionCode 6). Um APK só deve ser considerado validado quando o workflow da revisão correspondente estiver concluído com sucesso, incluindo os testes instrumentados no emulador.
