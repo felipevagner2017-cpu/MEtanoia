@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import java.security.SecureRandom
 
@@ -52,10 +53,10 @@ class AccountCryptoInstrumentedTest {
             store.save(b, keyB)
             assertArrayEquals(keyA, store.load(a))
             assertArrayEquals(keyB, store.load(b))
-            assertThrows(Exception::class.java) {
-                val wrong = store.load(a)!!
-                assertArrayEquals(keyB, wrong)
-            }
+            assertFalse(
+                "A DEK de outra conta não pode ser recuperada usando a conta atual.",
+                keyA.contentEquals(store.load(b)!!)
+            )
         } finally {
             store.remove(a, deleteKeystoreKey = true)
             store.remove(b, deleteKeystoreKey = true)
