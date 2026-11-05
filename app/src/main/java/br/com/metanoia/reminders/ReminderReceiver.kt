@@ -1,6 +1,7 @@
 package br.com.metanoia.reminders
 
 import android.app.NotificationChannel
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -49,7 +50,9 @@ class ReminderReceiver : BroadcastReceiver() {
                     if (item.reminderAt == null || !NotificationPreferences(context).leadEnabled(lead)) return@launch
                     val whenText = when (lead) { 120 -> "Faltam 2 horas"; 60 -> "Falta 1 hora"; else -> "Faltam 30 minutos" }
                     title = item.title
-                    message = "$whenText para o compromisso."
+                    val eventTime = java.time.Instant.ofEpochMilli(item.scheduledAt).atZone(java.time.ZoneId.systemDefault())
+                    val dateTime = eventTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM 'às' HH:mm", java.util.Locale("pt", "BR")))
+                    message = "$whenText · $dateTime"
                     sound = NotificationPreferences(context).eventSound()
                     category = "event"
                     notificationId = (eventId * 10L + when (lead) { 120 -> 0; 60 -> 1; else -> 2 }).toInt()
@@ -76,6 +79,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 setSound(soundUri(sound), if (sound == NotificationPreferences.SILENT_SOUND) null else
                     AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                // User-requested agenda reminders must be eligible for lock-screen display.
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             manager.createNotificationChannel(channel)
         }
@@ -89,7 +94,9 @@ class ReminderReceiver : BroadcastReceiver() {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setCategory(if (category == "event") NotificationCompat.CATEGORY_EVENT else NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setShowWhen(true)
             .setContentIntent(open)
             .setAutoCancel(true)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

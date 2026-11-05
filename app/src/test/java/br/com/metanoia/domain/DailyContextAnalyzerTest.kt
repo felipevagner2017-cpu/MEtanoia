@@ -19,7 +19,7 @@ class DailyContextAnalyzerTest {
         assertTrue(result.categories.contains("Dificuldade financeira"))
         assertFalse(result.categories.contains("Reconhecimento de erro"))
         assertTrue(result.direction.contains("Provérbios 21:5"))
-        assertTrue(result.nextStep.contains("preocupação financeira"))
+        assertTrue(result.nextStep.contains("valor") && result.nextStep.contains("vencimento"))
     }
 
     @Test fun explicitWrongdoingIsRecognizedWithoutAutomaticVerdict() {
@@ -67,6 +67,25 @@ class DailyContextAnalyzerTest {
         assertTrue(result.categories.contains("Expressão emocional"))
         assertTrue(result.summary.contains("dificuldades no trabalho"))
         assertTrue(result.summary.contains("não estou conseguindo resolver"))
+    }
+
+    @Test fun matrimonialGuidanceDoesNotAssumeWhatSpouseFeels() {
+        val result = DailyContextAnalyzer.analyze("Quero melhorar a comunicação no casamento e fortalecer a parceria com minha esposa.", "")
+        assertTrue(result.dimensions.contains("Matrimonial"))
+        assertTrue(result.attention.contains("não permite presumir"))
+        assertTrue(result.nextStep.contains("ouvir sem interromper"))
+    }
+
+    @Test fun professionalChallengeProducesMeasurableNextAction() {
+        val result = DailyContextAnalyzer.analyze("Tenho um desafio no trabalho, preciso organizar uma meta profissional e um projeto.", "")
+        assertTrue(result.dimensions.contains("Profissional"))
+        assertTrue(result.nextStep.contains("30 minutos"))
+    }
+
+    @Test fun dailyRoutineCanBeRecognizedWithoutSpiritualJudgment() {
+        val result = DailyContextAnalyzer.analyze("Minha rotina está desorganizada e tenho muitos compromissos.", "")
+        assertTrue(result.dimensions.contains("Cotidiano"))
+        assertFalse(result.categories.contains("Reconhecimento de erro"))
     }
 
     @Test fun wordConfessoAloneDoesNotMeanSin() {

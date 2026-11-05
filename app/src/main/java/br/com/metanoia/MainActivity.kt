@@ -1,5 +1,6 @@
 package br.com.metanoia
 import android.os.Bundle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
 import br.com.metanoia.wallpaper.LockScreenWallpaperWorker
 import android.content.Context
@@ -17,7 +18,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -50,9 +63,9 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val Navy = Color(0xFF102542)
-private val Gold = Color(0xFFC5A15A)
-private val Paper = Color(0xFFF4F6F9)
+private val Navy = Ivory
+private val Gold = GoldChampagne
+private val Paper = GoldChampagne.copy(alpha = .28f)
 
 class MainActivity : ComponentActivity() {
  override fun attachBaseContext(newBase: Context) {
@@ -63,6 +76,7 @@ class MainActivity : ComponentActivity() {
   super.attachBaseContext(newBase.createConfigurationContext(configuration))
  }
  override fun onCreate(savedInstanceState: Bundle?) {
+  installSplashScreen()
   super.onCreate(savedInstanceState)
   val db = MetanoiaDatabase.get(this)
   val scheduler = ReminderScheduler(this)
@@ -70,8 +84,34 @@ class MainActivity : ComponentActivity() {
   lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
-  setContent { MaterialTheme(colorScheme = lightColorScheme(primary=Navy, secondary=Gold, background=Paper)) {
-   Surface(Modifier.fillMaxSize(), color=Paper) { MetanoiaApp(db, scheduler) }
+  // Official MEtanoia violet, champagne-gold and ivory Material 3 system.
+  setContent { MaterialTheme(
+   colorScheme = darkColorScheme(
+    primary = GoldBright,
+    onPrimary = DeepViolet,
+    primaryContainer = VioletSecondary,
+    onPrimaryContainer = Ivory,
+    secondary = GoldChampagne,
+    onSecondary = DeepViolet,
+    secondaryContainer = VioletSurface,
+    onSecondaryContainer = Ivory,
+    tertiary = GoldChampagne,
+    onTertiary = DeepViolet,
+    background = DeepViolet,
+    onBackground = Ivory,
+    surface = CardSurface,
+    onSurface = Ivory,
+    surfaceVariant = VioletSurface,
+    onSurfaceVariant = Ivory,
+    outline = GoldChampagne.copy(alpha = 0.48f),
+    outlineVariant = GoldChampagne.copy(alpha = 0.24f),
+    error = Color(0xFFFF9A8B),
+    onError = DeepViolet
+   ),
+   typography = MetanoiaTypography,
+   shapes = MetanoiaShapes
+  ) {
+   Surface(Modifier.fillMaxSize(), color=DeepViolet) { Box(Modifier.fillMaxSize()) { MetanoiaApp(db, scheduler); MetanoiaBrandWatermark() } }
   } }
  }
 }
@@ -110,7 +150,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  fun toggle(item:AgendaItem) { viewModelScope.launch {
   val completed = !item.completed
   db.agendaDao().setCompleted(item.id,completed)
-  if (completed) scheduler.cancel(item) else scheduler.schedule(item)
+  if (completed) scheduler.cancel(item) else scheduler.schedule(item.copy(completed = false))
   LockScreenAgendaWallpaper.refresh(appContext, db)
  } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
@@ -155,6 +195,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    ))
   }
  }
+ fun saveDimensionRecord(title:String,body:String,dimension:LifeDimension) {
+  if(title.isBlank() || body.isBlank()) return
+  viewModelScope.launch(Dispatchers.IO) {
+   db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension,dayKey=LocalDate.now().toString()))
+  }
+ }
  fun addReview(period:ReviewPeriod, body:String) {
   if(body.isBlank()) return
   val today=LocalDate.now()
@@ -174,7 +220,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews by vm.reviews.collectAsStateWithLifecycle()
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
- var tab by remember { mutableStateOf("Agenda") }
+ var cotidianoTab by remember { mutableStateOf("Agenda") }
+ var showAiAssistant by remember { mutableStateOf(false) }
+ var aiInitialDimension by remember { mutableStateOf("Visão integrada") }
+ val sectionLabels = listOf("Painel","Devoção","Matrimônio","Profissional","Cotidiano")
+ val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
+ val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
   if (result.resultCode == android.app.Activity.RESULT_OK) {
    val uri = if (Build.VERSION.SDK_INT >= 33) result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
@@ -189,36 +240,106 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    NotificationPreferences(context).setEventSound(uri?.toString() ?: NotificationPreferences.SILENT_SOUND)
   }
  }
- Column(Modifier.fillMaxSize()) {
-  Column(Modifier.fillMaxWidth().background(Navy).padding(22.dp)) {
-   Text("MEtanoia",color=Gold,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
-   Text("A transformação é uma construção diária.",color=Color.White)
-   Text("Uma mente renovada. Uma vida intencional.",color=Color.White.copy(alpha=.8f))
-  }
-  Row(Modifier.fillMaxWidth().background(Color.White),horizontalArrangement=Arrangement.SpaceEvenly) {
-   listOf("Agenda","Diário","Revisões","Alertas").forEach { label -> TextButton(onClick={tab=label}) { Text(label,color=if(tab==label) Navy else Color.Gray) } }
-  }
-  when(tab) { "Agenda"->AgendaPage(agenda,vm); "Diário"->JournalPage(journal,confessions,analyses,agenda,vm); "Revisões"->ReviewPage(reviews,vm); else->NotificationSettingsPage(context,agenda, {
-    val prefs = NotificationPreferences(context)
-    val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-     putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som das notificações diárias")
-     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
+ Column(Modifier.fillMaxSize().background(DeepViolet)) {
+  Column(
+   Modifier.fillMaxWidth()
+    .background(Brush.verticalGradient(listOf(VioletPrimary.copy(alpha=.94f), DeepViolet)))
+    .padding(horizontal=20.dp, vertical=14.dp)
+  ) {
+   Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+    Image(
+     painter=painterResource(id=R.drawable.metanoia_oficial),
+     contentDescription="Símbolo oficial MEtanoia",
+     modifier=Modifier.size(48.dp),
+     contentScale=ContentScale.Fit
+    )
+    Column(Modifier.weight(1f)) {
+     Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
+     Text("UMA MENTE RENOVADA",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.labelSmall,letterSpacing=1.2.sp)
     }
-    ringtoneLauncher.launch(pick)
-   }, {
-    val eventPrefs = NotificationPreferences(context)
-    val pick = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
-     putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
-     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
-     putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, if(eventPrefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(eventPrefs.eventSound()))
+    TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";else->"Cotidiano"};showAiAssistant=true}) {
+     Text("IA",color=DeepViolet,fontWeight=FontWeight.Bold,modifier=Modifier.background(GoldChampagne,MaterialTheme.shapes.large).padding(horizontal=15.dp,vertical=8.dp))
     }
-    eventRingtoneLauncher.launch(pick)
-   })
+   }
+   Text(
+    LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",Locale("pt","BR"))).replaceFirstChar { it.uppercase(Locale("pt","BR")) },
+    color=Ivory,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(top=10.dp)
+   )
+   Text("Uma mente renovada. Uma vida intencional.",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.bodyMedium)
+  }
+  Row(
+   Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState())
+    .padding(horizontal=12.dp, vertical=9.dp),
+   horizontalArrangement=Arrangement.spacedBy(8.dp),
+   verticalAlignment=Alignment.CenterVertically
+  ) {
+   sectionLabels.forEachIndexed { index, label ->
+    val selected = pagerState.currentPage == index
+    TextButton(
+     onClick={ pagerScope.launch { pagerState.animateScrollToPage(index) } },
+     modifier=Modifier.background(
+      color=if(selected) CardSurface else Color.Transparent,
+      shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+     )
+    ) {
+     Text(
+      label,
+      color=if(selected) GoldBright else Ivory.copy(alpha=.76f),
+      fontWeight=if(selected) FontWeight.Bold else FontWeight.Medium,
+      style=MaterialTheme.typography.labelMedium
+     )
+    }
+   }
+  }
+  androidx.compose.foundation.pager.HorizontalPager(
+   state = pagerState,
+   modifier = Modifier.fillMaxSize().weight(1f)
+  ) { page ->
+   when(page) {
+    0 -> DashboardPage(agenda, journal, analyses) { destination ->
+     val target = when(destination) { "Devocional" -> 1; "Matrimônio" -> 2; "Profissional" -> 3; else -> 4 }
+     pagerScope.launch { pagerState.animateScrollToPage(target) }
+    }
+    1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
+    2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
+    3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
+    else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
+     Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+      listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
+       TextButton(onClick={cotidianoTab=label}) { Text(label,color=if(cotidianoTab==label) GoldBright else Ivory,fontWeight=if(cotidianoTab==label) FontWeight.Bold else FontWeight.Normal) }
+      }
+     }
+     when(cotidianoTab) {
+      "Agenda" -> AgendaPage(agenda,vm)
+      "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
+      "Revisões" -> ReviewPage(reviews,vm)
+      else -> NotificationSettingsPage(context,agenda,{
+       val prefs=NotificationPreferences(context)
+       val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_NOTIFICATION)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som das notificações diárias")
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.dailySound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) else Uri.parse(prefs.dailySound()))
+       }
+       ringtoneLauncher.launch(pick)
+      },{
+       val prefs=NotificationPreferences(context)
+       val pick=Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE,"Escolha o som dos alarmes de compromissos")
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT,true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,if(prefs.eventSound()==NotificationPreferences.SYSTEM_SOUND) RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM) else Uri.parse(prefs.eventSound()))
+       }
+       eventRingtoneLauncher.launch(pick)
+      })
+     }
+    }
+   }
+  }
+  if(showAiAssistant) {
+   AiAssistantDialog(context,journal,confessions,agenda,aiInitialDimension) { showAiAssistant=false }
   }
  }
 }
@@ -228,6 +349,21 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var selectedDate by remember { mutableStateOf(LocalDate.now()) }
  var editingItem by remember { mutableStateOf<AgendaItem?>(null) }
  var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
+ val lifecycleOwner = LocalLifecycleOwner.current
+ var lastObservedDate by remember { mutableStateOf(LocalDate.now(zone)) }
+ LaunchedEffect(lifecycleOwner) {
+  lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+   while (isActive) {
+    val today = LocalDate.now(zone)
+    if (today != lastObservedDate) {
+     if (selectedDate == lastObservedDate) selectedDate = today
+     if (displayedMonth == YearMonth.from(lastObservedDate)) displayedMonth = YearMonth.from(today)
+     lastObservedDate = today
+    }
+    delay(30_000)
+   }
+  }
+ }
  var title by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var recurrenceFrequency by remember { mutableStateOf<RecurrenceFrequency?>(null) }
@@ -250,22 +386,22 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  Column(Modifier.fillMaxSize().padding(horizontal=14.dp, vertical=10.dp)) {
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
-    Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
-    Text("Organize seus dias com intenção.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+    Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
+    Text("Organize seus dias com intenção.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
    }
    TextButton(onClick={selectedDate=LocalDate.now();displayedMonth=YearMonth.now()}) { Text("Hoje",color=Gold) }
   }
-  Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(12.dp)) {
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=Navy,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
+     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=GoldBright,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
      Row {
-      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=Navy,style=MaterialTheme.typography.headlineMedium) }
-      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=Navy,style=MaterialTheme.typography.headlineMedium) }
+      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
+      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
      }
     }
     Row(Modifier.fillMaxWidth()) {
-     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color=Color.Gray,style=MaterialTheme.typography.labelSmall) } }
+     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall) } }
     }
     cells.chunked(7).forEach { week->
      Row(Modifier.fillMaxWidth()) {
@@ -275,8 +411,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
          val isSelected=date==selectedDate
          val isToday=date==LocalDate.now()
          val count=monthItems[date]?.size?:0
-         Column(Modifier.fillMaxSize().background(if(isSelected) Navy else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-          Text(date.dayOfMonth.toString(),color=if(isSelected) Color.White else Navy,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
+         Column(Modifier.fillMaxSize().background(if(isSelected) VioletPrimary else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+          Text(date.dayOfMonth.toString(),color=Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
           if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
            repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
           } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
@@ -287,19 +423,19 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
     }
     Row(Modifier.fillMaxWidth().padding(top=6.dp),horizontalArrangement=Arrangement.SpaceBetween) {
-     Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+     Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
      Text("${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
     }
    }
   }
   Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
-    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=Navy,fontWeight=FontWeight.Bold)
+    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=GoldBright,fontWeight=FontWeight.Bold)
     Text("${selectedItems.count{!it.completed}} pendentes · ${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
    }
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
   }
-  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Nova tarefa, hábito ou compromisso")},singleLine=true)
     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
@@ -307,7 +443,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
     if(kind==AgendaKind.HABIT) {
      Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
-      Text("Repetição do hábito",color=Navy,style=MaterialTheme.typography.labelMedium)
+      Text("Repetição do hábito",color=GoldBright,style=MaterialTheme.typography.labelMedium)
       Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
        FilterChip(selected=recurrenceFrequency==null,onClick={recurrenceFrequency=null},label={Text("Único")})
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.DAILY,onClick={recurrenceFrequency=RecurrenceFrequency.DAILY},label={Text("Diário")})
@@ -317,7 +453,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
        FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
       }
-      Text("As próximas ocorrências serão organizadas automaticamente.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+      Text("As próximas ocorrências serão organizadas automaticamente.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
      }
     }
     Box {
@@ -338,29 +474,29 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      vm.addAgenda(title,kind,dimension,scheduled,reminder,recurrenceFrequency?.name)
      title=""
      reminder=true
-    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) {
+    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor = VioletPrimary)) {
      Text("Adicionar em ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
     }
    }
   }
   if(selectedItems.isEmpty()) {
    Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
-    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color=Color.Gray,style=MaterialTheme.typography.bodyMedium)
+    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodyMedium)
    }
   } else {
    LazyColumn(Modifier.weight(1f).padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     items(selectedItems,key={it.id}) { item->
-     Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+     Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
        Column(Modifier.weight(1f)) {
-        Text(item.title,color=Navy,fontWeight=FontWeight.SemiBold)
+        Text(item.title,color=GoldBright,fontWeight=FontWeight.SemiBold)
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
-        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Color.Gray)
+        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
        }
        Column(horizontalAlignment=Alignment.End) {
         TextButton(onClick={editingItem=item}) { Text("Editar",color=Gold) }
-        TextButton(onClick={vm.delete(item)}) { Text("Excluir",color=Color.Gray) }
+        TextButton(onClick={vm.delete(item)}) { Text("Excluir",color = Ivory.copy(alpha = .78f)) }
        }
       }
      }
@@ -386,11 +522,11 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var dimensionMenu by remember { mutableStateOf(false) }
  AlertDialog(
   onDismissRequest=onDismiss,
-  title={Text("Editar registro",color=Navy,fontWeight=FontWeight.Bold)},
+  title={Text("Editar registro",color=GoldBright,fontWeight=FontWeight.Bold)},
   text={
    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
     OutlinedTextField(value=title,onValueChange={title=it},label={Text("Título")},singleLine=true)
-    Text("Tipo",color=Navy,fontWeight=FontWeight.SemiBold)
+    Text("Tipo",color=GoldBright,fontWeight=FontWeight.SemiBold)
     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
      AgendaKind.entries.forEach { v->FilterChip(selected=kind==v,onClick={kind=v},label={Text(kindLabel(v))}) }
     }
@@ -419,7 +555,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     onSave(item.copy(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,reminderAt=reminderAt))
    }) { Text("Salvar alterações",color=Gold) }
   },
-  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color=Color.Gray) }}
+  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color = Ivory.copy(alpha = .78f)) }}
  )
 }
 
@@ -438,9 +574,23 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
  Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-  Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
-  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color=Color.Gray)
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
+  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color = Ivory.copy(alpha = .78f))
+  val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+    Text(if(notificationsEnabled) "NOTIFICAÇÕES ATIVAS" else "NOTIFICAÇÕES DESATIVADAS",color=if(notificationsEnabled) GoldBright else Color(0xFFFF9A8B),fontWeight=FontWeight.Bold)
+    Text(
+     if(notificationsEnabled) "Os lembretes do MEtanoia podem ser exibidos pelo Android. Para vê-los na tela bloqueada, permita notificações e conteúdo na tela de bloqueio nas configurações do aparelho."
+     else "O Android está bloqueando as notificações do aplicativo. Ative-as para receber os lembretes dos seus compromissos.",
+     color=Ivory,style=MaterialTheme.typography.bodySmall
+    )
+    OutlinedButton(onClick={
+     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName))
+    },modifier=Modifier.fillMaxWidth()) { Text("Configurar notificações e tela de bloqueio") }
+   }
+  }
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("LEMBRETES DIÁRIOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("07:00 · Planeje seu dia",d7,7),Triple("12:00 · Confira sua agenda",d12,12),Triple("18:00 · Organize o restante",d18,18)).forEach { row ->
@@ -456,7 +606,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("ALARMES DE COMPROMISSOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("2 horas antes",l120,120),Triple("1 hora antes",l60,60),Triple("30 minutos antes",l30,30)).forEach { row ->
@@ -471,7 +621,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
    Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     Text("TOQUES",color=Gold,fontWeight=FontWeight.Bold)
     Text("Som diário: "+when(dailySound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
@@ -488,21 +638,21 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
      OutlinedButton(onClick={ val uri=when(eventSound){NotificationPreferences.SILENT_SOUND->null;NotificationPreferences.SYSTEM_SOUND->RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);else->Uri.parse(eventSound)}; if(uri!=null) RingtoneManager.getRingtone(context,uri)?.play() }){Text("Testar")}
     }
-    Text("O volume é controlado pelos botões e configurações de som do Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+    Text("O volume é controlado pelos botões e configurações de som do Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
    }
   }
   if(!exactAllowed && Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
-   Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFFFF4DF))) {
+   Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
     Column(Modifier.padding(12.dp)) {
-     Text("Horário exato limitado pelo Android",color=Navy,fontWeight=FontWeight.Bold)
-     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Navy,style=MaterialTheme.typography.bodySmall)
+     Text("Horário exato limitado pelo Android",color=GoldBright,fontWeight=FontWeight.Bold)
+     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Ivory,style=MaterialTheme.typography.bodySmall)
      TextButton(onClick={context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}){Text("Configurar alarmes exatos",color=Gold)}
     }
    }
   } else {
-   Text("Alarmes exatos permitidos neste aparelho.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+   Text("Alarmes exatos permitidos neste aparelho.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
   }
-  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
  }
 }
 
@@ -514,20 +664,20 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  vm:AppViewModel
 ) {
  val todayKey=LocalDate.now().toString()
- val todayEntry=entries.firstOrNull{it.dayKey==todayKey}
+ val todayEntry=entries.firstOrNull{it.dayKey==todayKey && it.dimension==LifeDimension.INDIVIDUAL}
  val todayConfession=confessions.firstOrNull{it.dayKey==todayKey}
  val todayAnalysis=analyses.firstOrNull{it.dayKey==todayKey}
  var diary by remember(todayKey,entries) { mutableStateOf(todayEntry?.content.orEmpty()) }
  var confession by remember(todayKey,confessions) { mutableStateOf(todayConfession?.content.orEmpty()) }
  var confessionExpanded by remember(todayKey,confessions) { mutableStateOf(todayConfession!=null) }
- val violet=Color(0xFF24113F)
- val gold=Color(0xFFC5A15A)
+ val violet=Ivory
+ val gold=GoldChampagne
  val todayAgenda=agenda.filter {
   Instant.ofEpochMilli(it.scheduledAt).atZone(ZoneId.systemDefault()).toLocalDate()==LocalDate.now()
  }
  Column(Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=12.dp)) {
-  Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=violet,fontWeight=FontWeight.Bold)
-  Text("Um único relato para compreender o dia por inteiro.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+  Text("Diário de hoje",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
+  Text("Um único relato para compreender o dia por inteiro.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=violet)) {
    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
     Text("DIÁRIO DE HOJE",color=gold,fontWeight=FontWeight.Bold)
@@ -567,41 +717,41 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    }
   }
   if(todayAnalysis!=null) {
-   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=Color(0xFFF7F3FA))) {
+   Card(Modifier.fillMaxWidth().padding(top=12.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
     Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
      Text("LEITURA CONTEXTUAL DO DIA",color=gold,fontWeight=FontWeight.Bold)
-     Text("O que aconteceu hoje",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("O que aconteceu hoje",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.summary,color=violet)
-     Text("Como você está",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Como você está",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.emotionalState,color=violet)
-     Text("Dimensões identificadas",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Dimensões identificadas",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.dimensions.ifBlank{"Nenhuma dimensão específica foi identificada."},color=violet)
-     Text("Pontos de atenção",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Pontos de atenção",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.attention,color=violet)
-     Text("Aprendizados",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Aprendizados",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.learning,color=violet)
-     Text("Direcionamento",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Direcionamento",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.direction,color=violet)
      if(todayAnalysis.scriptureReference.isNotBlank()) {
       Text(todayAnalysis.scriptureReference,color=gold,fontWeight=FontWeight.Bold)
       Text(todayAnalysis.scriptureContext,color=violet,style=MaterialTheme.typography.bodySmall)
      }
-     Text("Próximo passo",color=violet,fontWeight=FontWeight.SemiBold)
+     Text("Próximo passo",color=GoldBright,fontWeight=FontWeight.SemiBold)
      Text(todayAnalysis.nextStep,color=violet)
-     Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color=Color.Gray,style=MaterialTheme.typography.labelSmall)
+     Text("Leitura contextual local; não substitui aconselhamento pastoral, psicológico ou profissional.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
     }
    }
   }
   if(todayAgenda.isNotEmpty()) {
-   Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=violet,fontWeight=FontWeight.SemiBold)
+   Text("Compromissos previstos hoje",modifier=Modifier.padding(top=12.dp),color=GoldBright,fontWeight=FontWeight.SemiBold)
    todayAgenda.sortedBy{it.scheduledAt}.forEach { item->
-    Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+    Text("• "+Instant.ofEpochMilli(item.scheduledAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))+"  "+item.title+(if(item.completed) " · concluído" else " · previsto"),color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
    }
   }
-  Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=violet,fontWeight=FontWeight.Bold)
+  Text("Histórico do diário",modifier=Modifier.padding(top=14.dp,bottom=6.dp),color=GoldBright,fontWeight=FontWeight.Bold)
   LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-   items(entries.filter{it.dayKey!=todayKey},key={it.id}) { entry->
-    Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   items(entries.filter{it.dayKey!=todayKey && it.dimension==LifeDimension.INDIVIDUAL},key={it.id}) { entry->
+    Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
      Column(Modifier.padding(12.dp)) {
       Text(if(entry.dayKey.isBlank()) formatDate(entry.createdAt) else entry.dayKey,color=gold,fontWeight=FontWeight.Bold)
       Text(entry.content,color=violet,maxLines=5)
@@ -624,27 +774,27 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
 @Composable private fun ReviewPage(entries:List<ReviewEntry>,vm:AppViewModel) {
  var period by remember { mutableStateOf(ReviewPeriod.WEEKLY) }; var body by remember { mutableStateOf("") }
  Column(Modifier.fillMaxSize().padding(16.dp)) {
-  Text("Revisões históricas",style=MaterialTheme.typography.headlineSmall,color=Navy,fontWeight=FontWeight.Bold)
+  Text("Revisões históricas",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
   Text("Observe sua caminhada sem transformar registros em julgamento.")
   Row { ReviewPeriod.entries.forEach { v->FilterChip(period==v,{period=v},label={Text(if(v==ReviewPeriod.WEEKLY) "Semanal" else "Mensal")}) } }
   OutlinedTextField(body,{body=it},Modifier.fillMaxWidth().heightIn(min=120.dp),label={Text("O que aprendi? O que merece atenção? Qual será meu próximo passo?")})
-  Button(onClick={vm.addReview(period,body).also{body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=Navy)) { Text("Salvar revisão") }
+  Button(onClick={vm.addReview(period,body).also{body=""}},Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor = VioletPrimary)) { Text("Salvar revisão") }
   val periodEntries=entries.filter { it.period==period }.sortedByDescending { it.periodStart }
   if(periodEntries.size>=2) {
-   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
+   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
     Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-     Text("Comparação com a revisão anterior",color=Navy,fontWeight=FontWeight.Bold)
-     Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color=Color.Gray,style=MaterialTheme.typography.bodySmall)
+     Text("Comparação com a revisão anterior",color=GoldBright,fontWeight=FontWeight.Bold)
+     Text("Observe mudanças, temas recorrentes e decisões registradas. Esta comparação não atribui notas nem mede seu valor pessoal.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
      Text("Mais recente · "+formatDate(periodEntries[0].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
-     Text(periodEntries[0].reflection,color=Navy)
+     Text(periodEntries[0].reflection,color=Ivory)
      Divider(color=Paper)
      Text("Anterior · "+formatDate(periodEntries[1].periodStart),color=Gold,fontWeight=FontWeight.SemiBold)
-     Text(periodEntries[1].reflection,color=Navy)
+     Text(periodEntries[1].reflection,color=Ivory)
     }
    }
   }
-  LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor=Color.White)) {
-   Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=Navy,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
+  LazyColumn { items(entries,key={it.id}) { e->Card(Modifier.fillMaxWidth().padding(vertical=4.dp),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+   Column(Modifier.padding(12.dp)) { Text(if(e.period==ReviewPeriod.WEEKLY) "Revisão semanal" else "Revisão mensal",color=GoldBright,fontWeight=FontWeight.Bold); Text(formatDate(e.periodStart),color=Gold); Text(e.reflection) }
   } } }
  }
 }
