@@ -96,8 +96,8 @@ class RoomV4ToV5MigrationTest {
             db.query("PRAGMA index_list(sync_outbox)").use { cursor ->
                 while (cursor.moveToNext()) outboxIndexes += cursor.getString(cursor.getColumnIndexOrThrow("name"))
             }
-            assertTrue(outboxIndexes.contains("index_sync_outbox_status_nextAttemptAt"))
-            assertTrue(outboxIndexes.contains("index_sync_outbox_recordId_createdAt"))
+            assertTrue(outboxIndexes.contains("index_sync_outbox_accountId_status_nextAttemptAt"))
+            assertTrue(outboxIndexes.contains("index_sync_outbox_accountId_recordId_createdAt"))
 
             db.query("PRAGMA foreign_key_check").use { assertFalse("Foreign-key violations found", it.moveToFirst()) }
             db.query("PRAGMA integrity_check").use {

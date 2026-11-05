@@ -57,7 +57,7 @@ class RoomV7ToV8MigrationTest {
             assertEquals("7", legacyRow[4])
             assertEquals("2", legacyRow[5])
             assertEquals("legacy-cipher", legacyRow[6])
-            assertTrue(legacyRow[7].contains("no authenticated account binding"))
+            assertEquals("temporary network error", legacyRow[7])
             assertTrue(dao.nextBatch("account-A", 10_000L).isEmpty())
             assertTrue(dao.nextBatch("account-B", 10_000L).isEmpty())
 

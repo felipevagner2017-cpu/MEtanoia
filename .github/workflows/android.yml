@@ -163,4 +163,22 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: gradle connectedDebugAndroidTest --stacktrace
+          script: gradle connectedDebugAndroidTest --stacktrace && python3 scripts/capture_emulator_screens.py
+      - name: Upload instrumented test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-room-instrumented-reports
+          path: |
+            app/build/reports/androidTests/connected/**
+            app/build/outputs/androidTest-results/connected/**
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload real emulator screenshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-emulator-screens
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 30

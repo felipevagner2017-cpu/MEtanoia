@@ -223,7 +223,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var cotidianoTab by remember { mutableStateOf("Agenda") }
  var showAiAssistant by remember { mutableStateOf(false) }
  var aiInitialDimension by remember { mutableStateOf("Visão integrada") }
- val sectionLabels = listOf("Devoção","Matrimônio","Profissional","Cotidiano")
+ val sectionLabels = listOf("Painel","Devoção","Matrimônio","Profissional","Cotidiano")
  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
  val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -257,7 +257,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
      Text("UMA MENTE RENOVADA",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.labelSmall,letterSpacing=1.2.sp)
     }
-    TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Devoção";1->"Matrimônio";2->"Profissional";else->"Cotidiano"};showAiAssistant=true}) {
+    TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";else->"Cotidiano"};showAiAssistant=true}) {
      Text("IA",color=DeepViolet,fontWeight=FontWeight.Bold,modifier=Modifier.background(GoldChampagne,MaterialTheme.shapes.large).padding(horizontal=15.dp,vertical=8.dp))
     }
    }
@@ -296,9 +296,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    modifier = Modifier.fillMaxSize().weight(1f)
   ) { page ->
    when(page) {
-    0 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
-    1 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
-    2 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
+    0 -> DashboardPage(agenda, journal, analyses) { destination ->
+     val target = when(destination) { "Devocional" -> 1; "Matrimônio" -> 2; "Profissional" -> 3; else -> 4 }
+     pagerScope.launch { pagerState.animateScrollToPage(target) }
+    }
+    1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
+    2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
+    3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
     else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
      Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
       listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
