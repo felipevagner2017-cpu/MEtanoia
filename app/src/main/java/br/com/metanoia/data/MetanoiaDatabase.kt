@@ -21,9 +21,9 @@ class AgendaConverters {
 @Database(
     entities = [
         AgendaItem::class, JournalEntry::class, ReviewEntry::class,
-        ConfessionEntry::class, DailyAnalysisEntry::class
+        ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -33,6 +33,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
     abstract fun confessionDao(): ConfessionDao
     abstract fun dailyAnalysisDao(): DailyAnalysisDao
+    abstract fun syncOutboxDao(): SyncOutboxDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -96,6 +97,31 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS sync_outbox (
+                        operationId TEXT NOT NULL PRIMARY KEY,
+                        recordId TEXT NOT NULL,
+                        dimension TEXT NOT NULL,
+                        recordType TEXT NOT NULL,
+                        operation TEXT NOT NULL,
+                        payloadCiphertext TEXT NOT NULL,
+                        encryptionVersion INTEGER NOT NULL,
+                        baseRevision INTEGER NOT NULL,
+                        clientUpdatedAt INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        attemptCount INTEGER NOT NULL,
+                        nextAttemptAt INTEGER NOT NULL,
+                        lastError TEXT,
+                        createdAt INTEGER NOT NULL
+                    )"""
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_outbox_status_nextAttemptAt ON sync_outbox(status, nextAttemptAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_outbox_recordId_createdAt ON sync_outbox(recordId, createdAt)")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -103,7 +129,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build().also { INSTANCE = it }
             }
     }
