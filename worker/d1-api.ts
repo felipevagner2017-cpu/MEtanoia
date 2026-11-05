@@ -51,14 +51,14 @@ export async function authenticate(request: Request, db: D1Database) {
 
 export async function handleD1Api(request: Request, env: D1Env, url: URL, origin?: string): Promise<Response | null> {
   if (!url.pathname.startsWith("/api/auth/") && !url.pathname.startsWith("/api/sync/") && !url.pathname.startsWith("/api/devices/") && !url.pathname.startsWith("/api/backups/") && !url.pathname.startsWith("/api/consents/")) return null;
-  if (!env.DB) return json({ error: "Banco central ainda não provisionado. Nenhum dado foi alterado." }, 503, origin);
-  const db = env.DB;
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
-    "Access-Control-Allow-Origin": origin || "",
+    ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Registration-Key",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Max-Age": "86400", Vary: "Origin",
   }});
+  if (!env.DB) return json({ error: "Banco central ainda não provisionado. Nenhum dado foi alterado." }, 503, origin);
+  const db = env.DB;
 
   try {
     if (url.pathname === "/api/auth/register" && request.method === "POST") {
@@ -233,22 +233,28 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         const previous = await db.prepare("SELECT status,result_revision FROM sync_operations WHERE user_id=? AND operation_id=?")
           .bind(session.user_id,operationId).first<{status:string;result_revision:number|null}>();
         if (previous) { results.push({ operationId, status: previous.status, revision: previous.result_revision, duplicate: true }); continue; }
-        const current = await db.prepare("SELECT revision FROM records WHERE user_id=? AND record_id=?").bind(session.user_id,recordId).first<{revision:number}>();
-        const currentRevision = current?.revision || 0;
-        if (currentRevision !== baseRevision) {
-          results.push({ operationId, status: "conflict", currentRevision }); continue;
+        const nextRevision = baseRevision + 1, now = Date.now();
+        const recordType = operation === "delete" ? "tombstone" : String(op.recordType || "entry").slice(0,80);
+        const storedPayload = operation === "delete" ? "" : payload;
+        const storedClientTime = operation === "delete" ? now : Number(op.clientUpdatedAt || now);
+        const write = db.prepare(
+          "INSERT INTO records(user_id,record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at) " +
+          "VALUES(?,?,?,?,?,1,?,?,?,?) " +
+          "ON CONFLICT(user_id,record_id) DO UPDATE SET dimension=excluded.dimension,record_type=excluded.record_type,payload_ciphertext=excluded.payload_ciphertext,encryption_version=excluded.encryption_version,revision=excluded.revision,client_updated_at=excluded.client_updated_at,server_updated_at=excluded.server_updated_at,deleted_at=excluded.deleted_at " +
+          "WHERE records.revision=?"
+        ).bind(session.user_id,recordId,dimension,recordType,storedPayload,nextRevision,storedClientTime,now,operation === "delete" ? now : null,baseRevision);
+        const audit = db.prepare(
+          "INSERT INTO sync_operations(user_id,operation_id,device_id,record_id,operation,base_revision,result_revision,status,server_updated_at) " +
+          "SELECT ?,?,?,?,?,?,?, 'applied', ? WHERE changes()=1"
+        ).bind(session.user_id,operationId,deviceId,recordId,operation,baseRevision,nextRevision,now);
+        const batchResult = await db.batch([write,audit]);
+        const changed = Number((batchResult[0] as any)?.meta?.changes || 0);
+        if (changed !== 1) {
+          const current = await db.prepare("SELECT revision FROM records WHERE user_id=? AND record_id=?")
+            .bind(session.user_id,recordId).first<{revision:number}>();
+          results.push({ operationId, status: "conflict", currentRevision: current?.revision || 0 });
+          continue;
         }
-        const nextRevision = currentRevision + 1, now = Date.now();
-        const statements = operation === "delete"
-          ? [
-              db.prepare("INSERT INTO records(user_id,record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at) VALUES(?,?,?,'tombstone','',1,?,?,?,?) ON CONFLICT(user_id,record_id) DO UPDATE SET revision=excluded.revision,server_updated_at=excluded.server_updated_at,deleted_at=excluded.deleted_at").bind(session.user_id,recordId,dimension,nextRevision,now,now,now),
-            ]
-          : [
-              db.prepare("INSERT INTO records(user_id,record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at) VALUES(?,?,?,?,?,1,?,?,?,NULL) ON CONFLICT(user_id,record_id) DO UPDATE SET dimension=excluded.dimension,record_type=excluded.record_type,payload_ciphertext=excluded.payload_ciphertext,revision=excluded.revision,client_updated_at=excluded.client_updated_at,server_updated_at=excluded.server_updated_at,deleted_at=NULL").bind(session.user_id,recordId,dimension,String(op.recordType || "entry").slice(0,80),payload,nextRevision,Number(op.clientUpdatedAt || now),now),
-            ];
-        statements.push(db.prepare("INSERT INTO sync_operations(user_id,operation_id,device_id,record_id,operation,base_revision,result_revision,status,server_updated_at) VALUES(?,?,?,?,?,?,?,'applied',?)")
-          .bind(session.user_id,operationId,deviceId,recordId,operation,baseRevision,nextRevision,now));
-        await db.batch(statements);
         results.push({ operationId, status: "applied", revision: nextRevision, serverUpdatedAt: now });
       }
       return json({ results, serverTime: Date.now() }, 200, origin);
