@@ -276,7 +276,7 @@ function renderIngrid(){
 }
 
 
-const aiSession={token:sessionStorage.getItem("metonoia-session-token")||"",history:[],busy:false};
+const aiSession={token:sessionStorage.getItem("metonoia-session-token")||"",history:[],busy:false,accountDataKey:null};
 const aiDimensionRecords={
  "Devoção":["Espiritual"],"Matrimônio":["Matrimonial"],"Profissional":["Profissional"],"Cotidiano":["Cotidiano"]
 };
@@ -336,6 +336,34 @@ async function accountRequest(path,payload,extraHeaders={}){
  if(!response.ok)throw new Error(data.error||"Não foi possível autenticar a conta.");
  return data;
 }
+async function unlockAccountCrypto(){
+ const phrase=$("accountEncryptionPassphrase").value;
+ if(!aiSession.token){accountStatus("Entre na conta antes de inicializar a criptografia.");return}
+ if(!window.MEtanoiaAccountCrypto){accountStatus("Módulo de criptografia indisponível. Atualize o aplicativo.");return}
+ if(phrase.length<12){accountStatus("Informe uma frase exclusiva com pelo menos 12 caracteres.");return}
+ const headers={Authorization:"Bearer "+aiSession.token};
+ $("accountUnlock").disabled=true;accountStatus("Verificando chave criptográfica...");
+ try{
+  let response=await fetch("/api/crypto/key-envelope",{headers});
+  let data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Não foi possível consultar a chave da conta.");
+  if(data.envelope){
+   aiSession.accountDataKey=await window.MEtanoiaAccountCrypto.openEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase,data.envelope);
+  }else{
+   const envelope=await window.MEtanoiaAccountCrypto.createEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase);
+   response=await fetch("/api/crypto/key-envelope",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify({envelope})});
+   data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.error||"Não foi possível inicializar a chave da conta.");
+   aiSession.accountDataKey=await window.MEtanoiaAccountCrypto.openEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase,envelope);
+  }
+  $("accountEncryptionPassphrase").value="";
+  accountStatus("Criptografia da conta desbloqueada neste navegador. A chave permanece somente na memória desta sessão.");
+ }catch(error){
+  aiSession.accountDataKey=null;
+  accountStatus(error.message||"Não foi possível desbloquear a criptografia.");
+ }finally{$("accountUnlock").disabled=false}
+}
+$("accountUnlock").onclick=unlockAccountCrypto;
 $("accountLogin").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
  if(!email||!password){accountStatus("Informe e-mail e senha.");return}
@@ -354,7 +382,7 @@ $("accountRegister").onclick=async()=>{
 };
 $("accountLogout").onclick=async()=>{
  try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
- aiSession.token="";sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
  $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
 };
 if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
