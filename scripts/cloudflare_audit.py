@@ -55,6 +55,12 @@ add(f"Worker domain mapping (HTTP {status})", [
     for d in domains
 ] if domains else ["- Domain inventory unavailable or empty. Check Workers Scripts Read."])
 
+status, data = get(f"/accounts/{account}/workers/subdomain")
+subdomain = data.get("result", {}).get("subdomain") if status == 200 and data.get("success") else None
+add(f"Workers.dev account subdomain (HTTP {status})", [
+    f"- Account subdomain: {subdomain}"
+] if subdomain else ["- Subdomain unavailable."])
+
 status, data = get(f"/accounts/{account}/d1/database")
 databases = data.get("result", []) if status == 200 and data.get("success") else []
 add(f"D1 database inventory (HTTP {status})", [
