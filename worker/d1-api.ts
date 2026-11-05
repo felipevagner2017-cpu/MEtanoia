@@ -71,7 +71,10 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       const label = String(body.deviceLabel || platform).slice(0, 80);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || password.length < 12 || password.length > 256)
         return json({ error: "Informe e-mail válido e senha com pelo menos 12 caracteres." }, 400, origin);
-      const id = crypto.randomUUID(), deviceId = crypto.randomUUID(), sessionId = crypto.randomUUID();
+      if (body.deviceId !== undefined && (typeof body.deviceId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.deviceId)))
+        return json({ error: "Identidade de dispositivo inválida." }, 400, origin);
+      const id = crypto.randomUUID(), deviceId = body.deviceId || crypto.randomUUID(), sessionId = crypto.randomUUID();
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const hash = await passwordHash(password, salt);
       const token = randomToken(), now = Date.now(), expires = now + 30 * 86400000;
