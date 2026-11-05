@@ -25,8 +25,7 @@ class MainActivityNavigationTest {
     private fun clickNavigationControl(label: String) {
         // The same label can also be rendered as a page title/content. Select the
         // actual clickable navigation control rather than requiring global uniqueness.
-        composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())
-            .onFirst()
+        composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())[0]
             .assertIsDisplayed()
             .performClick()
     }
