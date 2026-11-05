@@ -7,7 +7,7 @@ PACKAGE = "br.com.metanoia"
 ACTIVITY = f"{PACKAGE}/.MainActivity"
 os.makedirs(OUT, exist_ok=True)
 
-def adb(*args, binary=False, check=True, timeout=30):
+def adb(*args, binary=False, check=True, timeout=20):
     try:
         p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
@@ -22,7 +22,7 @@ def adb(*args, binary=False, check=True, timeout=30):
 
 def dump_ui():
     print("Atualizando árvore UIAutomator...", flush=True)
-    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", timeout=45)
+    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", timeout=15)
     return ET.fromstring(adb("exec-out", "cat", "/sdcard/window.xml"))
 
 def visible_node(root, label):
@@ -41,7 +41,7 @@ def capture(name):
 def find_and_tap(label):
     print("Navegando para:", label, flush=True)
     width, height = map(int, re.search(r"(\d+)x(\d+)", adb("shell", "wm", "size")).groups())
-    for attempt in range(12):
+    for attempt in range(4):
         root = dump_ui()
         _, bounds = visible_node(root, label)
         if bounds:
