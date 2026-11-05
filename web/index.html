@@ -325,12 +325,16 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
   <div class="eyebrow">Conta MEtanoia</div>
   <label for="accountEmail">E-mail da conta</label>
   <input id="accountEmail" class="field" type="email" autocomplete="username" placeholder="seu@email.com">
+  <label for="accountEncryptionPassphrase">Frase de criptografia (independente da senha da conta)</label>
+  <input id="accountEncryptionPassphrase" class="field" type="password" autocomplete="off" minlength="12" maxlength="256" placeholder="Use uma frase exclusiva com pelo menos 12 caracteres">
+  <p class="muted">A frase nunca é enviada ao servidor. Sem ela ou uma chave de recuperação futura, os dados cifrados não poderão ser recuperados.</p>
   <label for="accountPassword">Senha da conta</label>
   <input id="accountPassword" class="field" type="password" autocomplete="current-password" placeholder="Senha com pelo menos 12 caracteres">
   <label for="registrationKey">Código de convite (somente no primeiro cadastro)</label>
   <input id="registrationKey" class="field" type="password" autocomplete="off" placeholder="Código de convite fornecido pelo administrador">
   <div class="row" style="flex-wrap:wrap">
    <button id="accountLogin" class="btn">Entrar</button>
+   <button id="accountUnlock" class="btn">Inicializar / desbloquear criptografia</button>
    <button id="accountRegister" class="btn">Criar conta</button>
    <button id="accountLogout" class="btn" hidden>Sair</button>
   </div>
