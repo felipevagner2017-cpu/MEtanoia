@@ -56,6 +56,8 @@ Foi adicionado um diagnóstico de leitura à CI usando os secrets já configurad
 - O secret de API Token e o Account ID existem e são aceitos para listar Workers (HTTP 200).
 - A conta contém três Workers: `igrejaparacidade`, `metanoia` (tag `641780bf8f00438e9772d7481d53b6d4`) e `metonoia` (tag `91b542bb719049e39309be258c1122ce`). Portanto, há dois Workers com grafias distintas; nenhum foi excluído ou alterado.
 - Listagem de Worker Domains respondeu HTTP 200, sem domínios customizados retornados.
+- A API workers/subdomain respondeu HTTP 200 e confirmou o subdomínio da conta como `restaura-lar`. O endereço correspondente ao Worker `metanoia` é `https://metanoia.restaura-lar.workers.dev`. O Worker `metonoia` permanece preservado como recurso separado; não foi excluído.
+- A allowlist CORS secundária foi corrigida de `metonoia.felipevagner2017.workers.dev` para `metonoia.restaura-lar.workers.dev`, alinhando-a ao subdomínio atual da conta. O domínio oficial do Worker principal permaneceu inalterado.
 - A API de builds respondeu HTTP 403 para os dois Workers e para os builds conhecidos (`acb6fba7-4e02-4a40-991d-873faabe8eba`, `99a49e20-ae4d-424d-8bb2-2a328fbd31fc)). A credencial atual não tem permissão Workers CI Read.
 - A API D1 respondeu HTTP 401; a credencial não possui acesso D1 suficiente para inventariar/provisionar banco.
 - O token atual, portanto, permite inventário de scripts, mas não permite obter os logs de build nem consultar bancos D1.
