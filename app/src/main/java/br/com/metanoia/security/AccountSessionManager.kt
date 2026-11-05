@@ -42,7 +42,7 @@ class AccountSessionManager(
             identities.saveSession(session)
             return AuthenticatedAccount(session.userId, session.deviceId)
         } finally {
-            passphrase.fill('\\u0000')
+            passphrase.fill('\u0000')
         }
     }
 
@@ -56,7 +56,7 @@ class AccountSessionManager(
             unlockAccountKey(session, passphrase)
             return AuthenticatedAccount(session.userId, session.deviceId)
         } finally {
-            passphrase.fill('\\u0000')
+            passphrase.fill('\u0000')
         }
     }
 
