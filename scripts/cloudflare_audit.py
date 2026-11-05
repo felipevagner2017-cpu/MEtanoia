@@ -78,7 +78,7 @@ add(f"D1 database inventory (HTTP {status})", [
     for d in databases
 ] if databases else ["- D1 inventory unavailable or empty. Check D1 Read."])
 
-for build_id in ("ff732fe1-14d1-493f-bd97-658253f49053", "acb6fba7-4e02-4a40-991d-873faabe8eba", "99a49e20-ae4d-424d-8bb2-2a328fbd31fc"):
+for build_id in ("d08878b1-c4bf-4e7a-9c58-f745332e23cd", "ff732fe1-14d1-493f-bd97-658253f49053", "acb6fba7-4e02-4a40-991d-873faabe8eba", "99a49e20-ae4d-424d-8bb2-2a328fbd31fc"):
     status, data = get(f"/accounts/{account}/builds/builds/{build_id}")
     result = data.get("result", {}) if status == 200 and data.get("success") else {}
     meta = result.get("build_trigger_metadata") or {}
