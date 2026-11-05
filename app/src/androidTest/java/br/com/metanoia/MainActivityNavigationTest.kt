@@ -1,6 +1,9 @@
 package br.com.metanoia
 
 import android.Manifest
+import android.os.ParcelFileDescriptor
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.ByteArrayOutputStream
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -41,6 +44,16 @@ class MainActivityNavigationTest {
         composeRule.waitForIdle()
     }
 
+    private fun captureScreen(name: String) {
+        composeRule.waitForIdle()
+        val path = "/sdcard/Download/MEtanoia-$name.png"
+        val descriptor = InstrumentationRegistry.getInstrumentation()
+            .uiAutomation.executeShellCommand("screencap -p $path")
+        ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { input ->
+            input.copyTo(ByteArrayOutputStream())
+        }
+    }
+
     private fun assertPageVisible(tab: String, expected: String) {
         try {
             composeRule.waitUntil(timeoutMillis = 10_000) {
@@ -60,25 +73,34 @@ class MainActivityNavigationTest {
     fun fourDimensionsAndDailyAreasAreReachable() {
         assertPageVisible("Painel", "Mensagens e desafios")
         assertPageVisible("Painel", "SUAS QUATRO DIMENSÕES")
+        captureScreen("01-dashboard")
         clickNavigationControl("Devoção")
         assertPageVisible("Devoção", "Devocional / Espiritual")
+        captureScreen("02-devocao")
 
         clickNavigationControl("Matrimônio")
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
+        captureScreen("03-matrimonio")
 
         clickNavigationControl("Profissional")
         assertPageVisible("Profissional", "DIMENSÃO 03")
+        captureScreen("04-profissional")
 
         clickNavigationControl("Cotidiano")
         assertPageVisible("Cotidiano", "Minha agenda")
+        captureScreen("05-cotidiano")
+        captureScreen("06-agenda-marca-dagua")
 
         clickNavigationControl("Diário")
         assertPageVisible("Diário", "Diário de hoje")
+        captureScreen("07-diario")
 
         clickNavigationControl("Revisões")
         assertPageVisible("Revisões", "Revisões históricas")
+        captureScreen("08-revisoes")
 
         clickNavigationControl("Alertas")
         assertPageVisible("Alertas", "Notificações e alarmes")
+        captureScreen("09-alertas")
     }
 }
