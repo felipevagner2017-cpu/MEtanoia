@@ -43,7 +43,7 @@ class RoomV4ToV5MigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7)
+            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8)
             .build()
         try {
             assertEquals("Compromisso legado", migrated.agendaDao().findById(41L)?.title)
@@ -51,10 +51,11 @@ class RoomV4ToV5MigrationTest {
             assertEquals("Revisão preservada", migrated.reviewDao().observeHistory().first().single().reflection)
             assertEquals("Confissão preservada", migrated.confessionDao().findForDay("2026-11-04")?.content)
             assertEquals("Resumo preservado", migrated.dailyAnalysisDao().findForDay("2026-11-04")?.summary)
-            assertEquals("v1.ciphertext", migrated.syncOutboxDao().historyForRecord("", "legacy-record").single().payloadCiphertext)
+            val quarantinedV4 = migrated.openHelper.readableDatabase.query("SELECT payloadCiphertext,status FROM sync_outbox")
+            quarantinedV4.use { c -> assertTrue(c.moveToFirst()); assertEquals("v1.ciphertext", c.getString(0)); assertEquals("quarantined", c.getString(1)) }
 
             val db = migrated.openHelper.readableDatabase
-            assertEquals(7, db.version)
+            assertEquals(8, db.version)
             val expectedTables = setOf(
                 "agenda_items", "journal_entries", "review_entries", "confession_entries",
                 "daily_analysis", "sync_outbox", "sync_nonce_counters", "sync_record_metadata", "sync_cursors", "sync_remote_records", "android_metadata", "room_master_table"

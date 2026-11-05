@@ -3,13 +3,16 @@ package br.com.metanoia.data
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class SyncOutboxDaoTest {
     private lateinit var database: MetanoiaDatabase
 
@@ -72,12 +75,8 @@ class SyncOutboxDaoTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun blankAccountCannotReadPendingOperations() = runBlocking {
-        database.syncOutboxDao().nextBatch("", 100L)
-    }
+    fun blankAccountCannotReadPendingOperations(): Unit { runBlocking { database.syncOutboxDao().nextBatch("", 100L) } }
 
     @Test(expected = IllegalArgumentException::class)
-    fun blankAccountCannotEnqueueOperation() = runBlocking {
-        database.syncOutboxDao().enqueue(operation(""))
-    }
+    fun blankAccountCannotEnqueueOperation(): Unit { runBlocking { database.syncOutboxDao().enqueue(operation("")) } }
 }

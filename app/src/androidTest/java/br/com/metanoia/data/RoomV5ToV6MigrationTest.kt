@@ -33,16 +33,16 @@ class RoomV5ToV6MigrationTest {
    legacy.execSQL("INSERT INTO sync_outbox VALUES('op-v5','legacy-record-v5','DAILY','journal','upsert','v1.ciphertext-v5',1,0,1793890000001,'pending',0,0,NULL,1793890000000)")
    legacy.version=5
   } finally { legacy.close() }
-  val db=Room.databaseBuilder(context,MetanoiaDatabase::class.java,name).addMigrations(MetanoiaDatabase.MIGRATION_5_6,MetanoiaDatabase.MIGRATION_6_7).build()
+  val db=Room.databaseBuilder(context,MetanoiaDatabase::class.java,name).addMigrations(MetanoiaDatabase.MIGRATION_5_6,MetanoiaDatabase.MIGRATION_6_7,MetanoiaDatabase.MIGRATION_7_8).build()
   try {
-   assertEquals(7,db.openHelper.readableDatabase.version)
+   assertEquals(8,db.openHelper.readableDatabase.version)
    assertEquals("Agenda V5",db.agendaDao().findById(501L)?.title)
    assertEquals("Diário V5",db.journalDao().findForDay("2026-11-05")?.title)
    assertEquals("Revisão V5",db.reviewDao().observeHistory().first().single().reflection)
    assertEquals("Confissão V5",db.confessionDao().findForDay("2026-11-05")?.content)
    assertEquals("Análise V5",db.dailyAnalysisDao().findForDay("2026-11-05")?.summary)
-   val old=db.syncOutboxDao().historyForRecord("", "legacy-record-v5").single()
-   assertEquals("v1.ciphertext-v5",old.payloadCiphertext); assertEquals("",old.sourceDeviceId); assertEquals("record",old.purpose)
+   val old=db.openHelper.readableDatabase.query("SELECT payloadCiphertext,status,sourceDeviceId,purpose FROM sync_outbox")
+   old.use { c -> assertTrue(c.moveToFirst()); assertEquals("v1.ciphertext-v5",c.getString(0)); assertEquals("quarantined",c.getString(1)); assertEquals("",c.getString(2)); assertEquals("record",c.getString(3)) }
    val meta=db.syncRecordMetadataDao()
    assertEquals(5,meta.count()); assertEquals("legacy-agenda_items-501",meta.find("agenda_items","501")?.recordId)
    assertEquals("DAILY",meta.find("agenda_items","501")?.dimension); assertEquals("local",meta.find("agenda_items","501")?.syncState)
