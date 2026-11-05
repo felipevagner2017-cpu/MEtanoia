@@ -51,7 +51,7 @@ class RoomV4ToV5MigrationTest {
             assertEquals("Revisão preservada", migrated.reviewDao().observeHistory().first().single().reflection)
             assertEquals("Confissão preservada", migrated.confessionDao().findForDay("2026-11-04")?.content)
             assertEquals("Resumo preservado", migrated.dailyAnalysisDao().findForDay("2026-11-04")?.summary)
-            assertEquals("v1.ciphertext", migrated.syncOutboxDao().historyForRecord("legacy-record").single().payloadCiphertext)
+            assertEquals("v1.ciphertext", migrated.syncOutboxDao().historyForRecord("", "legacy-record").single().payloadCiphertext)
 
             val db = migrated.openHelper.readableDatabase
             assertEquals(7, db.version)

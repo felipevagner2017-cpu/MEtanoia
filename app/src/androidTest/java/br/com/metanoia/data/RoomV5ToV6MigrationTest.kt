@@ -41,7 +41,7 @@ class RoomV5ToV6MigrationTest {
    assertEquals("Revisão V5",db.reviewDao().observeHistory().first().single().reflection)
    assertEquals("Confissão V5",db.confessionDao().findForDay("2026-11-05")?.content)
    assertEquals("Análise V5",db.dailyAnalysisDao().findForDay("2026-11-05")?.summary)
-   val old=db.syncOutboxDao().historyForRecord("legacy-record-v5").single()
+   val old=db.syncOutboxDao().historyForRecord("", "legacy-record-v5").single()
    assertEquals("v1.ciphertext-v5",old.payloadCiphertext); assertEquals("",old.sourceDeviceId); assertEquals("record",old.purpose)
    val meta=db.syncRecordMetadataDao()
    assertEquals(5,meta.count()); assertEquals("legacy-agenda_items-501",meta.find("agenda_items","501")?.recordId)
