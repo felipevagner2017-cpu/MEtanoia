@@ -21,9 +21,9 @@ class AgendaConverters {
 @Database(
     entities = [
         AgendaItem::class, JournalEntry::class, ReviewEntry::class,
-        ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class
+        ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,\n        SyncNonceCounterEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -33,7 +33,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
     abstract fun confessionDao(): ConfessionDao
     abstract fun dailyAnalysisDao(): DailyAnalysisDao
-    abstract fun syncOutboxDao(): SyncOutboxDao
+    abstract fun syncOutboxDao(): SyncOutboxDao\n    abstract fun syncNonceCounterDao(): SyncNonceCounterDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -122,6 +122,20 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    \"\"\"CREATE TABLE IF NOT EXISTS sync_nonce_counters (
+                        accountId TEXT NOT NULL,
+                        deviceId TEXT NOT NULL,
+                        purpose TEXT NOT NULL,
+                        nextCounter INTEGER NOT NULL,
+                        PRIMARY KEY(accountId, deviceId, purpose)
+                    )\"\"\"
+                )
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -129,7 +143,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build().also { INSTANCE = it }
             }
     }
