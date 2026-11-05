@@ -25,6 +25,8 @@ import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.ConfessionEntry
 import br.com.metanoia.data.JournalEntry
 import br.com.metanoia.data.LifeDimension
+import br.com.metanoia.security.AccountCrypto
+import br.com.metanoia.security.AccountKeyStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,6 +46,7 @@ import java.time.format.DateTimeFormatter
 
 private const val METANOIA_API_BASE = "https://metanoia.restaura-lar.workers.dev"
 private data class AiChatMessage(val role: String, val content: String)
+private data class AiAuthenticatedSession(val token: String, val userId: String, val deviceId: String)
 
 private class AiTokenStore(context: Context) {
     private val prefs = context.getSharedPreferences("metonoia_ai_secure", Context.MODE_PRIVATE)
@@ -59,14 +62,15 @@ private class AiTokenStore(context: Context) {
     }
 
     fun clear() { prefs.edit().remove("credential").apply() }
+    fun readUserId(): String = prefs.getString("user_id", "").orEmpty()
 
-    fun save(value: String) {
+    fun save(value: String, userId: String = readUserId()) {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
         val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
         val stored = Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + "." +
             Base64.encodeToString(encrypted, Base64.NO_WRAP)
-        prefs.edit().putString("credential", stored).apply()
+        prefs.edit().putString("credential", stored).putString("user_id", userId).apply()
     }
 
     private fun key(): SecretKey {
@@ -98,6 +102,10 @@ internal fun AiAssistantDialog(
     val tokenStore = remember { AiTokenStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var token by remember { mutableStateOf(tokenStore.read()) }
+    var userId by remember { mutableStateOf(tokenStore.readUserId()) }
+    var encryptionPhrase by remember { mutableStateOf("") }
+    var accountDataKey by remember { mutableStateOf<ByteArray?>(null) }
+    val accountKeyStore = remember { AccountKeyStore(context.applicationContext) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var registrationKey by remember { mutableStateOf("") }
@@ -108,6 +116,11 @@ internal fun AiAssistantDialog(
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("A conversa não será salva automaticamente.") }
     var messages by remember { mutableStateOf(emptyList<AiChatMessage>()) }
+
+    LaunchedEffect(userId) {
+        accountDataKey = if (userId.isBlank()) null else withContext(Dispatchers.IO) { accountKeyStore.load(userId) }
+        if (accountDataKey != null) status = "Chave da conta desbloqueada pelo Android Keystore neste aparelho."
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -164,7 +177,7 @@ internal fun AiAssistantDialog(
                         scope.launch {
                             try {
                                 val session = withContext(Dispatchers.IO) { AiCloudClient.authenticate(false, email.trim(), password, "") }
-                                token = session; tokenStore.save(session); status = "Conta autenticada. Sessão protegida pelo Android Keystore."
+                                token = session.token; userId = session.userId; tokenStore.save(session.token, session.userId); status = "Conta autenticada. Sessão protegida pelo Android Keystore."
                             } catch (error: Exception) { status = error.message ?: "Não foi possível autenticar." }
                             finally { authBusy = false }
                         }
@@ -175,11 +188,59 @@ internal fun AiAssistantDialog(
                         scope.launch {
                             try {
                                 val session = withContext(Dispatchers.IO) { AiCloudClient.authenticate(true, email.trim(), password, registrationKey.trim()) }
-                                token = session; tokenStore.save(session); registrationKey = ""; status = "Conta criada e autenticada."
+                                token = session.token; userId = session.userId; tokenStore.save(session.token, session.userId); registrationKey = ""; status = "Conta criada e autenticada."
                             } catch (error: Exception) { status = error.message ?: "Não foi possível criar a conta." }
                             finally { authBusy = false }
                         }
                     }, colors = ButtonDefaults.buttonColors(containerColor = VioletSurface, contentColor = Ivory)) { Text("Criar conta") }
+                }
+                if (token.isNotBlank()) {
+                    OutlinedTextField(
+                        value = encryptionPhrase, onValueChange = { encryptionPhrase = it },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        label = { Text("Frase independente de criptografia da conta") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Ivory, unfocusedTextColor = Ivory, focusedBorderColor = GoldBright, unfocusedBorderColor = GoldChampagne.copy(alpha = .5f), focusedLabelColor = GoldBright, unfocusedLabelColor = Ivory.copy(alpha = .8f), cursorColor = GoldBright)
+                    )
+                    Button(enabled = !authBusy && encryptionPhrase.length >= 12, onClick = {
+                        if (userId.isBlank()) { status = "Entre novamente para atualizar os dados de identificação da conta."; return@Button }
+                        authBusy = true
+                        status = "Desbloqueando a chave criptográfica da conta..."
+                        scope.launch {
+                            try {
+                                val phrase = encryptionPhrase.toCharArray()
+                                val dataKey = withContext(Dispatchers.IO) {
+                                    val existing = AiCloudClient.getAccountKeyEnvelope(token)
+                                    val envelopeJson = if (existing == null) {
+                                        val created = AccountCrypto().createEnvelope(userId, phrase)
+                                        AiCloudClient.saveAccountKeyEnvelope(token, created)
+                                        JSONObject(created)
+                                    } else existing
+                                    val envelope = AccountCrypto.KeyEnvelope(
+                                        envelopeJson.getInt("version"), envelopeJson.getString("kdf"),
+                                        envelopeJson.getInt("iterations"), envelopeJson.getString("salt"),
+                                        envelopeJson.getString("nonce"), envelopeJson.getString("ciphertext")
+                                    )
+                                    AccountCrypto().openEnvelope(userId, phrase, envelope)
+                                }
+                                accountKeyStore.save(userId, dataKey)
+                                accountDataKey?.fill(0)
+                                accountDataKey = dataKey
+                                phrase.fill('\u0000')
+                                encryptionPhrase = ""
+                                status = "Chave de conta desbloqueada e protegida localmente pelo Android Keystore."
+                            } catch (error: Exception) {
+                                status = error.message ?: "Não foi possível desbloquear a chave da conta."
+                            } finally { authBusy = false }
+                        }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = VioletSurface, contentColor = Ivory)) {
+                        Text(if (accountDataKey == null) "Inicializar / desbloquear criptografia" else "Atualizar chave protegida")
+                    }
+                    Text(
+                        if (accountDataKey != null) "Dados da conta protegidos neste aparelho." else "A chave ainda não foi desbloqueada neste aparelho.",
+                        color = Ivory.copy(alpha = .72f), style = MaterialTheme.typography.labelSmall
+                    )
                 }
                 Row(verticalAlignment = Alignment.Top) {
                     Checkbox(checked = consent, onCheckedChange = { consent = it }, colors = CheckboxDefaults.colors(checkedColor = GoldBright))
@@ -260,7 +321,7 @@ internal fun AiAssistantDialog(
                         val currentToken = token.trim()
                         if (currentToken.isBlank()) {
                             tokenStore.clear()
-                            token = ""
+                            token = ""; userId = ""; accountDataKey?.fill(0); accountDataKey = null
                             status = "Nenhuma sessão ativa neste aparelho."
                         } else {
                             authBusy = true
@@ -269,7 +330,7 @@ internal fun AiAssistantDialog(
                                 try {
                                     withContext(Dispatchers.IO) { AiCloudClient.logout(currentToken) }
                                     tokenStore.clear()
-                                    token = ""
+                                    token = ""; userId = ""; accountDataKey?.fill(0); accountDataKey = null
                                     messages = emptyList()
                                     status = "Sessão encerrada no servidor e neste aparelho."
                                 } catch (error: Exception) {
@@ -345,7 +406,7 @@ private fun buildAiContext(
 }
 
 private object AiCloudClient {
-    fun authenticate(register: Boolean, email: String, password: String, registrationKey: String): String {
+    fun authenticate(register: Boolean, email: String, password: String, registrationKey: String): AiAuthenticatedSession {
         val connection = URL(METANOIA_API_BASE + if (register) "/api/auth/register" else "/api/auth/login").openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.connectTimeout = 15000
@@ -361,7 +422,47 @@ private object AiCloudClient {
             val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
             if (code !in 200..299) throw IOException(response.optString("error").ifBlank { "Autenticação respondeu HTTP " + code + "." })
-            return response.optString("token").takeIf { it.length >= 24 } ?: throw IOException("A sessão não foi retornada pelo servidor.")
+            val sessionToken = response.optString("token").takeIf { it.length >= 24 } ?: throw IOException("A sessão não foi retornada pelo servidor.")
+            val userId = response.optString("userId").takeIf { it.isNotBlank() } ?: throw IOException("O identificador da conta não foi retornado.")
+            val deviceId = response.optString("deviceId").takeIf { it.isNotBlank() } ?: throw IOException("O identificador do aparelho não foi retornado.")
+            return AiAuthenticatedSession(sessionToken, userId, deviceId)
+        } finally { connection.disconnect() }
+    }
+
+    fun getAccountKeyEnvelope(token: String): JSONObject? {
+        val connection = URL(METANOIA_API_BASE + "/api/crypto/key-envelope").openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 30000
+        connection.setRequestProperty("Authorization", "Bearer " + token)
+        try {
+            val code = connection.responseCode
+            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+            val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
+            if (code !in 200..299) throw IOException(response.optString("error").ifBlank { "Falha ao consultar a chave da conta (HTTP $code)." })
+            return if (response.isNull("envelope")) null else response.getJSONObject("envelope")
+        } finally { connection.disconnect() }
+    }
+
+    fun saveAccountKeyEnvelope(token: String, envelopeJson: String) {
+        val connection = URL(METANOIA_API_BASE + "/api/crypto/key-envelope").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 30000
+        connection.doOutput = true
+        connection.setRequestProperty("Authorization", "Bearer " + token)
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        try {
+            connection.outputStream.use {
+                it.write(JSONObject().put("envelope", JSONObject(envelopeJson)).toString().toByteArray(Charsets.UTF_8))
+            }
+            val code = connection.responseCode
+            if (code !in 200..299) {
+                val responseText = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
+                throw IOException(response.optString("error").ifBlank { "Falha ao salvar a chave da conta (HTTP $code)." })
+            }
         } finally { connection.disconnect() }
     }
 
