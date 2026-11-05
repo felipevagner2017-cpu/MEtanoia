@@ -79,7 +79,7 @@ jobs:
 
 
   release-signing:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/work/phase1-integrated-main'
     runs-on: ubuntu-latest
     steps:
       - name: Check protected signing secrets
@@ -125,6 +125,24 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle assembleRelease
+      - name: Verify release APK signature and metadata
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n1)
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/metanoia-release-cert.txt"
+          CERT_SHA256=$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-release-cert.txt" | head -n1)
+          if [ -z "$CERT_SHA256" ]; then
+            echo "Não foi possível obter o SHA-256 do certificado do APK." >&2
+            exit 1
+          fi
+          PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
+          echo "### APK release assinado" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "$PACKAGE_INFO" >> "$GITHUB_STEP_SUMMARY"
+          echo "Certificate SHA-256: $CERT_SHA256" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload signed release APK
         if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
