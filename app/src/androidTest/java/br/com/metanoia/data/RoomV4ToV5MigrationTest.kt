@@ -29,7 +29,7 @@ class RoomV4ToV5MigrationTest {
         try {
             assertEquals(4, legacy.version)
             assertEquals(
-                setOf("agenda_items", "journal_entries", "review_entries", "confession_entries", "daily_analysis", "sync_outbox"),
+                setOf("android_metadata", "agenda_items", "journal_entries", "review_entries", "confession_entries", "daily_analysis", "sync_outbox"),
                 tableNames(legacy)
             )
             assertEquals(1, rowCount(legacy, "agenda_items"))
