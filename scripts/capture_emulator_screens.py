@@ -13,7 +13,7 @@ def find_and_tap(label):
         root=ET.fromstring(xml)
         for node in root.iter("node"):
             if node.attrib.get("text","").strip()==label or node.attrib.get("content-desc","").strip()==label:
-                m=re.fullmatch(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",node.attrib.get("bounds",""))
+                m=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",node.attrib.get("bounds",""))
                 if m:
                     x1,y1,x2,y2=map(int,m.groups())
                     adb("shell","input","tap",str((x1+x2)//2),str((y1+y2)//2))
@@ -24,7 +24,9 @@ def find_and_tap(label):
 def capture(name):
     with open(os.path.join(OUT,name+".png"),"wb") as f:
         f.write(adb("exec-out","screencap","-p",binary=True))
-time.sleep(4)
+adb("shell","am","force-stop","br.com.metanoia")
+adb("shell","monkey","-p","br.com.metanoia","1")
+time.sleep(5)
 capture("01-dashboard")
 for label,name in [("Devoção","02-devocao"),("Matrimônio","03-matrimonio"),("Profissional","04-profissional"),("Cotidiano","05-cotidiano")]:
     find_and_tap(label); capture(name)

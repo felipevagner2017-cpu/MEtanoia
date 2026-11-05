@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.printToLog
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
@@ -26,6 +27,7 @@ class MainActivityNavigationTest {
         // The same label can also be rendered as a page title/content. Select the
         // actual clickable navigation control rather than requiring global uniqueness.
         composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())[0]
+            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         composeRule.mainClock.advanceTimeBy(1_000)
@@ -49,6 +51,8 @@ class MainActivityNavigationTest {
 
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
+        assertPageVisible("Painel", "Mensagens e desafios")
+        assertPageVisible("Painel", "SUAS QUATRO DIMENSÕES")
         clickNavigationControl("Devoção")
         assertPageVisible("Devoção", "Devocional / Espiritual")
 
