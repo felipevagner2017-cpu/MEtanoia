@@ -56,6 +56,27 @@ try {
   const login = await request("/api/auth/login", "POST", { email, password, platform: "android", deviceLabel: "CI second device" });
   if (login.status !== 200) throw new Error("Login failed: " + JSON.stringify(login));
 
+  const keyEnvelope = {
+    format: "metanoia-key-envelope", version: 1, kdf: "PBKDF2-SHA256", iterations: 600000,
+    salt: "AAECAwQFBgcICQoLDA0ODw==", nonce: "EBESExQVFhcYGRob",
+    ciphertext: "TEkPBZsPEhWxEfDk4jt+tZq4dFKFTmjZ3tR4rQC4+L/+p0cDJNMM9ealgfi2H14P"
+  };
+  const envelopeSaved = await request("/api/crypto/key-envelope", "POST", { envelope: keyEnvelope }, session.token);
+  if (envelopeSaved.status !== 201) throw new Error("Encrypted account key envelope save failed: " + JSON.stringify(envelopeSaved));
+  const envelopeFromSecondDevice = await request("/api/crypto/key-envelope", "GET", undefined, login.data.token);
+  if (envelopeFromSecondDevice.status !== 200 || envelopeFromSecondDevice.data.envelope?.ciphertext !== keyEnvelope.ciphertext)
+    throw new Error("Account key envelope was not available to the second authorized device.");
+  const duplicateEnvelope = await request("/api/crypto/key-envelope", "POST", { envelope: keyEnvelope }, login.data.token);
+  if (duplicateEnvelope.status !== 409) throw new Error("Existing account key envelope was overwritten.");
+  const otherRegistration = await request("/api/auth/register", "POST", {
+    email: "isolated-account@example.invalid", password: "Another-local-test-password-2026",
+    platform: "pwa", deviceLabel: "Isolation test"
+  }, null, { "X-Registration-Key": invite });
+  if (otherRegistration.status !== 201) throw new Error("Second account registration failed.");
+  const isolatedEnvelope = await request("/api/crypto/key-envelope", "GET", undefined, otherRegistration.data.token);
+  if (isolatedEnvelope.status !== 200 || isolatedEnvelope.data.envelope !== null)
+    throw new Error("Account key envelope leaked across accounts.");
+
   const operation = {
     operationId: "operation-local-0001",
     recordId: "record-local-0001",
@@ -99,7 +120,7 @@ try {
   const afterRevoke = await request("/api/sync/pull?since=0", "GET", undefined, session.token);
   if (afterRevoke.status !== 401) throw new Error("Revoked device still authenticated.");
 
-  console.log("D1 Worker integration passed: registration, login, device binding, push, idempotency, conflict, pull, encrypted backup restore, device revocation.");
+  console.log("D1 Worker integration passed: registration, login, device binding, account-key envelope isolation, push, idempotency, conflict, pull, encrypted backup restore, device revocation.");
 } finally {
   server.kill("SIGTERM");
   await Promise.race([new Promise(resolve => server.once("exit", resolve)), sleep(5000)]);
