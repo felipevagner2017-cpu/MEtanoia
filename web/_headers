@@ -1,9 +1,0 @@
-/downloads/MEtonoia.apk
-  Content-Type: application/vnd.android.package-archive
-  Content-Disposition: attachment; filename="MEtonoia.apk"
-  Cache-Control: public, max-age=300
-
-/downloads/MEtonoia-codigo-fonte.zip
-  Content-Type: application/zip
-  Content-Disposition: attachment; filename="MEtonoia-codigo-fonte.zip"
-  Cache-Control: public, max-age=300

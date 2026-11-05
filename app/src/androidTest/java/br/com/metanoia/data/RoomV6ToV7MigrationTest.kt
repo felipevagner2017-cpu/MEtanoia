@@ -92,7 +92,7 @@ class RoomV6ToV7MigrationTest {
             assertEquals(1, dao.delete("account-A", "same-record"))
             assertNull(dao.find("account-A", "same-record"))
             assertEquals("ciphertext-B", dao.find("account-B", "same-record")?.payloadCiphertext)
-            assertEquals(1, dao.insertIfAbsent(accountA))
+            assertTrue(dao.insertIfAbsent(accountA) != -1L)
             assertEquals("ciphertext-A", dao.find("account-A", "same-record")?.payloadCiphertext)
 
             // A quarantined legacy row is never visible in either authenticated account scope.
