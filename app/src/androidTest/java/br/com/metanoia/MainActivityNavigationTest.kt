@@ -18,27 +18,23 @@ class MainActivityNavigationTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
+    private fun navigateAndAssert(tab: String, expected: String) {
+        composeRule.onNodeWithText(tab, substring = false).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(expected, substring = false)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
+    }
+
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
-        composeRule.onNodeWithText("Devoção", substring = false).performClick()
-        composeRule.onNodeWithText("Devocional / Espiritual", substring = false).assertIsDisplayed()
-
-        composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
-        composeRule.onNodeWithText("Matrimônio / Ingrid", substring = false).assertIsDisplayed()
-
-        composeRule.onAllNodesWithText("Profissional", substring = false)[0].performClick()
-        composeRule.onNodeWithText("DIMENSÃO 03", substring = false).assertIsDisplayed()
-
-        composeRule.onNodeWithText("Cotidiano", substring = false).performClick()
-        composeRule.onNodeWithText("Minha agenda", substring = false).assertIsDisplayed()
-
-        composeRule.onNodeWithText("Diário", substring = false).performClick()
-        composeRule.onNodeWithText("Diário de hoje", substring = false).assertIsDisplayed()
-
-        composeRule.onNodeWithText("Revisões", substring = false).performClick()
-        composeRule.onNodeWithText("Revisões históricas", substring = false).assertIsDisplayed()
-
-        composeRule.onNodeWithText("Alertas", substring = false).performClick()
-        composeRule.onNodeWithText("Notificações e alarmes", substring = false).assertIsDisplayed()
+        navigateAndAssert("Devoção", "Devocional / Espiritual")
+        navigateAndAssert("Matrimônio", "Matrimônio / Ingrid")
+        navigateAndAssert("Profissional", "DIMENSÃO 03")
+        navigateAndAssert("Cotidiano", "Minha agenda")
+        navigateAndAssert("Diário", "Diário de hoje")
+        navigateAndAssert("Revisões", "Revisões históricas")
+        navigateAndAssert("Alertas", "Notificações e alarmes")
     }
 }
