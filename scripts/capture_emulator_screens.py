@@ -1,34 +1,90 @@
 #!/usr/bin/env python3
 """Captures real screens from the running Android emulator through adb/UIAutomator."""
 import os, re, subprocess, time, xml.etree.ElementTree as ET
-OUT="screenshots"
+
+OUT = "screenshots"
+PACKAGE = "br.com.metanoia"
+ACTIVITY = f"{PACKAGE}/.MainActivity"
 os.makedirs(OUT, exist_ok=True)
-def adb(*args, binary=False):
-    p=subprocess.run(["adb",*args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
-    return p.stdout if binary else p.stdout.decode("utf-8",errors="replace")
-def find_and_tap(label):
-    for _ in range(10):
-        adb("shell","uiautomator","dump","/sdcard/window.xml")
-        xml=adb("exec-out","cat","/sdcard/window.xml")
-        root=ET.fromstring(xml)
-        for node in root.iter("node"):
-            if node.attrib.get("text","").strip()==label or node.attrib.get("content-desc","").strip()==label:
-                m=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",node.attrib.get("bounds",""))
-                if m:
-                    x1,y1,x2,y2=map(int,m.groups())
-                    adb("shell","input","tap",str((x1+x2)//2),str((y1+y2)//2))
-                    time.sleep(2)
-                    return
-        time.sleep(1)
-    raise RuntimeError("Não foi possível navegar para: "+label)
+
+def adb(*args, binary=False, check=True):
+    p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if check and p.returncode:
+        raise RuntimeError(
+            f"adb {' '.join(args)} falhou ({p.returncode}): "
+            + p.stderr.decode("utf-8", errors="replace")
+            + p.stdout.decode("utf-8", errors="replace")
+        )
+    return p.stdout if binary else p.stdout.decode("utf-8", errors="replace")
+
+def dump_ui():
+    adb("shell", "uiautomator", "dump", "/sdcard/window.xml")
+    return ET.fromstring(adb("exec-out", "cat", "/sdcard/window.xml"))
+
+def visible_node(root, label):
+    for node in root.iter("node"):
+        if node.attrib.get("text", "").strip() == label or node.attrib.get("content-desc", "").strip() == label:
+            m = re.fullmatch(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]", node.attrib.get("bounds", ""))
+            if m:
+                return node, tuple(map(int, m.groups()))
+    return None, None
+
 def capture(name):
-    with open(os.path.join(OUT,name+".png"),"wb") as f:
-        f.write(adb("exec-out","screencap","-p",binary=True))
-adb("shell","am","force-stop","br.com.metanoia")
-adb("shell","monkey","-p","br.com.metanoia","1")
+    with open(os.path.join(OUT, name + ".png"), "wb") as f:
+        f.write(adb("exec-out", "screencap", "-p", binary=True))
+
+def find_and_tap(label):
+    width, height = map(int, re.search(r"(\\d+)x(\\d+)", adb("shell", "wm", "size")).groups())
+    for attempt in range(12):
+        root = dump_ui()
+        node, bounds = visible_node(root, label)
+        if bounds:
+            x1, y1, x2, y2 = bounds
+            if x1 >= 0 and y1 >= 0 and x2 <= width and y2 <= height:
+                adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+                time.sleep(2)
+                return
+        # The navigation row is horizontally scrollable. Swipe it left to reveal
+        # later tabs, deriving its vertical position from a visible tab node.
+        _, nav_bounds = visible_node(root, "Devoção")
+        if not nav_bounds:
+            _, nav_bounds = visible_node(root, "Painel")
+        if not nav_bounds:
+            raise RuntimeError("Não foi possível localizar a barra de navegação para revelar: " + label)
+        _, y1, _, y2 = nav_bounds
+        y = (y1 + y2) // 2
+        adb("shell", "input", "swipe", str(width - 40), str(y), "40", str(y), "350")
+        time.sleep(0.5)
+    raise RuntimeError("Não foi possível navegar para: " + label)
+
+# Confirm that the app installed by connectedDebugAndroidTest is present.
+installed = adb("shell", "pm", "path", PACKAGE, check=False)
+if "package:" not in installed:
+    raise RuntimeError(f"O pacote {PACKAGE} não está instalado no emulador: {installed}")
+
+adb("shell", "am", "force-stop", PACKAGE)
+# Start the declared launcher activity explicitly; monkey can return 252 on
+# headless CI images even when the app's launcher activity is valid.
+launch = adb("shell", "am", "start", "-n", ACTIVITY)
+if "Error" in launch or "unable to resolve" in launch.lower():
+    raise RuntimeError("Falha ao iniciar a Activity principal: " + launch)
+
+# Capture immediately to preserve the real launch/splash transition, then wait
+# for Compose to settle before taking the Dashboard screen.
+time.sleep(0.2)
+capture("00-splash-transicao")
 time.sleep(5)
 capture("01-dashboard")
-for label,name in [("Devoção","02-devocao"),("Matrimônio","03-matrimonio"),("Profissional","04-profissional"),("Cotidiano","05-cotidiano")]:
-    find_and_tap(label); capture(name)
-find_and_tap("Agenda"); capture("06-agenda-marca-dagua")
-print("Capturas reais:",", ".join(sorted(os.listdir(OUT))))
+
+for label, name in [
+    ("Devoção", "02-devocao"),
+    ("Matrimônio", "03-matrimonio"),
+    ("Profissional", "04-profissional"),
+    ("Cotidiano", "05-cotidiano"),
+]:
+    find_and_tap(label)
+    capture(name)
+
+find_and_tap("Agenda")
+capture("06-agenda-marca-dagua")
+print("Capturas reais:", ", ".join(sorted(os.listdir(OUT))))
