@@ -1,48 +1,40 @@
-# IA híbrida do MEtanoia
+# Inteligência contextual do MEtanoia
 
-## Arquitetura
+## Arquitetura em evolução
 
-- Android e PWA preservam seus bancos locais (Room e localStorage).
-- A leitura contextual por regras continua disponível offline.
-- Quando há internet, o usuário pode abrir a assistente integrada e enviar uma pergunta ao Worker do Cloudflare.
-- O Worker chama o modelo @cf/meta/llama-3.3-70b-instruct-fp8-fast por meio do binding Workers AI.
-- A conversa não é gravada pelo Worker. A conversa na interface é temporária; o contexto enviado é limitado aos registros recentes relevantes e à agenda.
-- O usuário precisa marcar a autorização de envio antes de cada sessão de conversa.
-- Android guarda a credencial cifrada com AES-GCM e Android Keystore. A PWA mantém a credencial apenas em sessionStorage.
+- O Worker Cloudflare executa o modelo Workers AI pelo binding `AI`.
+- O backend agora possui endpoints de conta e sincronização D1 em `worker/d1-api.ts`.
+- Cadastro por convite, login, sessão opaca armazenada somente como hash, vínculo de sessão/dispositivo e revogação individual.
+- O endpoint de IA exige sessão autenticada e limita a 30 solicitações por usuário/dia.
+- Registros sincronizados são recebidos como ciphertext; o Worker não precisa conhecer o conteúdo pessoal em texto claro.
+- O contexto enviado à IA continua limitado ao que o cliente seleciona explicitamente.
 
-## Proteção da API
+## Endpoints adicionados
 
-O Worker exige o segredo METANOIA_AI_TOKEN no cabeçalho Authorization: Bearer. Não colocar esse segredo no código-fonte, no arquivo wrangler ou em variáveis públicas do frontend.
+- `POST /api/auth/register`: cadastro protegido por `X-Registration-Key`; exige senha com no mínimo 12 caracteres.
+- `POST /api/auth/login`: autenticação por e-mail e senha com PBKDF2-SHA256 (310.000 iterações).
+- `POST /api/auth/logout`: revogação da sessão atual.
+- `GET /api/devices/list` e `DELETE /api/devices/{id}`: gerenciamento de dispositivos.
+- `POST /api/sync/push`: lote de até 50 operações, idempotência por operationId e controle otimista de revisão.
+- `GET /api/sync/pull?since={timestamp}`: busca incremental de alterações e tombstones.
+- `POST /api/ai/chat`: exige sessão e aplica limite diário.
 
-### Configuração única necessária no Cloudflare
+## Provisionamento ainda necessário
 
-1. Abra o painel Cloudflare e selecione Workers & Pages.
-2. Abra o Worker metonoia.
-3. Entre em Settings → Variables and Secrets.
-4. Crie um secret chamado exatamente METANOIA_AI_TOKEN.
-5. Use uma senha aleatória longa (mínimo recomendado: 32 caracteres), salve e não a publique.
-6. Use essa mesma credencial no campo protegido da assistente no Android ou PWA.
+O Worker exige um binding D1 chamado `DB`, conectado exclusivamente ao banco do MEtanoia. O banco remoto ainda não foi criado nem associado: a migration local não é evidência de provisionamento. O cadastro exige o secret `METANOIA_REGISTRATION_KEY`. Nenhum token de IA deve ser digitado ou armazenado no aplicativo; a chamada Workers AI é feita pelo próprio Worker.
 
-O valor nunca deve ser commitado no GitHub. O deploy do Worker pode ocorrer sem o segredo, mas a API responderá 503 até que ele seja cadastrado.
+## Limites de integração atuais
 
-## Modelo e custo
+- A API D1 está implementada no código, mas não pode funcionar até existir o binding remoto e as migrations serem aplicadas.
+- As telas Android e PWA ainda não foram conectadas ao fluxo compartilhado de conta/sincronização; Room e localStorage continuam sendo os repositórios locais.
+- O histórico contextual da IA ainda não é persistido no D1. A tabela de conversas usa ciphertext e precisa da integração criptográfica cliente-servidor antes de armazenar conteúdo.
+- A cota diária é aplicada por usuário. A medição de tokens e os limites de custo monetário ainda precisam ser conectados ao retorno de uso do modelo.
+- O uso da IA requer internet. A análise local permanece disponível offline.
 
-O modelo é hospedado pela Cloudflare Workers AI. O preço depende do volume de tokens de entrada e saída e pode mudar; consulte o catálogo e a página do modelo antes de uso recorrente. A página atual do modelo informa zero data retention e preço por milhão de tokens.
+## Segurança
 
-## Privacidade e limites
-
-- Nenhum dado do Room ou do localStorage é sincronizado automaticamente para uma nuvem.
-- O usuário escolhe o foco e autoriza explicitamente o envio do contexto selecionado.
-- O contexto é reduzido aos registros recentes, confissões recentes e compromissos pertinentes; dados do cofre privado de Ingrid não são incluídos.
-- O Worker não persiste prompts nem respostas em banco próprio.
-- O token do Android é cifrado com chave mantida no Android Keystore; na PWA, fica somente na sessão atual do navegador.
-- A IA depende de internet. Sem internet, a análise contextual local continua funcionando.
-- A IA não é terapeuta, profissional de saúde, consultor financeiro nem substituto de acompanhamento pastoral.
-
-## Endpoint
-
-POST /api/ai/chat
-
-Body: { dimension, context, question, history }
-
-Response: { answer, model, mode: "cloud" }
+- Não grave credenciais em código, logs ou variáveis públicas.
+- Não envie o cofre matrimonial de Ingrid como contexto implícito.
+- O cliente deve selecionar e autorizar os registros antes do envio.
+- O servidor trata registros como dados não confiáveis, nunca como instruções.
+- A IA não substitui acompanhamento pastoral, médico, psicológico, jurídico ou financeiro.
