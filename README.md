@@ -34,7 +34,9 @@ Room mantém agenda, diário, revisões, confissões e análises. A migração m
 
 ## Inteligência contextual
 
-A inteligência do MEtanoia agora tem arquitetura híbrida: a leitura contextual local permanece disponível offline; quando há internet, a assistente integrada pode consultar o modelo generativo Workers AI por um Worker protegido. O usuário escolhe o foco e autoriza explicitamente o envio de registros recentes relevantes. O Worker não grava conversas. A credencial não fica no código: Android a cifra com Android Keystore e a PWA a mantém somente na sessão do navegador. A configuração única do segredo METANOIA_AI_TOKEN está documentada em docs/AI_HYBRID.md.
+O Worker Cloudflare utiliza Workers AI e agora contém uma base de API D1 para contas, sessões, dispositivos e sincronização incremental. O cadastro é protegido por convite; senhas usam PBKDF2-SHA256, sessões são armazenadas por hash, e operações de sincronização usam identificadores idempotentes e revisões otimistas. A API de IA exige sessão autenticada e aplica uma cota inicial de 30 solicitações por usuário/dia.
+
+**Estado de integração:** o backend D1 está preparado no código, mas ainda depende da criação do banco remoto exclusivo, da aplicação das migrations e do binding `DB`. Android e PWA ainda não foram conectados à conta/sincronização compartilhada; Room e localStorage continuam locais. O histórico de IA ainda não é persistido. Não inserir credenciais de IA no aplicativo.
 
 ## Orientação das dimensões
 
