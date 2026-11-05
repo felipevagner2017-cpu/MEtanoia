@@ -1,7 +1,7 @@
 # Protocolo criptográfico de conta — versão 1
 
 ## Estado
-Implementação dos primitivos interoperáveis Android (JCA) e PWA (Web Crypto API). Não está ativada sobre registros existentes e não autoriza migração ou exclusão. A criptografia local anterior vinculada ao Android Keystore não é interoperável com esta chave de conta.
+Implementação dos primitivos interoperáveis Android (JCA) e PWA (Web Crypto API), com vetores determinísticos bidirecionais de teste. A PWA já consegue inicializar/desbloquear o envelope via endpoint autenticado e manter a DEK somente em memória. O Android ainda não possui fluxo de tela para inicialização/desbloqueio nem integração do DEK aos registros. O protocolo não está ativado sobre registros antigos e não autoriza migração ou exclusão. A criptografia local anterior vinculada ao Android Keystore não é interoperável com esta chave de conta.
 
 ## Formato
 - Chave de dados aleatória por conta (DEK): 256 bits.
