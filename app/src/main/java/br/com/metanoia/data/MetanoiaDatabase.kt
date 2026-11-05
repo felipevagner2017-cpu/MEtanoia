@@ -124,7 +124,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
+        internal val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     """CREATE TABLE IF NOT EXISTS sync_nonce_counters (
