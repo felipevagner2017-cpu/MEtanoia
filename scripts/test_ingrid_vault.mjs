@@ -13,6 +13,8 @@ const prompts = [];
 const alerts = [];
 const context = {
   crypto: webcrypto,
+  prompts,
+  alerts,
   TextEncoder,
   TextDecoder,
   Uint8Array,
