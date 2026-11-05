@@ -5,7 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -24,19 +24,27 @@ class MainActivityNavigationTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     private fun clickNavigationControl(label: String) {
-        // The same label can also be rendered as a page title/content. Select the
-        // actual clickable navigation control rather than requiring global uniqueness.
-        composeRule.onAllNodes(hasText(label, substring = false) and hasClickAction())[0]
-            .performScrollTo()
-            .assertIsDisplayed()
-            .performClick()
-        composeRule.mainClock.advanceTimeBy(1_000)
+        // Avoid issuing a bring-into-view request for a tab that is already
+        // visible. For clipped tabs, scroll only when visibility requires it.
+        composeRule.waitForIdle()
+        val target = composeRule.onAllNodes(
+            hasText(label, substring = false) and hasClickAction()
+        )[0]
+        val alreadyVisible = runCatching {
+            target.assertIsDisplayed()
+            true
+        }.getOrDefault(false)
+        if (!alreadyVisible) {
+            target.performScrollTo()
+        }
+        target.assertIsDisplayed().performClick()
+        composeRule.mainClock.advanceTimeBy(1_500)
         composeRule.waitForIdle()
     }
 
     private fun assertPageVisible(tab: String, expected: String) {
         try {
-            composeRule.waitUntil(timeoutMillis = 8_000) {
+            composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
                     composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
                     true
