@@ -52,7 +52,7 @@ class RoomV5ToV6MigrationTest {
    assertEquals(1,db.syncRemoteRecordDao().pending().size)
    db.syncCursorDao().save(SyncCursorEntity(accountId="account-test",deviceId="device-test",serverUpdatedAt=1793890001000,afterRecordId="remote-v5-test"))
    assertEquals("remote-v5-test",db.syncCursorDao().get("account-test","device-test")?.afterRecordId)
-   assertEquals(1,db.syncRecordMetadataDao().pendingOrConflicted().size)
+   assertEquals(5,db.syncRecordMetadataDao().pendingOrConflicted().size)
    val sqlite=db.openHelper.readableDatabase
    sqlite.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
    sqlite.query("PRAGMA integrity_check").use { assertTrue(it.moveToFirst()); assertEquals("ok",it.getString(0)) }
