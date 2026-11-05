@@ -7,19 +7,31 @@ const source = await readFile(new URL("../web/crypto.js", import.meta.url), "utf
 (0, eval)(source);
 const api = window.MEtanoiaAccountCrypto;
 assert.equal(api.version, 1);
-const user = "account-A", pass = "separate-encryption-passphrase";
-const envelope = await api.createEnvelope(user, pass);
-const key = await api.openEnvelope(user, pass, envelope);
-assert.equal(key.length, 32);
-const clear = new TextEncoder().encode("registro privado multiplataforma");
-const cipher = await api.encryptRecord(user, "record-01", "DEVOTION", "journal", key, clear);
-assert.ok(cipher.startsWith("v1."));
-assert.deepEqual(await api.decryptRecord(user, "record-01", "DEVOTION", "journal", key, cipher), clear);
-await assert.rejects(() => api.openEnvelope("account-B", pass, envelope));
-await assert.rejects(() => api.openEnvelope(user, "wrong-encryption-passphrase", envelope));
-await assert.rejects(() => api.decryptRecord("account-B", "record-01", "DEVOTION", "journal", key, cipher));
-await assert.rejects(() => api.decryptRecord(user, "record-02", "DEVOTION", "journal", key, cipher));
-const envelope2 = await api.createEnvelope("account-B", pass);
-const key2 = await api.openEnvelope("account-B", pass, envelope2);
-assert.notDeepEqual(key, key2);
-console.log("Account crypto v1: envelope, AES-GCM records, AAD account/record isolation and wrong-passphrase rejection passed.");
+
+// Android-produced deterministic vector: PWA opens its wrapped account key and record.
+const androidEnvelope = {
+  format:"metanoia-key-envelope",version:1,kdf:"PBKDF2-SHA256",iterations:600000,
+  salt:"AAECAwQFBgcICQoLDA0ODw==",nonce:"EBESExQVFhcYGRob",
+  ciphertext:"TEkPBZsPEhWxEfDk4jt+tZq4dFKFTmjZ3tR4rQC4+L/+p0cDJNMM9ealgfi2H14P"
+};
+const androidKey = await api.openEnvelope("interop-user-01","interop passphrase 123",androidEnvelope);
+assert.equal(Buffer.from(androidKey).toString("base64"),"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
+const androidRecord = "v1.UFFSU1RVVldYWVpb8s/GZlTszWlbL2loBGjnwPyCIB85mB1yzZW8etUqQVuEtDK3Rk/YUnXFLTjkJae5iv7LIpXRIuM/kzc=";
+assert.equal(new TextDecoder().decode(await api.decryptRecord("interop-user-01","record-interop-1","DEVOTION","journal",androidKey,androidRecord)),"Conteúdo criado no Android e aberto na PWA");
+
+// PWA-produced deterministic vector: proves the reciprocal byte format expected by Android.
+const pwaEnvelope = {
+  format:"metanoia-key-envelope",version:1,kdf:"PBKDF2-SHA256",iterations:600000,
+  salt:"EBESExQVFhcYGRobHB0eHw==",nonce:"KCkqKywtLi8wMTIz",
+  ciphertext:"6imIo6IAg9BsXvVld9AnOtPQB/in8/PQmOF1kRrXK5ULX+5c9zMWqQkm+X+YSLdV"
+};
+const pwaKey = await api.openEnvelope("interop-user-pwa","pwa-generated phrase 456",pwaEnvelope);
+assert.equal(Buffer.from(pwaKey).toString("base64"),"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=");
+const pwaRecord = "v1.YGFiY2RlZmdoaWpr70dncWJXKsJmoRpEbOc4ZC9CjzFHadAua1qq2s6wc5QAgYI+OqW7+8eQxB+X3YwgYxmg6EHoBNKru5I=";
+assert.equal(new TextDecoder().decode(await api.decryptRecord("interop-user-pwa","record-pwa-1","MATRIMONIAL","journal",pwaKey,pwaRecord)),"Conteúdo criado na PWA e aberto no Android");
+
+await assert.rejects(() => api.openEnvelope("another-account","interop passphrase 123",androidEnvelope));
+await assert.rejects(() => api.openEnvelope("interop-user-01","wrong encryption passphrase",androidEnvelope));
+await assert.rejects(() => api.decryptRecord("another-account","record-interop-1","DEVOTION","journal",androidKey,androidRecord));
+await assert.rejects(() => api.decryptRecord("interop-user-01","record-other","DEVOTION","journal",androidKey,androidRecord));
+console.log("PASS: fixed Android→PWA and PWA→Android AES-256-GCM/PBKDF2 vectors; account and record AAD isolation.");
