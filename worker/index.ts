@@ -1,9 +1,8 @@
-import { handleD1Api } from "./d1-api";
+import { authenticate, handleD1Api } from "./d1-api";
 
 interface Env {
   AI: { run(model: string, input: Record<string, unknown>): Promise<unknown> };
   ASSETS: { fetch(request: Request): Promise<Response> };
-  METANOIA_AI_TOKEN?: string;
   METANOIA_REGISTRATION_KEY?: string;
   DB?: D1Database;
 }
@@ -54,13 +53,9 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": origin || "", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" } });
     if (url.pathname !== "/api/ai/chat") return json({ error: "Rota não encontrada." }, 404, origin);
     if (request.method !== "POST") return json({ error: "Método não permitido." }, 405, origin);
-    if (!env.METANOIA_AI_TOKEN) return json({ error: "A IA ainda não foi configurada no servidor." }, 503, origin);
-
-    const authorization = request.headers.get("Authorization") || "";
-    const suppliedToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-    if (!suppliedToken || suppliedToken !== env.METANOIA_AI_TOKEN) {
-      return json({ error: "Acesso à IA não autorizado. Confira a credencial configurada no aplicativo." }, 401, origin);
-    }
+    if (!env.DB) return json({ error: "A IA autenticada depende do banco central ainda não provisionado." }, 503, origin);
+    const session = await authenticate(request, env.DB);
+    if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, origin);
 
     const declaredLength = Number(request.headers.get("Content-Length") || "0");
     if (declaredLength > 24000) return json({ error: "Contexto muito extenso. Reduza os registros enviados." }, 413, origin);
@@ -78,6 +73,10 @@ export default {
     if (!question || question.length > 5000 || context.length > 14000) {
       return json({ error: "A pergunta ou o contexto está vazio ou excede o limite permitido." }, 400, origin);
     }
+    const usageDate = new Date().toISOString().slice(0, 10);
+    const quota = await env.DB.prepare("INSERT INTO ai_usage_daily(user_id,usage_date,request_count,updated_at) VALUES(?,?,1,?) ON CONFLICT(user_id,usage_date) DO UPDATE SET request_count=ai_usage_daily.request_count+1,updated_at=excluded.updated_at WHERE ai_usage_daily.request_count < 30 RETURNING request_count").bind(session.user_id, usageDate, Date.now()).first<{request_count:number}>();
+    if (!quota) return json({ error: "Limite diário de 30 solicitações de IA atingido. Tente novamente amanhã." }, 429, origin);
+
     const safeHistory = history.filter((m: any) =>
       (m?.role === "user" || m?.role === "assistant") &&
       typeof m?.content === "string" && m.content.length > 0 && m.content.length <= 5000
