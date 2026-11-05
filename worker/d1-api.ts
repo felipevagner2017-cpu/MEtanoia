@@ -50,7 +50,7 @@ export async function authenticate(request: Request, db: D1Database) {
 }
 
 export async function handleD1Api(request: Request, env: D1Env, url: URL, origin?: string): Promise<Response | null> {
-  if (!url.pathname.startsWith("/api/auth/") && !url.pathname.startsWith("/api/sync/") && !url.pathname.startsWith("/api/devices/")) return null;
+  if (!url.pathname.startsWith("/api/auth/") && !url.pathname.startsWith("/api/sync/") && !url.pathname.startsWith("/api/devices/") && !url.pathname.startsWith("/api/backups/") && !url.pathname.startsWith("/api/consents/")) return null;
   if (!env.DB) return json({ error: "Banco central ainda não provisionado. Nenhum dado foi alterado." }, 503, origin);
   const db = env.DB;
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
@@ -128,6 +128,74 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         db.prepare("UPDATE sessions SET revoked_at=? WHERE user_id=? AND device_id=? AND revoked_at IS NULL").bind(Date.now(),session.user_id,deviceId),
       ]);
       return json({ ok: true, note: "Dispositivo revogado; sessões ativas devem ser encerradas no próximo ciclo." }, 200, origin);
+    }
+
+    if (url.pathname === "/api/backups/list" && request.method === "GET") {
+      const result = await db.prepare("SELECT id,format_version,sha256,record_count,created_at FROM backups WHERE user_id=? ORDER BY created_at DESC LIMIT 30")
+        .bind(session.user_id).all();
+      return json({ backups: result.results }, 200, origin);
+    }
+
+    if (url.pathname === "/api/backups/create" && request.method === "POST") {
+      const body = await parseBody(request, 7000000);
+      const deviceId = String(body.deviceId || "");
+      const payload = String(body.payloadCiphertext || "");
+      const recordCount = Math.max(0, Number(body.recordCount || 0));
+      const formatVersion = Math.max(1, Number(body.formatVersion || 1));
+      if (!deviceId || !payload || payload.length > 6500000 || recordCount > 100000 || !Number.isSafeInteger(recordCount))
+        return json({ error: "Backup inválido ou acima do limite de tamanho." }, 400, origin);
+      const device = await db.prepare("SELECT id FROM devices WHERE id=? AND user_id=? AND revoked_at IS NULL").bind(deviceId,session.user_id).first();
+      if (!device) return json({ error: "Dispositivo inválido ou revogado." }, 403, origin);
+      const id = crypto.randomUUID(), digest = await sha256(payload), now = Date.now();
+      await db.prepare("INSERT INTO backups(id,user_id,device_id,format_version,payload_ciphertext,sha256,record_count,created_at) VALUES(?,?,?,?,?,?,?,?)")
+        .bind(id,session.user_id,deviceId,formatVersion,payload,digest,recordCount,now).run();
+      return json({ id, sha256: digest, recordCount, createdAt: now }, 201, origin);
+    }
+
+    if (url.pathname.startsWith("/api/backups/") && request.method === "GET" && url.pathname !== "/api/backups/list") {
+      const id = url.pathname.split("/").pop() || "";
+      const backup = await db.prepare("SELECT id,format_version,payload_ciphertext,sha256,record_count,created_at FROM backups WHERE id=? AND user_id=?")
+        .bind(id,session.user_id).first<{id:string;format_version:number;payload_ciphertext:string;sha256:string;record_count:number;created_at:number}>();
+      if (!backup) return json({ error: "Backup não encontrado." }, 404, origin);
+      if (await sha256(backup.payload_ciphertext) !== backup.sha256) return json({ error: "Integridade do backup inválida." }, 409, origin);
+      return json({ backup }, 200, origin);
+    }
+
+    if (url.pathname.startsWith("/api/backups/") && request.method === "DELETE") {
+      const id = url.pathname.split("/").pop() || "";
+      await db.prepare("DELETE FROM backups WHERE id=? AND user_id=?").bind(id,session.user_id).run();
+      return json({ ok: true }, 200, origin);
+    }
+
+    if (url.pathname === "/api/consents/list" && request.method === "GET") {
+      const result = await db.prepare("SELECT id,owner_user_id,participant_user_id,purpose,scope,granted_at,revoked_at FROM consents WHERE owner_user_id=? OR participant_user_id=? ORDER BY granted_at DESC")
+        .bind(session.user_id,session.user_id).all();
+      return json({ consents: result.results }, 200, origin);
+    }
+
+    if (url.pathname === "/api/consents/grant" && request.method === "POST") {
+      const body = await parseBody(request, 8000);
+      const ownerId = String(body.ownerUserId || "");
+      const purpose = String(body.purpose || "").slice(0,80);
+      const scope = String(body.scope || "").slice(0,1000);
+      const evidence = String(body.evidenceCiphertext || "");
+      if (!ownerId || ownerId === session.user_id || !purpose || !scope || !evidence || evidence.length > 5000)
+        return json({ error: "Consentimento incompleto ou inválido." }, 400, origin);
+      const owner = await db.prepare("SELECT id FROM users WHERE id=? AND status='active'").bind(ownerId).first();
+      if (!owner) return json({ error: "Conta proprietária não encontrada." }, 404, origin);
+      const id = crypto.randomUUID(), now = Date.now();
+      await db.prepare("INSERT INTO consents(id,owner_user_id,participant_user_id,purpose,scope,granted_at,evidence_ciphertext) VALUES(?,?,?,?,?,?,?)")
+        .bind(id,ownerId,session.user_id,purpose,scope,now,evidence).run();
+      return json({ id, grantedAt: now }, 201, origin);
+    }
+
+    if (url.pathname === "/api/consents/revoke" && request.method === "POST") {
+      const body = await parseBody(request, 2000);
+      const id = String(body.id || "");
+      if (!id) return json({ error: "Consentimento inválido." }, 400, origin);
+      await db.prepare("UPDATE consents SET revoked_at=? WHERE id=? AND participant_user_id=? AND revoked_at IS NULL")
+        .bind(Date.now(),id,session.user_id).run();
+      return json({ ok: true }, 200, origin);
     }
 
     if (url.pathname === "/api/sync/pull" && request.method === "GET") {
