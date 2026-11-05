@@ -42,6 +42,7 @@ jobs:
       - name: Validate Cloudflare Worker bundle
         run: |
           npm install --global wrangler
+          node scripts/test_d1_api.mjs
           wrangler deploy --dry-run --outdir /tmp/metanoia-worker-bundle
       - name: Generate Gradle Wrapper for portable source
         run: gradle wrapper --gradle-version 8.9 --distribution-type bin
