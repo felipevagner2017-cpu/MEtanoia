@@ -61,7 +61,7 @@ private class AiTokenStore(context: Context) {
         } catch (_: Exception) { "" }
     }
 
-    fun clear() { prefs.edit().remove("credential").apply() }
+    fun clear() { prefs.edit().remove("credential").remove("user_id").apply() }
     fun readUserId(): String = prefs.getString("user_id", "").orEmpty()
 
     fun save(value: String, userId: String = readUserId()) {
@@ -118,8 +118,16 @@ internal fun AiAssistantDialog(
     var messages by remember { mutableStateOf(emptyList<AiChatMessage>()) }
 
     LaunchedEffect(userId) {
-        accountDataKey = if (userId.isBlank()) null else withContext(Dispatchers.IO) { accountKeyStore.load(userId) }
-        if (accountDataKey != null) status = "Chave da conta desbloqueada pelo Android Keystore neste aparelho."
+        accountDataKey?.fill(0)
+        accountDataKey = null
+        if (userId.isNotBlank()) {
+            try {
+                accountDataKey = withContext(Dispatchers.IO) { accountKeyStore.load(userId) }
+                if (accountDataKey != null) status = "Chave da conta desbloqueada pelo Android Keystore neste aparelho."
+            } catch (error: Exception) {
+                status = error.message ?: "A chave local protegida não pôde ser aberta. Os dados originais foram preservados."
+            }
+        }
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -210,7 +218,7 @@ internal fun AiAssistantDialog(
                         scope.launch {
                             try {
                                 val phrase = encryptionPhrase.toCharArray()
-                                val dataKey = withContext(Dispatchers.IO) {
+                                val dataKey = try { withContext(Dispatchers.IO) {
                                     val existing = AiCloudClient.getAccountKeyEnvelope(token)
                                     val envelopeJson = if (existing == null) {
                                         val created = AccountCrypto().createEnvelope(userId, phrase)
@@ -223,11 +231,10 @@ internal fun AiAssistantDialog(
                                         envelopeJson.getString("nonce"), envelopeJson.getString("ciphertext")
                                     )
                                     AccountCrypto().openEnvelope(userId, phrase, envelope)
-                                }
+                                } } finally { phrase.fill('\u0000') }
                                 accountKeyStore.save(userId, dataKey)
                                 accountDataKey?.fill(0)
                                 accountDataKey = dataKey
-                                phrase.fill('\u0000')
                                 encryptionPhrase = ""
                                 status = "Chave de conta desbloqueada e protegida localmente pelo Android Keystore."
                             } catch (error: Exception) {
