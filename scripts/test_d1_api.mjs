@@ -91,7 +91,7 @@ try {
     throw new Error("Backup integrity/restore check failed: " + JSON.stringify(restore));
 
   const devices = await request("/api/devices/list", "GET", undefined, session.token);
-  if (devices.status !== 200 || devices.data.devices?.length !== 1)
+  if (devices.status !== 200 || devices.data.devices?.length !== 2)
     throw new Error("Device inventory failed: " + JSON.stringify(devices));
 
   const revoked = await request("/api/devices/" + session.deviceId, "DELETE", undefined, login.data.token);
