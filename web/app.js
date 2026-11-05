@@ -276,7 +276,7 @@ function renderIngrid(){
 }
 
 
-const aiSession={token:sessionStorage.getItem("metonoia-ai-token")||"",history:[],busy:false};
+const aiSession={token:sessionStorage.getItem("metonoia-session-token")||"",history:[],busy:false};
 const aiDimensionRecords={
  "Devoção":["Espiritual"],"Matrimônio":["Matrimonial"],"Profissional":["Profissional"],"Cotidiano":["Cotidiano"]
 };
@@ -304,12 +304,10 @@ function renderAiConversation(){
 }
 async function sendAiQuestion(){
  if(aiSession.busy)return;
- const token=$("aiToken").value.trim(),question=$("aiQuestion").value.trim();
- if(!token){$("aiStatus").textContent="Informe a credencial privada fornecida para o serviço do MEtanoia.";return}
- if(token.length<24){$("aiStatus").textContent="A credencial parece incompleta.";return}
+ const token=aiSession.token,question=$("aiQuestion").value.trim();
+ if(!token){$("aiStatus").textContent="Entre com sua conta MEtanoia antes de conversar com a IA.";return}
  if(!$("aiConsent").checked){$("aiStatus").textContent="Confirme a autorização antes de enviar seus registros.";return}
  if(!question){$("aiStatus").textContent="Escreva uma pergunta antes de enviar.";return}
- aiSession.token=token;sessionStorage.setItem("metonoia-ai-token",token);
  aiSession.busy=true;$("aiSend").disabled=true;$("aiStatus").textContent="A inteligência está analisando sua pergunta e o contexto autorizado...";
  const previous=aiSession.history.slice(-8);
  aiSession.history.push({role:"user",content:question});renderAiConversation();$("aiQuestion").value="";
@@ -324,8 +322,42 @@ async function sendAiQuestion(){
   aiSession.busy=false;$("aiSend").disabled=false;renderAiConversation();
  }
 }
-$("aiToken").value=aiSession.token;
+
 $("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
+const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
+const setAccountSession=(data)=>{
+ aiSession.token=data.token;sessionStorage.setItem("metonoia-session-token",data.token);
+ sessionStorage.setItem("metonoia-user-id",data.userId||"");sessionStorage.setItem("metonoia-device-id",data.deviceId||"");
+ $("accountLogout").hidden=false;accountStatus("Conta autenticada neste navegador. A sessão expira em até 30 dias.");
+};
+async function accountRequest(path,payload,extraHeaders={}){
+ const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json",...extraHeaders},body:JSON.stringify(payload)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.error||"Não foi possível autenticar a conta.");
+ return data;
+}
+$("accountLogin").onclick=async()=>{
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
+ if(!email||!password){accountStatus("Informe e-mail e senha.");return}
+ $("accountLogin").disabled=true;accountStatus("Autenticando...");
+ try{setAccountSession(await accountRequest("/api/auth/login",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"}))}
+ catch(error){accountStatus(error.message)}
+ finally{$("accountLogin").disabled=false}
+};
+$("accountRegister").onclick=async()=>{
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value,key=$("registrationKey").value.trim();
+ if(!email||password.length<12||!key){accountStatus("Informe e-mail, senha de pelo menos 12 caracteres e código de convite.");return}
+ $("accountRegister").disabled=true;accountStatus("Criando conta...");
+ try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"},{"X-Registration-Key":key}));$("registrationKey").value=""}
+ catch(error){accountStatus(error.message)}
+ finally{$("accountRegister").disabled=false}
+};
+$("accountLogout").onclick=async()=>{
+ try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
+ aiSession.token="";sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
+};
+if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
 $("aiSend").onclick=sendAiQuestion;
 $("aiQuestion").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiQuestion()}});
 $("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatus").textContent="Conversa limpa. Os registros locais não foram alterados."};
