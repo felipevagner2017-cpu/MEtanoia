@@ -272,7 +272,7 @@ function renderIngrid(){
  $("saveIngridCare").onclick=async()=>{ingridData.dailyCare=ingridData.dailyCare||[];const record={date:today(),sensitivity:$("ingridSensitivity").value,conversation:$("ingridConversation").value,note:$("ingridCareNote").value.trim(),at:Date.now()};const index=ingridData.dailyCare.findIndex(x=>x.date===today());if(index>=0)ingridData.dailyCare[index]=record;else ingridData.dailyCare.push(record);await saveIngridVault();renderIngrid();};
  $("saveIngridEntry").onclick=async()=>{const shared=$("ingridShared").value.trim(),request=$("ingridRequest").value.trim(),response=$("ingridResponse").value.trim();if(!shared&&!request&&!response)return alert("Registre ao menos uma informação.");ingridData.entries=ingridData.entries||[];ingridData.entries.push({date:today(),shared,request,response,at:Date.now()});await saveIngridVault();renderIngrid();};
  $("lockIngrid").onclick=()=>{ingridData=null;ingridUnlocked=false;ingridSessionPin="";ingridVaultSalt=null;renderIngrid();};
- $("deleteIngridVault").onclick=()=>{if(confirm("Apagar definitivamente os dados de Ingrid deste aparelho?")){localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin="";renderIngrid();}};
+ $("deleteIngridVault").onclick=()=>{if(confirm("Apagar definitivamente os dados de Ingrid deste aparelho?")){localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin="";ingridVaultSalt=null;renderIngrid();}};
 }
 
 
