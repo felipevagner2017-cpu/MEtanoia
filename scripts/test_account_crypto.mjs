@@ -25,7 +25,7 @@ const pwaEnvelope = {
 };
 const pwaKey = await api.openEnvelope("interop-user-pwa","pwa-generated phrase 456",pwaEnvelope);
 assert.equal(Buffer.from(pwaKey).toString("base64"),"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=");
-const pwaRecord = "v1.YGFiY2RlZmdoaWpr70dncWJXKsJmoRpEbOc4ZC9CjzFHadAua1qq2s6wc5QAgYI+OqW7+8eQxB+X3YwgYxmg6EHoBNKru5I=";
+const pwaRecord = "v1.YWJjZGVmZ2hpamtsI0w9uzTCk08vSfnCywtXbEmIGBiQEalSTO+70D1fvf0latMiNHx6XiOUBnn+m4xTg4dtXNMxPObIKzA=";
 assert.equal(new TextDecoder().decode(await api.decryptRecord("interop-user-pwa","record-pwa-1","MATRIMONIAL","journal",pwaKey,pwaRecord)),"Conteúdo criado na PWA e aberto no Android");
 
 await assert.rejects(() => api.openEnvelope("another-account","interop passphrase 123",androidEnvelope));
