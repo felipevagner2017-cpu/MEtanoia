@@ -1,0 +1,166 @@
+name: Android build
+
+concurrency:
+  group: metanoia-android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main, work/phase1-integrated-main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        run: gradle assembleDebug
+      - name: Run unit tests
+        run: gradle testDebugUnitTest
+      - name: Validate D1 migrations
+        run: python3 scripts/validate_d1_migrations.py
+      - name: Test matrimonial vault encryption
+        run: node scripts/test_ingrid_vault.mjs
+      - name: Validate PWA JavaScript
+        run: node --check web/app.js && node --check web/sw.js && node --check web/crypto.js && node scripts/test_account_crypto.mjs
+      - name: Validate Cloudflare Worker bundle
+        run: |
+          npm install --global wrangler
+          node scripts/test_d1_api.mjs
+          wrangler deploy --dry-run --outdir /tmp/metanoia-worker-bundle
+      - name: Generate Gradle Wrapper for portable source
+        run: gradle wrapper --gradle-version 8.9 --distribution-type bin
+      - name: Package complete source
+        run: |
+          git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
+          zip -u MEtanoia-codigo-fonte.zip gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtanoia-Android.apk
+      - name: Upload source code
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-source-code
+          path: MEtanoia-codigo-fonte.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Android installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-android-apk
+          path: app/build/outputs/apk/debug/MEtanoia-Android.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish durable release files
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: MEtanoia Android — versão de teste
+          prerelease: true
+          overwrite_files: true
+          files: |
+            app/build/outputs/apk/debug/MEtanoia-Android.apk
+            MEtanoia-codigo-fonte.zip
+
+
+  release-signing:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check protected signing secrets
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Release signing is not configured; no release APK will be produced."
+          fi
+      - name: Checkout
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/checkout@v4
+      - name: Set up Java
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        if: steps.signing.outputs.available == 'true'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore protected keystore
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/metanoia-release.jks"
+      - name: Build signed release APK
+        if: steps.signing.outputs.available == 'true'
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/metanoia-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle assembleRelease
+      - name: Upload signed release APK
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: metanoia-android-release
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  room-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run Room integration tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          emulator-boot-timeout: 900
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: gradle connectedDebugAndroidTest --stacktrace

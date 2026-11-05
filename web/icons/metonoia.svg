@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><radialGradient id="bg"><stop stop-color="#183c62"/><stop offset="1" stop-color="#07172f"/></radialGradient><linearGradient id="brain" x2="1" y2="1"><stop stop-color="#b4ff71"/><stop offset=".42" stop-color="#16d66b"/><stop offset="1" stop-color="#007c54"/></linearGradient><linearGradient id="gold"><stop stop-color="#fff0a6"/><stop offset=".45" stop-color="#d5a63e"/><stop offset="1" stop-color="#8c5b17"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="512" height="512" rx="110" fill="url(#bg)"/><rect x="17" y="17" width="478" height="478" rx="94" fill="none" stroke="url(#gold)" stroke-width="9"/>
+<path d="M85 246C35 178 92 111 164 125c24-53 97-58 128-20 49-33 111 2 111 55 62 21 70 94 23 130" fill="none" stroke="url(#gold)" stroke-width="7" opacity=".9"/>
+<g filter="url(#glow)" stroke="#9affb1" stroke-width="7" stroke-linejoin="round" fill="url(#brain)">
+<path d="M252 105c-26-32-75-20-82 17-34-3-57 27-46 58-29 21-26 65 5 81-12 35 13 68 48 66 16 33 57 37 78 9 22 28 62 24 78-9 35 2 60-31 48-66 31-16 34-60 5-81 11-31-12-61-46-58-7-37-56-49-82-17z"/>
+<path d="M255 108v211M171 124c27 14 27 39 10 55m-55 1c25-5 42 9 39 32m-28 49c27-9 45 4 47 29m-4-130c24 7 30 27 18 47m-16 52c22-6 38 5 39 28m-15 44c18-20 42-17 54 1m-9-185c-18 17-15 39 2 52m30-60c-22 17-20 39-2 54m45-30c-25-3-38 13-34 36m55 4c-25-3-40 12-36 35m-1 40c-23-9-42 4-42 28m-12 43c-9-23-31-30-49-17" fill="none" stroke="#d5ffcb" stroke-width="5" opacity=".9"/>
+</g>
+<path d="M80 350Q165 326 256 370Q347 326 432 350L432 398Q343 377 256 416Q169 377 80 398z" fill="#f4e7c3" stroke="url(#gold)" stroke-width="8"/><path d="M256 370v45M92 359q83-20 164 18M420 359q-83-20-164 18" fill="none" stroke="#b88934" stroke-width="5"/>
+<path d="M95 278C171 337 340 339 425 257" fill="none" stroke="url(#gold)" stroke-width="9" stroke-linecap="round"/><path d="M416 91v76m-38-38h76m-65-27 54 54m0-54-54 54" stroke="#ffe18a" stroke-width="7" stroke-linecap="round" filter="url(#glow)"/>
+<text x="256" y="466" text-anchor="middle" font-family="Georgia,serif" font-size="43" font-weight="bold" fill="#f4d27b">MEtanoia</text>
+</svg>
