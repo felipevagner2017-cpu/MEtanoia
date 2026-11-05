@@ -1,13 +1,12 @@
 package br.com.metanoia
 
 import android.Manifest
-import androidx.test.rule.GrantPermissionRule
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,7 +26,7 @@ class MainActivityNavigationTest {
         composeRule.onNodeWithText("Matrimônio", substring = false).performClick()
         composeRule.onNodeWithText("Matrimônio / Ingrid", substring = false).assertIsDisplayed()
 
-        composeRule.onAllNodesWithText("Profissional", substring = false).onFirst().performClick()
+        composeRule.onAllNodesWithText("Profissional", substring = false)[0].performClick()
         composeRule.onNodeWithText("DIMENSÃO 03", substring = false).assertIsDisplayed()
 
         composeRule.onNodeWithText("Cotidiano", substring = false).performClick()
