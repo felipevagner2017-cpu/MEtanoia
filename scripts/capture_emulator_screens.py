@@ -7,8 +7,11 @@ PACKAGE = "br.com.metanoia"
 ACTIVITY = f"{PACKAGE}/.MainActivity"
 os.makedirs(OUT, exist_ok=True)
 
-def adb(*args, binary=False, check=True):
-    p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def adb(*args, binary=False, check=True, timeout=30):
+    try:
+        p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Timeout de {timeout}s em adb {' '.join(args)}") from exc
     if check and p.returncode:
         raise RuntimeError(
             f"adb {' '.join(args)} falhou ({p.returncode}): "
@@ -18,7 +21,8 @@ def adb(*args, binary=False, check=True):
     return p.stdout if binary else p.stdout.decode("utf-8", errors="replace")
 
 def dump_ui():
-    adb("shell", "uiautomator", "dump", "/sdcard/window.xml")
+    print("Atualizando árvore UIAutomator...", flush=True)
+    adb("shell", "uiautomator", "dump", "/sdcard/window.xml", timeout=45)
     return ET.fromstring(adb("exec-out", "cat", "/sdcard/window.xml"))
 
 def visible_node(root, label):
@@ -30,22 +34,22 @@ def visible_node(root, label):
     return None, None
 
 def capture(name):
+    print("Capturando:", name, flush=True)
     with open(os.path.join(OUT, name + ".png"), "wb") as f:
         f.write(adb("exec-out", "screencap", "-p", binary=True))
 
 def find_and_tap(label):
+    print("Navegando para:", label, flush=True)
     width, height = map(int, re.search(r"(\d+)x(\d+)", adb("shell", "wm", "size")).groups())
     for attempt in range(12):
         root = dump_ui()
-        node, bounds = visible_node(root, label)
+        _, bounds = visible_node(root, label)
         if bounds:
             x1, y1, x2, y2 = bounds
             if x1 >= 0 and y1 >= 0 and x2 <= width and y2 <= height:
                 adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
                 time.sleep(2)
                 return
-        # The navigation row is horizontally scrollable. Swipe it left to reveal
-        # later tabs, deriving its vertical position from a visible tab node.
         _, nav_bounds = visible_node(root, "Devoção")
         if not nav_bounds:
             _, nav_bounds = visible_node(root, "Painel")
@@ -61,13 +65,13 @@ installed = adb("shell", "pm", "path", PACKAGE, check=False)
 if "package:" not in installed:
     raise RuntimeError(f"O pacote {PACKAGE} não está instalado no emulador: {installed}")
 
+print("Pacote encontrado:", installed.strip(), flush=True)
 adb("shell", "am", "force-stop", PACKAGE)
-# Explicit launcher intent avoids monkey's exit 252 in headless CI.
 launch = adb("shell", "am", "start", "-n", ACTIVITY)
+print("Resultado da Activity principal:", launch.strip(), flush=True)
 if "Error" in launch or "unable to resolve" in launch.lower():
     raise RuntimeError("Falha ao iniciar a Activity principal: " + launch)
 
-# Capture the actual launch transition, then the settled Dashboard.
 time.sleep(0.2)
 capture("00-splash-transicao")
 time.sleep(5)
@@ -84,4 +88,4 @@ for label, name in [
 
 find_and_tap("Agenda")
 capture("06-agenda-marca-dagua")
-print("Capturas reais:", ", ".join(sorted(os.listdir(OUT))))
+print("Capturas reais:", ", ".join(sorted(os.listdir(OUT))), flush=True)
