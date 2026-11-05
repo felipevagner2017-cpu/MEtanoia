@@ -256,7 +256,28 @@ internal fun AiAssistantDialog(
                     TextButton(onClick = { messages = emptyList(); status = "Conversa limpa. Seus registros continuam no aparelho." }) {
                         Text("Limpar conversa", color = GoldBright)
                     }
-                    TextButton(onClick = { tokenStore.clear(); token = ""; status = "Credencial apagada deste aparelho." }) {
+                    TextButton(enabled = !authBusy, onClick = {
+                        val currentToken = token.trim()
+                        if (currentToken.isBlank()) {
+                            tokenStore.clear()
+                            token = ""
+                            status = "Nenhuma sessão ativa neste aparelho."
+                        } else {
+                            authBusy = true
+                            status = "Encerrando sessão da conta..."
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) { AiCloudClient.logout(currentToken) }
+                                    tokenStore.clear()
+                                    token = ""
+                                    messages = emptyList()
+                                    status = "Sessão encerrada no servidor e neste aparelho."
+                                } catch (error: Exception) {
+                                    status = error.message ?: "Não foi possível encerrar a sessão. Verifique a conexão e tente novamente."
+                                } finally { authBusy = false }
+                            }
+                        }
+                    }) {
                         Text("Sair da conta", color = GoldBright)
                     }
                 }
@@ -293,7 +314,7 @@ private fun buildAiContext(
         journal.groupBy { it.dimension }.values.flatMap { group -> group.sortedByDescending { it.createdAt }.take(3) }
             .sortedByDescending { it.createdAt }.take(12)
     } else {
-        (journal.filter { it.dimension in allowed } + journal.filter { it.dimension == LifeDimension.INDIVIDUAL }.takeLast(2))
+        journal.filter { it.dimension in allowed }
             .distinctBy { it.id }.sortedByDescending { it.createdAt }.take(10)
     }
     val records = selected.joinToString("\n") { entry ->
@@ -341,6 +362,25 @@ private object AiCloudClient {
             val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
             if (code !in 200..299) throw IOException(response.optString("error").ifBlank { "Autenticação respondeu HTTP " + code + "." })
             return response.optString("token").takeIf { it.length >= 24 } ?: throw IOException("A sessão não foi retornada pelo servidor.")
+        } finally { connection.disconnect() }
+    }
+
+    fun logout(token: String) {
+        val connection = URL(METANOIA_API_BASE + "/api/auth/logout").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 30000
+        connection.doOutput = true
+        connection.setRequestProperty("Authorization", "Bearer " + token)
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        try {
+            connection.outputStream.use { it.write("{}".toByteArray(Charsets.UTF_8)) }
+            val code = connection.responseCode
+            if (code !in 200..299 && code != 401) {
+                val responseText = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
+                throw IOException(response.optString("error").ifBlank { "Não foi possível encerrar a sessão (HTTP " + code + ")." })
+            }
         } finally { connection.disconnect() }
     }
 
