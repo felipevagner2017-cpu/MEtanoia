@@ -18,12 +18,14 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY NOT NULL,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device_id TEXT REFERENCES devices(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL UNIQUE,
   created_at INTEGER NOT NULL,
   expires_at INTEGER NOT NULL,
   revoked_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_user_expiry ON sessions(user_id, expires_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_device_active ON sessions(device_id, revoked_at, expires_at);
 
 CREATE TABLE IF NOT EXISTS devices (
   id TEXT PRIMARY KEY NOT NULL,
