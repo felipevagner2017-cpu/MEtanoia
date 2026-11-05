@@ -50,7 +50,7 @@ export async function authenticate(request: Request, db: D1Database) {
 }
 
 export async function handleD1Api(request: Request, env: D1Env, url: URL, origin?: string): Promise<Response | null> {
-  if (!url.pathname.startsWith("/api/auth/") && !url.pathname.startsWith("/api/sync/") && !url.pathname.startsWith("/api/devices/") && !url.pathname.startsWith("/api/backups/") && !url.pathname.startsWith("/api/consents/")) return null;
+  if (!url.pathname.startsWith("/api/auth/") && !url.pathname.startsWith("/api/sync/") && !url.pathname.startsWith("/api/devices/") && !url.pathname.startsWith("/api/backups/") && !url.pathname.startsWith("/api/consents/") && !url.pathname.startsWith("/api/crypto/")) return null;
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: {
     ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Registration-Key",
@@ -129,6 +129,43 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         db.prepare("UPDATE sessions SET revoked_at=? WHERE user_id=? AND device_id=? AND revoked_at IS NULL").bind(Date.now(),session.user_id,deviceId),
       ]);
       return json({ ok: true, note: "Dispositivo revogado; sessões ativas devem ser encerradas no próximo ciclo." }, 200, origin);
+    }
+
+    if (url.pathname === "/api/crypto/key-envelope" && request.method === "GET") {
+      const row = await db.prepare(
+        "SELECT envelope_json,envelope_version,created_at,updated_at FROM account_key_envelopes WHERE user_id=? LIMIT 1"
+      ).bind(session.user_id).first<{envelope_json:string;envelope_version:number;created_at:number;updated_at:number}>();
+      if (!row) return json({ envelope: null }, 200, origin);
+      return json({ envelope: JSON.parse(row.envelope_json), version: row.envelope_version, createdAt: row.created_at, updatedAt: row.updated_at }, 200, origin);
+    }
+
+    if (url.pathname === "/api/crypto/key-envelope" && request.method === "POST") {
+      const body = await parseBody(request, 4000);
+      const envelope = body.envelope;
+      if (!session.device_id || !envelope || envelope.format !== "metanoia-key-envelope" ||
+          envelope.version !== 1 || envelope.kdf !== "PBKDF2-SHA256" ||
+          !Number.isInteger(envelope.iterations) || envelope.iterations < 600000 || envelope.iterations > 2000000 ||
+          typeof envelope.salt !== "string" || typeof envelope.nonce !== "string" || typeof envelope.ciphertext !== "string") {
+        return json({ error: "Envelope de chave inválido." }, 400, origin);
+      }
+      try {
+        if (unb64(envelope.salt).length !== 16 || unb64(envelope.nonce).length !== 12 || unb64(envelope.ciphertext).length !== 48)
+          return json({ error: "Tamanhos criptográficos inválidos." }, 400, origin);
+      } catch {
+        return json({ error: "Codificação Base64 inválida." }, 400, origin);
+      }
+      const device = await db.prepare("SELECT id FROM devices WHERE id=? AND user_id=? AND revoked_at IS NULL")
+        .bind(session.device_id, session.user_id).first();
+      if (!device) return json({ error: "Dispositivo não autorizado." }, 403, origin);
+      const now = Date.now();
+      try {
+        await db.prepare(
+          "INSERT INTO account_key_envelopes(user_id,envelope_json,envelope_version,created_by_device_id,updated_by_device_id,created_at,updated_at) VALUES(?,?,1,?,?,?,?)"
+        ).bind(session.user_id, JSON.stringify(envelope), session.device_id, session.device_id, now, now).run();
+      } catch {
+        return json({ error: "A chave da conta já foi inicializada. A substituição exige o fluxo explícito de rotação." }, 409, origin);
+      }
+      return json({ ok: true, version: 1, createdAt: now }, 201, origin);
     }
 
     if (url.pathname === "/api/backups/list" && request.method === "GET") {
