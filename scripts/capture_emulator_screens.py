@@ -63,7 +63,14 @@ def find_and_tap(label):
 
 installed = adb("shell", "pm", "path", PACKAGE, check=False)
 if "package:" not in installed:
-    raise RuntimeError(f"O pacote {PACKAGE} não está instalado no emulador: {installed}")
+    apk_path = "app/build/outputs/apk/debug/app-debug.apk"
+    if not os.path.isfile(apk_path):
+        raise RuntimeError(f"APK debug do mesmo commit não encontrado: {apk_path}")
+    print("Pacote ausente após os testes; instalando o APK recém-compilado no emulador:", apk_path, flush=True)
+    adb("install", "-r", apk_path, timeout=90)
+    installed = adb("shell", "pm", "path", PACKAGE, check=False)
+if "package:" not in installed:
+    raise RuntimeError(f"Não foi possível confirmar a instalação de {PACKAGE}: {installed}")
 
 print("Pacote encontrado:", installed.strip(), flush=True)
 adb("shell", "am", "force-stop", PACKAGE)
