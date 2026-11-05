@@ -21,7 +21,7 @@ tables = {
 }
 required = {
     "users", "sessions", "devices", "records", "sync_operations",
-    "consents", "ai_conversations", "ai_messages", "ai_usage_daily", "backups",
+    "consents", "ai_conversations", "ai_messages", "ai_usage_daily", "backups", "account_key_envelopes",
 }
 missing = sorted(required - tables)
 if missing:
@@ -48,6 +48,22 @@ session_device = db.execute(
 ).fetchone()[0]
 if session_device != "d1":
     raise SystemExit("Session-to-device binding is missing")
+
+db.execute(
+    "INSERT INTO account_key_envelopes(user_id,envelope_json,envelope_version,created_by_device_id,updated_by_device_id,created_at,updated_at) "
+    "VALUES ('u1','{\\\"format\\\":\\\"metanoia-key-envelope\\\"}',1,'d1','d1',2,2)"
+)
+if db.execute("SELECT user_id FROM account_key_envelopes WHERE user_id='u1'").fetchone()[0] != "u1":
+    raise SystemExit("Encrypted account key envelope storage failed")
+try:
+    db.execute(
+        "INSERT INTO account_key_envelopes(user_id,envelope_json,envelope_version,created_by_device_id,updated_by_device_id,created_at,updated_at) "
+        "VALUES ('u2','{}',1,'d1','d1',2,2)"
+    )
+except sqlite3.IntegrityError:
+    pass
+else:
+    raise SystemExit("Account key envelope device isolation constraint is missing")
 
 db.execute(
     "INSERT INTO records (user_id,record_id,dimension,record_type,payload_ciphertext,client_updated_at,server_updated_at) "
@@ -101,4 +117,4 @@ except sqlite3.IntegrityError:
 else:
     raise SystemExit("Unique email constraint is missing")
 
-print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, idempotent re-application, device-bound sessions, atomic sync revision checks, and key constraints.")
+print(f"Validated {len(MIGRATIONS)} D1 migration(s), {len(tables)} tables, encrypted account key envelope storage, idempotent re-application, device-bound sessions, atomic sync revision checks, and key constraints.")
