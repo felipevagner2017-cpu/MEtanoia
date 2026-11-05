@@ -10,7 +10,7 @@ const run = (args) => {
   const result = spawnSync("wrangler", args, { encoding: "utf8", stdio: "inherit" });
   if (result.status !== 0) throw new Error(`wrangler ${args.join(" ")} failed`);
 };
-run(["d1", "migrations", "apply", "metanoia-local-test", "--local", "--config", config, "--persist-to", persist, "--yes"]);
+run(["d1", "migrations", "apply", "metanoia-local-test", "--local", "--config", config, "--persist-to", persist]);
 
 const server = spawn("wrangler", [
   "dev", "--local", "--port", String(port), "--config", config,
