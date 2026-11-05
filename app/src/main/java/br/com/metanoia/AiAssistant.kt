@@ -42,7 +42,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private const val METANOIA_AI_ENDPOINT = "https://metanoia.restaura-lar.workers.dev/api/ai/chat"
+private const val METANOIA_API_BASE = "https://metanoia.restaura-lar.workers.dev"
 private data class AiChatMessage(val role: String, val content: String)
 
 private class AiTokenStore(context: Context) {
@@ -98,6 +98,10 @@ internal fun AiAssistantDialog(
     val tokenStore = remember { AiTokenStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var token by remember { mutableStateOf(tokenStore.read()) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var registrationKey by remember { mutableStateOf("") }
+    var authBusy by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf("") }
     var dimension by remember { mutableStateOf(initialDimension) }
     var consent by remember { mutableStateOf(false) }
@@ -135,18 +139,48 @@ internal fun AiAssistantDialog(
                     }
                 }
                 OutlinedTextField(
-                    value = token, onValueChange = { token = it }, modifier = Modifier.fillMaxWidth(),
-                    singleLine = true, label = { Text("Credencial privada do serviço de IA") },
-                    placeholder = { Text("Cole a credencial configurada no servidor") },
+                    value = email, onValueChange = { email = it }, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true, label = { Text("E-mail da conta MEtanoia") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Ivory, unfocusedTextColor = Ivory, focusedBorderColor = GoldBright, unfocusedBorderColor = GoldChampagne.copy(alpha = .5f), focusedLabelColor = GoldBright, unfocusedLabelColor = Ivory.copy(alpha = .8f), cursorColor = GoldBright)
+                )
+                OutlinedTextField(
+                    value = password, onValueChange = { password = it }, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true, label = { Text("Senha da conta") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Ivory, unfocusedTextColor = Ivory,
-                        focusedBorderColor = GoldBright, unfocusedBorderColor = GoldChampagne.copy(alpha = .5f),
-                        focusedLabelColor = GoldBright, unfocusedLabelColor = Ivory.copy(alpha = .8f),
-                        cursorColor = GoldBright
-                    )
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Ivory, unfocusedTextColor = Ivory, focusedBorderColor = GoldBright, unfocusedBorderColor = GoldChampagne.copy(alpha = .5f), focusedLabelColor = GoldBright, unfocusedLabelColor = Ivory.copy(alpha = .8f), cursorColor = GoldBright)
                 )
+                OutlinedTextField(
+                    value = registrationKey, onValueChange = { registrationKey = it }, modifier = Modifier.fillMaxWidth(),
+                    singleLine = true, label = { Text("Código de convite (primeiro cadastro)") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Ivory, unfocusedTextColor = Ivory, focusedBorderColor = GoldBright, unfocusedBorderColor = GoldChampagne.copy(alpha = .5f), focusedLabelColor = GoldBright, unfocusedLabelColor = Ivory.copy(alpha = .8f), cursorColor = GoldBright)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(enabled = !authBusy, onClick = {
+                        if (email.isBlank() || password.isBlank()) { status = "Informe e-mail e senha."; return@Button }
+                        authBusy = true; status = "Autenticando conta..."
+                        scope.launch {
+                            try {
+                                val session = withContext(Dispatchers.IO) { AiCloudClient.authenticate(false, email.trim(), password, "") }
+                                token = session; tokenStore.save(session); status = "Conta autenticada. Sessão protegida pelo Android Keystore."
+                            } catch (error: Exception) { status = error.message ?: "Não foi possível autenticar." }
+                            finally { authBusy = false }
+                        }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GoldChampagne, contentColor = DeepViolet)) { Text("Entrar") }
+                    Button(enabled = !authBusy, onClick = {
+                        if (email.isBlank() || password.length < 12 || registrationKey.isBlank()) { status = "Informe e-mail, senha com pelo menos 12 caracteres e convite."; return@Button }
+                        authBusy = true; status = "Criando conta..."
+                        scope.launch {
+                            try {
+                                val session = withContext(Dispatchers.IO) { AiCloudClient.authenticate(true, email.trim(), password, registrationKey.trim()) }
+                                token = session; tokenStore.save(session); registrationKey = ""; status = "Conta criada e autenticada."
+                            } catch (error: Exception) { status = error.message ?: "Não foi possível criar a conta." }
+                            finally { authBusy = false }
+                        }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = VioletSurface, contentColor = Ivory)) { Text("Criar conta") }
+                }
                 Row(verticalAlignment = Alignment.Top) {
                     Checkbox(checked = consent, onCheckedChange = { consent = it }, colors = CheckboxDefaults.colors(checkedColor = GoldBright))
                     Text(
@@ -223,12 +257,12 @@ internal fun AiAssistantDialog(
                         Text("Limpar conversa", color = GoldBright)
                     }
                     TextButton(onClick = { tokenStore.clear(); token = ""; status = "Credencial apagada deste aparelho." }) {
-                        Text("Apagar credencial", color = GoldBright)
+                        Text("Sair da conta", color = GoldBright)
                     }
                 }
                 Text(status, color = Ivory.copy(alpha = .76f), style = MaterialTheme.typography.labelSmall)
                 Text(
-                    "A IA na nuvem exige internet e credencial ativa. Sem conexão, a leitura contextual local continua disponível. O uso do modelo pode gerar cobrança conforme o volume de tokens.",
+                    "A IA na nuvem exige internet e uma sessão autenticada. A sessão fica protegida pelo Android Keystore. Sem conexão, a leitura contextual local continua disponível.",
                     color = Ivory.copy(alpha = .65f), style = MaterialTheme.typography.labelSmall
                 )
             }
@@ -290,6 +324,26 @@ private fun buildAiContext(
 }
 
 private object AiCloudClient {
+    fun authenticate(register: Boolean, email: String, password: String, registrationKey: String): String {
+        val connection = URL(METANOIA_API_BASE + if (register) "/api/auth/register" else "/api/auth/login").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 15000
+        connection.readTimeout = 30000
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        if (register) connection.setRequestProperty("X-Registration-Key", registrationKey)
+        try {
+            val payload = JSONObject().put("email", email).put("password", password).put("platform", "android").put("deviceLabel", android.os.Build.MODEL)
+            connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+            val code = connection.responseCode
+            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+            val responseText = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val response = runCatching { JSONObject(responseText) }.getOrElse { JSONObject() }
+            if (code !in 200..299) throw IOException(response.optString("error").ifBlank { "Autenticação respondeu HTTP " + code + "." })
+            return response.optString("token").takeIf { it.length >= 24 } ?: throw IOException("A sessão não foi retornada pelo servidor.")
+        } finally { connection.disconnect() }
+    }
+
     fun ask(token: String, dimension: String, context: String, history: List<AiChatMessage>, question: String): String {
         val payload = JSONObject()
             .put("dimension", dimension)
@@ -298,7 +352,7 @@ private object AiCloudClient {
             .put("history", JSONArray().apply {
                 history.forEach { put(JSONObject().put("role", it.role).put("content", it.content)) }
             })
-        val connection = URL(METANOIA_AI_ENDPOINT).openConnection() as HttpURLConnection
+        val connection = URL(METANOIA_API_BASE + "/api/ai/chat").openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.connectTimeout = 15000
         connection.readTimeout = 60000
