@@ -3,7 +3,6 @@ package br.com.metanoia
 import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.rule.GrantPermissionRule
@@ -21,8 +20,10 @@ class MainActivityNavigationTest {
     private fun navigateAndAssert(tab: String, expected: String) {
         composeRule.onNodeWithText(tab, substring = false).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(expected, substring = false)
-                .fetchSemanticsNodes().isNotEmpty()
+            runCatching {
+                composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
+                true
+            }.getOrDefault(false)
         }
         composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
     }
