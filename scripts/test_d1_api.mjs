@@ -46,15 +46,36 @@ try {
 
   const email = "sync-test@example.invalid";
   const password = "Metanoia-local-test-password-2026";
+  const stableDeviceId = "4d5f7a10-2b3c-4d5e-8f90-1234567890ab";
   const registration = await request("/api/auth/register", "POST", {
-    email, password, platform: "pwa", deviceLabel: "CI local test"
+    email, password, platform: "pwa", deviceLabel: "CI local test", deviceId: stableDeviceId
   }, null, { "X-Registration-Key": invite });
   if (registration.status !== 201) throw new Error("Register failed: " + JSON.stringify(registration));
   const session = registration.data;
   if (!session.token || !session.deviceId || !session.userId) throw new Error("Registration did not return a complete session.");
 
-  const login = await request("/api/auth/login", "POST", { email, password, platform: "android", deviceLabel: "CI second device" });
-  if (login.status !== 200) throw new Error("Login failed: " + JSON.stringify(login));
+  const stableLogin = await request("/api/auth/login", "POST", {
+    email, password, platform: "android", deviceLabel: "CI same installation", deviceId: stableDeviceId
+  });
+  if (stableLogin.status !== 200 || stableLogin.data.deviceId !== stableDeviceId)
+    throw new Error("Stable installation identity was not reused: " + JSON.stringify(stableLogin));
+  const login = await request("/api/auth/login", "POST", {
+    email, password, platform: "android", deviceLabel: "CI legacy second device"
+  });
+  if (login.status !== 200 || login.data.deviceId === stableDeviceId)
+    throw new Error("Legacy login without deviceId failed: " + JSON.stringify(login));
+
+  const otherRegistration = await request("/api/auth/register", "POST", {
+    email: "isolated-account@example.invalid", password: "Another-local-test-password-2026",
+    platform: "pwa", deviceLabel: "Isolation test"
+  }, null, { "X-Registration-Key": invite });
+  if (otherRegistration.status !== 201) throw new Error("Second account registration failed.");
+  const crossAccountClaim = await request("/api/auth/login", "POST", {
+    email: "isolated-account@example.invalid", password: "Another-local-test-password-2026",
+    platform: "android", deviceId: stableDeviceId
+  });
+  if (crossAccountClaim.status !== 409)
+    throw new Error("A different account claimed an existing installation identity: " + JSON.stringify(crossAccountClaim));
 
   const keyEnvelope = {
     format: "metanoia-key-envelope", version: 1, kdf: "PBKDF2-SHA256", iterations: 600000,
@@ -68,11 +89,6 @@ try {
     throw new Error("Account key envelope was not available to the second authorized device.");
   const duplicateEnvelope = await request("/api/crypto/key-envelope", "POST", { envelope: keyEnvelope }, login.data.token);
   if (duplicateEnvelope.status !== 409) throw new Error("Existing account key envelope was overwritten.");
-  const otherRegistration = await request("/api/auth/register", "POST", {
-    email: "isolated-account@example.invalid", password: "Another-local-test-password-2026",
-    platform: "pwa", deviceLabel: "Isolation test"
-  }, null, { "X-Registration-Key": invite });
-  if (otherRegistration.status !== 201) throw new Error("Second account registration failed.");
   const isolatedEnvelope = await request("/api/crypto/key-envelope", "GET", undefined, otherRegistration.data.token);
   if (isolatedEnvelope.status !== 200 || isolatedEnvelope.data.envelope !== null)
     throw new Error("Account key envelope leaked across accounts.");
@@ -115,10 +131,15 @@ try {
   if (devices.status !== 200 || devices.data.devices?.length !== 2)
     throw new Error("Device inventory failed: " + JSON.stringify(devices));
 
-  const revoked = await request("/api/devices/" + session.deviceId, "DELETE", undefined, login.data.token);
+  const revoked = await request("/api/devices/" + stableDeviceId, "DELETE", undefined, login.data.token);
   if (revoked.status !== 200) throw new Error("Device revocation failed: " + JSON.stringify(revoked));
-  const afterRevoke = await request("/api/sync/pull?since=0", "GET", undefined, session.token);
+  const afterRevoke = await request("/api/sync/pull?since=0", "GET", undefined, stableLogin.data.token);
   if (afterRevoke.status !== 401) throw new Error("Revoked device still authenticated.");
+  const reloginRevoked = await request("/api/auth/login", "POST", {
+    email, password, platform: "android", deviceId: stableDeviceId
+  });
+  if (reloginRevoked.status !== 403)
+    throw new Error("A revoked installation identity was allowed to log in again: " + JSON.stringify(reloginRevoked));
 
   console.log("D1 Worker integration passed: registration, login, device binding, account-key envelope isolation, push, idempotency, conflict, pull, encrypted backup restore, device revocation.");
 } finally {

@@ -24,44 +24,39 @@ class AccountSessionManager(
     private val baseUrl: String = API_BASE_URL
 ) {
     fun login(email: String, password: String, passphrase: CharArray): AuthenticatedAccount {
-        require(email.isNotBlank() && password.isNotBlank())
-        val deviceId = identities.getOrCreateDeviceId()
-        val response = request(
-            "/api/auth/login", "POST",
-            JSONObject().put("email", email.trim()).put("password", password)
-                .put("platform", "android").put("deviceLabel", "Android MEtanoia")
-                .put("deviceId", deviceId).toString()
-        )
-        val session = StoredAccountSession(
-            response.getString("userId"), response.getString("deviceId"),
-            response.getString("token"), response.getLong("expiresAt")
-        )
-        require(session.deviceId == deviceId) { "O servidor retornou outra identidade de dispositivo." }
         try {
+            require(email.isNotBlank() && password.isNotBlank())
+            val deviceId = identities.getOrCreateDeviceId()
+            val response = request(
+                "/api/auth/login", "POST",
+                JSONObject().put("email", email.trim()).put("password", password)
+                    .put("platform", "android").put("deviceLabel", "Android MEtanoia")
+                    .put("deviceId", deviceId).toString()
+            )
+            val session = StoredAccountSession(
+                response.getString("userId"), response.getString("deviceId"),
+                response.getString("token"), response.getLong("expiresAt")
+            )
+            require(session.deviceId == deviceId) { "O servidor retornou outra identidade de dispositivo." }
             unlockAccountKey(session, passphrase)
             identities.saveSession(session)
-        } catch (error: Exception) {
-            passphrase.fill('\u0000')
-            throw error
+            return AuthenticatedAccount(session.userId, session.deviceId)
+        } finally {
+            passphrase.fill('\\u0000')
         }
-        passphrase.fill('\u0000')
-        return AuthenticatedAccount(session.userId, session.deviceId)
     }
 
     fun restore(passphrase: CharArray): AuthenticatedAccount? {
-        val session = identities.loadSession() ?: return null
-        if (session.expiresAt <= System.currentTimeMillis()) {
-            identities.clearSession()
-            return null
-        }
         try {
+            val session = identities.loadSession() ?: return null
+            if (session.expiresAt <= System.currentTimeMillis()) {
+                identities.clearSession()
+                return null
+            }
             unlockAccountKey(session, passphrase)
             return AuthenticatedAccount(session.userId, session.deviceId)
-        } catch (error: Exception) {
-            passphrase.fill('\u0000')
-            throw error
         } finally {
-            passphrase.fill('\u0000')
+            passphrase.fill('\\u0000')
         }
     }
 

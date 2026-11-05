@@ -99,13 +99,37 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       if (!row || row.status !== "active" || password.length > 256) return json({ error: "Credenciais inválidas." }, 401, origin);
       const candidate = await passwordHash(password, unb64(row.password_salt_b64));
       if (candidate !== row.password_hash_b64) return json({ error: "Credenciais inválidas." }, 401, origin);
-      const token = randomToken(), sessionId = crypto.randomUUID(), deviceId = crypto.randomUUID();
+      if (body.deviceId !== undefined && (typeof body.deviceId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.deviceId)))
+        return json({ error: "Identidade de dispositivo inválida." }, 400, origin);
+      const token = randomToken(), sessionId = crypto.randomUUID(), deviceId = body.deviceId || crypto.randomUUID();
       const now = Date.now(), expires = now + 30 * 86400000;
       const platform = ["android","pwa","web"].includes(body.platform) ? body.platform : "web";
-      await db.batch([
-        db.prepare("INSERT INTO devices(id,user_id,platform,label,last_seen_at) VALUES(?,?,?,?,?)").bind(deviceId,row.id,platform,String(body.deviceLabel || platform).slice(0,80),now),
-        db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)").bind(sessionId,row.id,deviceId,await sha256(token),now,expires),
-      ]);
+      const label = String(body.deviceLabel || platform).slice(0,80);
+      const existingDevice = await db.prepare("SELECT user_id,revoked_at FROM devices WHERE id=? LIMIT 1")
+        .bind(deviceId).first<{user_id:string;revoked_at:number|null}>();
+      if (existingDevice && existingDevice.user_id !== row.id)
+        return json({ error: "Esta identidade já pertence a outra conta." }, 409, origin);
+      if (existingDevice?.revoked_at)
+        return json({ error: "Este dispositivo foi revogado e não pode iniciar uma nova sessão." }, 403, origin);
+      const statements = existingDevice
+        ? [
+            db.prepare("UPDATE devices SET platform=?,label=?,last_seen_at=? WHERE id=? AND user_id=? AND revoked_at IS NULL")
+              .bind(platform,label,now,deviceId,row.id),
+            db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)")
+              .bind(sessionId,row.id,deviceId,await sha256(token),now,expires)
+          ]
+        : [
+            db.prepare("INSERT INTO devices(id,user_id,platform,label,last_seen_at) VALUES(?,?,?,?,?)")
+              .bind(deviceId,row.id,platform,label,now),
+            db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)")
+              .bind(sessionId,row.id,deviceId,await sha256(token),now,expires)
+          ];
+      try {
+        await db.batch(statements);
+      } catch {
+        return json({ error: "Não foi possível registrar o dispositivo. Verifique a identidade e tente novamente." }, 409, origin);
+      }
       return json({ token, expiresAt: expires, userId: row.id, deviceId }, 200, origin);
     }
 
