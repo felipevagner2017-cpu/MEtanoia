@@ -24,7 +24,7 @@ def dump_ui():
 def visible_node(root, label):
     for node in root.iter("node"):
         if node.attrib.get("text", "").strip() == label or node.attrib.get("content-desc", "").strip() == label:
-            m = re.fullmatch(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]", node.attrib.get("bounds", ""))
+            m = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
             if m:
                 return node, tuple(map(int, m.groups()))
     return None, None
@@ -34,7 +34,7 @@ def capture(name):
         f.write(adb("exec-out", "screencap", "-p", binary=True))
 
 def find_and_tap(label):
-    width, height = map(int, re.search(r"(\\d+)x(\\d+)", adb("shell", "wm", "size")).groups())
+    width, height = map(int, re.search(r"(\d+)x(\d+)", adb("shell", "wm", "size")).groups())
     for attempt in range(12):
         root = dump_ui()
         node, bounds = visible_node(root, label)
@@ -57,20 +57,17 @@ def find_and_tap(label):
         time.sleep(0.5)
     raise RuntimeError("Não foi possível navegar para: " + label)
 
-# Confirm that the app installed by connectedDebugAndroidTest is present.
 installed = adb("shell", "pm", "path", PACKAGE, check=False)
 if "package:" not in installed:
     raise RuntimeError(f"O pacote {PACKAGE} não está instalado no emulador: {installed}")
 
 adb("shell", "am", "force-stop", PACKAGE)
-# Start the declared launcher activity explicitly; monkey can return 252 on
-# headless CI images even when the app's launcher activity is valid.
+# Explicit launcher intent avoids monkey's exit 252 in headless CI.
 launch = adb("shell", "am", "start", "-n", ACTIVITY)
 if "Error" in launch or "unable to resolve" in launch.lower():
     raise RuntimeError("Falha ao iniciar a Activity principal: " + launch)
 
-# Capture immediately to preserve the real launch/splash transition, then wait
-# for Compose to settle before taking the Dashboard screen.
+# Capture the actual launch transition, then the settled Dashboard.
 time.sleep(0.2)
 capture("00-splash-transicao")
 time.sleep(5)
