@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
-globalThis.crypto = webcrypto;
 globalThis.window = {};
 const source = await readFile(new URL("../web/crypto.js", import.meta.url), "utf8");
 (0, eval)(source);
