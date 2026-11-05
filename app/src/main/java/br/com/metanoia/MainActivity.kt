@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
    typography = MetanoiaTypography,
    shapes = MetanoiaShapes
   ) {
-   Surface(Modifier.fillMaxSize(), color=DeepViolet) { MetanoiaApp(db, scheduler) }
+   Surface(Modifier.fillMaxSize(), color=DeepViolet) { Box(Modifier.fillMaxSize()) { MetanoiaApp(db, scheduler); MetanoiaBrandWatermark() } }
   } }
  }
 }
@@ -246,7 +246,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   ) {
    Row(verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(12.dp)) {
     Image(
-     painter=painterResource(id=R.drawable.metanoia_symbol),
+     painter=painterResource(id=R.drawable.metanoia_oficial),
      contentDescription="Símbolo oficial MEtanoia",
      modifier=Modifier.size(48.dp),
      contentScale=ContentScale.Fit

@@ -7,8 +7,8 @@
     <application
         android:allowBackup="false"
         android:label="MEtanoia"
-        android:icon="@drawable/metanoia_symbol"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Metanoia"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"
