@@ -35,6 +35,8 @@ jobs:
         run: gradle testDebugUnitTest
       - name: Validate D1 migrations
         run: python3 scripts/validate_d1_migrations.py
+      - name: Test matrimonial vault encryption
+        run: node scripts/test_ingrid_vault.mjs
       - name: Validate PWA JavaScript
         run: node --check web/app.js && node --check web/sw.js
       - name: Validate Cloudflare Worker bundle
