@@ -5,10 +5,31 @@ import subprocess
 import time
 
 OUT = "screenshots"
-PACKAGE = "br.com.metanoia"
-ACTIVITY = f"{PACKAGE}/.MainActivity"
 APK = "app/build/outputs/apk/debug/app-debug.apk"
 os.makedirs(OUT, exist_ok=True)
+
+def package_from_apk():
+    build_tools = os.path.join(os.environ.get("ANDROID_HOME", ""), "build-tools")
+    candidates = []
+    if os.path.isdir(build_tools):
+        candidates = sorted(
+            [os.path.join(build_tools, name, "aapt") for name in os.listdir(build_tools)],
+            key=lambda path: tuple(int(part) for part in os.path.basename(os.path.dirname(path)).split(".") if part.isdigit())
+        )
+    aapt = next((path for path in reversed(candidates) if os.path.isfile(path)), None)
+    if not aapt:
+        raise RuntimeError("aapt não encontrado para identificar o package ID do APK.")
+    result = subprocess.run([aapt, "dump", "badging", APK], capture_output=True, text=True, check=True)
+    for line in result.stdout.splitlines():
+        if line.startswith("package:"):
+            import re
+            match = re.search(r"name='([^']+)'", line)
+            if match:
+                return match.group(1)
+    raise RuntimeError("Não foi possível identificar o package ID do APK debug.")
+
+PACKAGE = package_from_apk()
+ACTIVITY = f"{PACKAGE}/.MainActivity"
 
 def adb(*args, binary=False, check=True, timeout=30):
     p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
