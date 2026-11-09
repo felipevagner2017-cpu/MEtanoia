@@ -1,0 +1,41 @@
+name: Cloudflare D1 read-only audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [ deploy/cloudflare-metanoia-web ]
+    paths:
+      - "wrangler.jsonc"
+      - "migrations/**"
+      - "scripts/audit_cloudflare_d1.mjs"
+      - ".github/workflows/cloudflare-d1-readonly.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "wrangler.jsonc"
+      - "migrations/**"
+      - "scripts/audit_cloudflare_d1.mjs"
+      - ".github/workflows/cloudflare-d1-readonly.yml"
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Cloudflare D1 using read-only API calls
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          METANOIA_REGISTRATION_KEY: ${{ secrets.METANOIA_REGISTRATION_KEY }}
+        run: node scripts/audit_cloudflare_d1.mjs
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-cloudflare-d1-audit
+          path: d1-audit-report.md
+          if-no-files-found: ignore
+          retention-days: 30
