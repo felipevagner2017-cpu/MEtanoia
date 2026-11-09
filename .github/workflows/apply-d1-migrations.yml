@@ -45,10 +45,10 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const expected = ['0001_initial.sql', '0002_account_key_envelopes.sql'];
-          const files = fs.readdirSync('migrations').filter(x => /^\\d+_.+\\.sql$/.test(x)).sort();
+          const files = fs.readdirSync('migrations').filter(x => /^\d+_.+\.sql$/.test(x)).sort();
           if (JSON.stringify(files) !== JSON.stringify(expected)) throw new Error('Unexpected migration set; refusing remote write.');
-          const all = files.map(f => fs.readFileSync('migrations/' + f, 'utf8')).join('\\n');
-          if (/\\b(DROP|TRUNCATE|ALTER\\s+TABLE\\s+.*\\bDROP|DELETE\\s+FROM)\\b/i.test(all)) throw new Error('Destructive SQL detected; refusing remote write.');
+          const all = files.map(f => fs.readFileSync('migrations/' + f, 'utf8')).join('\n');
+          if (/\b(DROP|TRUNCATE|ALTER\s+TABLE\s+.*\bDROP|DELETE\s+FROM)\b/i.test(all)) throw new Error('Destructive SQL detected; refusing remote write.');
           const cfg = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
           const db = (cfg.d1_databases || []).filter(x => x.binding === 'DB');
           if (db.length !== 1 || db[0].database_name !== 'metanoia' || db[0].database_id !== '1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0' || db[0].migrations_dir !== './migrations')
