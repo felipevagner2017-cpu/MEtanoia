@@ -166,11 +166,6 @@ async function syncOnce(){
   if(remoteById.has(recordId))continue;
   pending.push({kind:record.kind,id:record.id,record,baseRevision:0});
  }
- const deletionQueue=readDeletionQueue();
- for(const item of deletionQueue){
-  const remote=remoteById.get(item.recordId);
-  if(remote&&!remote.deleted_at)pending.push({kind:item.kind,id:item.id,deleted:true,baseRevision:Number(remote.revision||0),dimension:item.dimension});
- }
  if(changed)configuration.onApply?.();
  const operations=[];
  for(const item of pending){
