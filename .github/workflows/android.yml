@@ -42,14 +42,14 @@ jobs:
           CERT_SHA256=$(sed -n 's/^V2 Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-debug-cert.txt" | head -n1)
           test -n "$CERT_SHA256" || { echo "Certificado do APK não foi identificado." >&2; exit 1; }
           PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
-          for expected in "name='br.com.metanoia'" "versionCode='7'" "versionName='0.5.1'"; do
+          for expected in "name='br.com.metanoia.preview'" "versionCode='7'" "versionName='0.5.1-preview'"; do
             case "$PACKAGE_INFO" in *"$expected"*) ;; *) echo "Metadado inesperado: $expected" >&2; exit 1 ;; esac
           done
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
           echo "### APK debug verificado" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Package: br.com.metanoia' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Package: br.com.metanoia.preview (instalação Preview independente)' >> "$GITHUB_STEP_SUMMARY"
           echo 'Version code: 7' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Version name: 0.5.1' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Version name: 0.5.1-preview' >> "$GITHUB_STEP_SUMMARY"
           echo "Debug certificate SHA-256: $CERT_SHA256" >> "$GITHUB_STEP_SUMMARY"
           echo "APK SHA-256: $APK_SHA256" >> "$GITHUB_STEP_SUMMARY"
       - name: Run unit tests
