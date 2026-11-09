@@ -60,10 +60,11 @@ if (!token) {
         const applied = hasHistory ? (await query("SELECT name FROM d1_migrations ORDER BY id")).map((row) => row.name) : [];
         const expectedInitial = ["ai_conversations","ai_messages","ai_usage_daily","backups","consents","devices","records","sessions","sync_operations","users"];
         const expectedComplete = [...expectedInitial, "account_key_envelopes"];
+        const expectedIndexes = ["idx_ai_conversations_user_updated","idx_ai_messages_conversation_time","idx_backups_user_time","idx_consents_pair","idx_devices_user_active","idx_records_user_dimension","idx_records_user_server_time","idx_sessions_device_active","idx_sessions_user_expiry","idx_sync_ops_user_time"];
         const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
         const empty = appTables.length === 0 && applied.length === 0;
         const initial = same(appTables, expectedInitial) && same(applied, ["0001_initial.sql"]);
-        const complete = same(appTables, expectedComplete) && same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql"]) && indexes.length === 10;
+        const complete = same(appTables, expectedComplete) && same(indexes, expectedIndexes) && same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql"]);
         const schemaOk = empty || initial || complete;
         const schemaState = complete ? "completo" : initial ? "migration 0001 aplicada; 0002 pendente" : empty ? "vazio; duas migrations pendentes" : "estado inesperado/incompleto";
         add("Catálogo D1 — tabelas e índices", schemaOk ? "APROVADA" : "REPROVADA",
@@ -73,6 +74,19 @@ if (!token) {
         const migrationOk = unknown.length === 0 && (empty || initial || complete);
         add("Histórico remoto das migrations", migrationOk ? "APROVADA" : "REPROVADA",
           `Aplicadas=${applied.join(", ") || "nenhuma"}; pendentes=${pending.join(", ") || "nenhuma"}; remotas sem arquivo local=${unknown.join(", ") || "nenhuma"}.`);
+        try {
+          const integrityRows = await query("PRAGMA integrity_check");
+          const integrityValues = integrityRows.map((row) => Object.values(row)[0]);
+          const integrityOk = integrityValues.length === 1 && integrityValues[0] === "ok";
+          add("Integridade SQLite (integrity_check)", integrityOk ? "APROVADA" : "REPROVADA",
+            `Resultado=${integrityValues.join(", ") || "sem resultado"}.`);
+          const foreignKeyRows = await query("PRAGMA foreign_key_check");
+          add("Integridade referencial (foreign_key_check)", foreignKeyRows.length === 0 ? "APROVADA" : "REPROVADA",
+            foreignKeyRows.length === 0 ? "Nenhuma violação de chave estrangeira." : `${foreignKeyRows.length} violação(ões) encontrada(s).`);
+        } catch (error) {
+          add("Integridade SQLite e referencial", "NÃO VERIFICADA",
+            `Cloudflare D1 não retornou o resultado dos PRAGMAs: ${error.message}. Nenhuma escrita foi executada.`);
+        }
       } catch (error) {
         add("Leitura de tabelas/migrations", "NÃO VERIFICADA",
           `Identidade confirmada, mas consulta SELECT não permitida: ${error.message}. Nenhuma escrita foi solicitada.`);
