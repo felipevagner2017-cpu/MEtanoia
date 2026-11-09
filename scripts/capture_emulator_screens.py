@@ -62,7 +62,6 @@ for name in [
     "04-profissional",
     "05-cotidiano",
     "06-agenda",
-    "07-diario",
     "08-revisoes",
     "09-alertas",
 ]:
