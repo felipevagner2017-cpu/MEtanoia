@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+globalThis.window = {};
+const source = await readFile(new URL("../web/crypto.js", import.meta.url), "utf8");
+(0, eval)(source);
+const api = window.MEtanoiaAccountCrypto;
+assert.equal(api.version, 1);
+
+// Android-produced deterministic vector: PWA opens its wrapped account key and record.
+const androidEnvelope = {
+  format:"metanoia-key-envelope",version:1,kdf:"PBKDF2-SHA256",iterations:600000,
+  salt:"AAECAwQFBgcICQoLDA0ODw==",nonce:"EBESExQVFhcYGRob",
+  ciphertext:"TEkPBZsPEhWxEfDk4jt+tZq4dFKFTmjZ3tR4rQC4+L/+p0cDJNMM9ealgfi2H14P"
+};
+const androidKey = await api.openEnvelope("interop-user-01","interop passphrase 123",androidEnvelope);
+assert.equal(Buffer.from(androidKey).toString("base64"),"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=");
+const androidRecord = "v1.UFFSU1RVVldYWVpb8s/GZlTszWlbL2loBGjnwPyCIB85mB1yzZW8etUqQVuEtDK3Rk/YUnXFLTjkJae5iv7LIpXRIuM/kzc=";
+assert.equal(new TextDecoder().decode(await api.decryptRecord("interop-user-01","record-interop-1","DEVOTION","journal",androidKey,androidRecord)),"Conteúdo criado no Android e aberto na PWA");
+
+// PWA-produced deterministic vector: proves the reciprocal byte format expected by Android.
+const pwaEnvelope = {
+  format:"metanoia-key-envelope",version:1,kdf:"PBKDF2-SHA256",iterations:600000,
+  salt:"EBESExQVFhcYGRobHB0eHw==",nonce:"KCkqKywtLi8wMTIz",
+  ciphertext:"6imIo6IAg9BsXvVld9AnOtPQB/in8/PQmOF1kRrXK5ULX+5c9zMWqQkm+X+YSLdV"
+};
+const pwaKey = await api.openEnvelope("interop-user-pwa","pwa-generated phrase 456",pwaEnvelope);
+assert.equal(Buffer.from(pwaKey).toString("base64"),"QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl8=");
+const pwaRecord = "v1.YWJjZGVmZ2hpamtsI0w9uzTCk08vSfnCywtXbEmIGBiQEalSTO+70D1fvf0latMiNHx6XiOUBnn+m4xTg4dtXNMxPObIKzA=";
+assert.equal(new TextDecoder().decode(await api.decryptRecord("interop-user-pwa","record-pwa-1","MATRIMONIAL","journal",pwaKey,pwaRecord)),"Conteúdo criado na PWA e aberto no Android");
+
+await assert.rejects(() => api.openEnvelope("another-account","interop passphrase 123",androidEnvelope));
+await assert.rejects(() => api.openEnvelope("interop-user-01","wrong encryption passphrase",androidEnvelope));
+await assert.rejects(() => api.decryptRecord("another-account","record-interop-1","DEVOTION","journal",androidKey,androidRecord));
+await assert.rejects(() => api.decryptRecord("interop-user-01","record-other","DEVOTION","journal",androidKey,androidRecord));
+console.log("PASS: fixed Android→PWA and PWA→Android AES-256-GCM/PBKDF2 vectors; account and record AAD isolation.");
+
+const v2Dek = Uint8Array.from({length:32},(_,i)=>i);
+const v2Plain = "Conteúdo compartilhado Android/PWA — vetor v2";
+const v2Payload = await api.encryptRecordV2(
+  "interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","journal",
+  v2Dek,42n,v2Plain
+);
+assert.equal(v2Payload,"v2.AAAAAAAAACqcwwxL0VXPNJ4sfTkb+YRGhVourP2v6px5/LWgS4rMDmXu+zpsLHeQe/jyU9fnjsmwA3uglaviKRnXZW7SrhQe");
+assert.equal(new TextDecoder().decode(await api.decryptRecordV2(
+  "interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","journal",v2Dek,v2Payload
+)),v2Plain);
+for (const metadata of [
+  ["other-account","device-android-01","record","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","other-device","record","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","ai-history","record-v2-01","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","record","other-record","DEVOTION","journal"],
+  ["interop-user-v2","device-android-01","record","record-v2-01","MATRIMONIAL","journal"],
+  ["interop-user-v2","device-android-01","record","record-v2-01","DEVOTION","review"]
+]) {
+  await assert.rejects(() => api.decryptRecordV2(...metadata,v2Dek,v2Payload));
+}
+console.log("PASS: v2 RFC 5869 HKDF-SHA-256/AES-256-GCM deterministic vector and account/device/purpose/record metadata authentication.");
+

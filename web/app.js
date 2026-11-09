@@ -58,7 +58,7 @@ function wordContent(a){
  const body=match?'<div class="eyebrow">Tema identificado nos seus registros</div><h3>'+esc(match.name)+'</h3><p>'+esc(match.advice)+'</p><div class="goldtext">'+esc(match.ref)+'</div><p><b>Próximo passo:</b> '+esc(match.step)+'</p>':'<div class="eyebrow">Ensinamento bíblico</div><div class="goldtext">'+esc(g.ref)+'</div><p>'+esc(g.principle)+'</p><p><b>Examine:</b> '+esc(g.reflect)+'</p><p><b>Prática:</b> '+esc(g.action)+'</p>';
  return '<article class="reading-page"><div class="eyebrow">Item 0'+(wordOrder.indexOf(a)+1)+' · '+(a==="Espiritual"?"Devoção a Deus":a)+'</div><h2>'+(a==="Espiritual"?"Devoção a Deus":a)+'</h2><div class="reading-topic"><span class="muted">Ponto de partida dos seus registros</span><p>'+esc(topic)+'</p></div>'+body+'<p class="reading-note">Leia a passagem no contexto. A orientação considera o que você registrou e não substitui discernimento, cuidado profissional ou acompanhamento pastoral.</p></article>';
 }
-let activeWordIndex=0;
+let activeWordIndex=null;
 const wordChallenges={
  "Espiritual":"Separe 15 minutos sem distrações. Leia a passagem indicada, anote uma verdade sobre Deus e pratique hoje uma orientação que ela apresenta.",
  "Matrimonial":"Tome uma iniciativa concreta de cuidado: escute sem interromper, reconheça algo que precisa reparar ou demonstre gratidão de forma específica.",
@@ -75,7 +75,7 @@ function renderWord(){
  const pages=wordOrder.map((a,i)=>{
   const daily=dailyGuidance[a][dailyIndex()],records=db.journal.filter(x=>area(x.dimension)===a).sort((x,y)=>y.at-x.at),match=bestPattern(records.slice(0,8),a);
   const content='<div class="daily-word-source"><span class="word-kicker">Palavra de hoje · Dia '+(dailyIndex()+1)+' de 7</span><div class="goldtext">'+esc(daily[0])+'</div><p>'+esc(daily[1])+'</p><p class="word-reflection"><b>Para refletir:</b> '+esc(daily[2])+'</p></div>'+(match?'<div class="daily-word-source personal-direction"><span class="word-kicker">Uma direção a partir dos seus registros</span><h3>'+esc(match.name)+'</h3><p>'+esc(match.advice)+'</p><div class="goldtext">'+esc(match.ref)+'</div></div>':'');
-  return '<article class="word-slide" data-word-slide="'+a+'" aria-label="'+labels[a]+'"><div class="word-slide-head"><span class="word-icon">'+icons[a]+'</span><div><div class="eyebrow">Jornada diária · 0'+(i+1)+' de 04</div><h2>'+labels[a]+'</h2><p>'+descriptions[a]+'</p></div></div>'+content+'<div class="word-challenge"><div class="challenge-mark">DESAFIO DE HOJE</div><p>'+daily[3]+'</p></div><div class="word-slide-actions"><button class="btn gold" type="button" data-open-section="'+(a==="Matrimonial"?"ingrid":a==="Cotidiano"?"agenda":"diary")+'" data-dimension="'+a+'">Abrir '+labels[a]+'</button></div><div class="word-slide-foot"><span>MEtanoia · Palavra e prática</span><span>'+(i+1)+' / 4</span></div></article>';
+  return '<article class="word-slide" data-word-slide="'+a+'" aria-label="'+labels[a]+'"><div class="word-slide-head">'+(a==="Matrimonial"?'<img class="word-dimension-avatar" src="/icons/ingrid-avatar.svg" alt="Ingrid">':'<span class="word-icon">'+icons[a]+'</span>')+'<div><div class="eyebrow">Jornada diária · 0'+(i+1)+' de 04</div><h2>'+labels[a]+'</h2><p>'+descriptions[a]+'</p></div></div>'+content+'<div class="word-challenge"><div class="challenge-mark">DESAFIO DE HOJE</div><p>'+daily[3]+'</p></div><div class="word-slide-actions"><button class="btn gold" type="button" data-open-section="'+(a==="Matrimonial"?"ingrid":a==="Cotidiano"?"agenda":"diary")+'" data-dimension="'+a+'">Abrir '+labels[a]+'</button></div><div class="word-slide-foot"><span>MEtanoia · Palavra e prática</span><span>'+(i+1)+' / 4</span></div></article>';
  }).join("");
  root.innerHTML='<div class="word-welcome"><div class="word-welcome-copy"><div class="eyebrow">Sua jornada diária</div><h2>Mensagens e desafios</h2><p>Deslize para a direita ou esquerda entre Devocional, Matrimônio, Profissional e Cotidiano. Cada dimensão reúne uma mensagem e um desafio prático para hoje.</p></div><div class="word-progress"><span>04</span><small>ÁREAS DE<br>TRANSFORMAÇÃO</small></div></div><div class="word-topic-rail" id="wordTopicRail" aria-label="Escolher área">'+wordOrder.map((a,i)=>'<button class="word-topic '+(i===activeWordIndex?"active":"")+'" type="button" data-word-go="'+i+'"><span>'+icons[a]+'</span><b>'+labels[a]+'</b><small>0'+(i+1)+'</small></button>').join("")+'</div><div class="word-swipe-hint"><span>DESLIZE PARA EXPLORAR</span><span class="word-hint-arrows">←　→</span></div><div class="word-carousel" id="wordCarousel">'+pages+'</div><div class="word-pagination" id="wordPagination">'+wordOrder.map((a,i)=>'<button type="button" data-word-go="'+i+'" class="'+(i===activeWordIndex?"active":"")+'" aria-label="Abrir '+labels[a]+'"></button>').join("")+'</div><p class="word-disclaimer">A reflexão considera princípios bíblicos e os registros que você escolheu compartilhar. Leia sempre a passagem no contexto.</p>';
  const carousel=$("wordCarousel"),rail=$("wordTopicRail");
@@ -138,7 +138,7 @@ function renderIntel(){
   const coaching=a==="Matrimonial"?"Acompanhamento relacional: identifique fatos, sentimentos e necessidades; escute a perspectiva da sua esposa; reconheça sua parte sem assumir a responsabilidade pelo que pertence ao outro; combine um próximo passo concreto. Se houver violência, ameaça ou coerção, priorize segurança e apoio especializado.":a==="Profissional"?"Mentoria de desenvolvimento: defina resultado, prazo, recursos, obstáculos e uma ação verificável. Avalie riscos antes de decisões financeiras ou profissionais importantes.":a==="Cotidiano"?"Cuidado integral: observe emoções, sono, alimentação, movimento, descanso e organização. Diferencie fato, interpretação e sentimento. Não transforme ausência de registro em conclusão. Sintomas persistentes ou preocupantes merecem avaliação de saúde.":"Devoção a Deus: observe o texto bíblico no contexto, examine motivações e transforme a verdade compreendida em obediência. Disciplina não é desempenho para impressionar.";
   return '<article class="reading-page"><div class="eyebrow">Acompanhamento · '+(a==="Espiritual"?"Devoção a Deus":a)+'</div><h3>'+esc(record.title||"Relato mais recente")+'</h3><p>'+esc(record.body||"")+'</p>'+(checkinHtml?'<div class="reading-topic"><b>Informações que você registrou</b>'+checkinHtml+'</div>':"")+(match?'<div class="goldtext">'+esc(match.ref)+'</div><h3>'+esc(match.name)+'</h3><p>'+esc(match.advice)+'</p><p><b>Aplicação:</b> '+esc(match.step)+'</p>':'<div class="goldtext">'+esc(g.ref)+'</div><p>'+esc(g.principle)+'</p><p><b>Aplicação:</b> '+esc(g.action)+'</p>')+'<div class="reading-topic"><b>Plano de acompanhamento</b><p>'+coaching+'</p></div></article>';
  }).join("");
- $("intelligenceAreas").innerHTML=content+'<p class="muted" style="margin-top:12px">A inteligência atual analisa localmente os relatos, padrões de palavras e respostas que você forneceu. Ela não inventa dados, não faz diagnóstico e não substitui psicoterapia, avaliação médica ou pastoreio. Esta versão não utiliza um modelo generativo conectado.</p>';
+ $("intelligenceAreas").innerHTML=content+'<p class="muted" style="margin-top:12px">A leitura contextual local continua disponível sem internet. Para perguntas abertas e análise generativa integrada, use a assistente MEtanoia AI acima: ela só envia os registros recentes selecionados quando você autoriza explicitamente. A IA não faz diagnóstico e não substitui psicoterapia, avaliação médica ou acompanhamento pastoral.</p>';
 }
 function renderEvolution(){
  const weekAgo=Date.now()-7*86400000,weekEntries=db.journal.filter(x=>x.at>=weekAgo),routine=weekEntries.filter(x=>area(x.dimension)==="Cotidiano"&&x.checkin),exercise=routine.map(x=>x.checkin.exercise).filter(Boolean),practiced=exercise.filter(x=>x==="Pratiquei").length,notPracticed=exercise.filter(x=>x==="Não pratiquei").length,unrecorded=exercise.filter(x=>x==="Não registrei").length,food=routine.map(x=>x.checkin.food).filter(Boolean),foodAlerts=food.filter(x=>x==="Irregular"||x==="Precisa de atenção").length;
@@ -169,7 +169,7 @@ async function checkCommitmentReminders(){
 async function checkReminderClock(){if(!("Notification"in window)||Notification.permission!=="granted")return;await checkCommitmentReminders();const n=new Date(),h=n.getHours();if(n.getMinutes()!==0||![7,12,18].includes(h))return;const stamp=key(n)+"-"+h;if(localStorage.getItem("metonoia-reminder-"+stamp))return;localStorage.setItem("metonoia-reminder-"+stamp,"1");const dailyBody=h===7?(ingridUnlocked?ingridDailyUpdate(ingridData).challenge:"Comece o dia com escuta: pergunte à Ingrid como está e o que seria cuidado para ela hoje."):h===12?(ingridUnlocked?("Reavalie com delicadeza: "+ingridDailyUpdate(ingridData).challenge):"Faça uma pausa e confira se há alguma necessidade prática que você pode aliviar."):(ingridUnlocked?("Feche o dia sem cobranças: "+ingridDailyUpdate(ingridData).challenge):"Encerre o dia com gratidão, escuta e uma atitude concreta de carinho.");const opts={body:dailyBody,icon:"/icons/metonoia.svg",badge:"/icons/metonoia.svg",tag:"metonoia-daily-"+stamp,renotify:false,vibrate:[250,120,250]};try{const reg=await navigator.serviceWorker.ready;await reg.showNotification("MEtonoia · Hora de revisar o cotidiano",opts)}catch(e){console.warn(e)}}
 
 const INGRID_VAULT_KEY="metonoia-ingrid-vault-v1";
-let ingridData=null,ingridUnlocked=false,ingridSessionPin='';
+let ingridData=null,ingridUnlocked=false,ingridSessionPin='',ingridVaultSalt=null;
 const toB64=bytes=>{const data=new Uint8Array(bytes);let binary="";for(let i=0;i<data.length;i+=32768)binary+=String.fromCharCode(...data.subarray(i,i+32768));return btoa(binary)};
 const fromB64=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 async function ingridCryptoKey(pin,salt){
@@ -178,32 +178,55 @@ async function ingridCryptoKey(pin,salt){
 }
 async function saveIngridVault(){
  if(!ingridData)return;
- localStorage.setItem(INGRID_VAULT_KEY,JSON.stringify({version:2,encrypted:false,data:ingridData}));
+ if(!ingridSessionPin)throw new Error("O cofre está bloqueado. Desbloqueie-o antes de salvar.");
+ if(!ingridVaultSalt)ingridVaultSalt=crypto.getRandomValues(new Uint8Array(16));
+ const key=await ingridCryptoKey(ingridSessionPin,ingridVaultSalt),iv=crypto.getRandomValues(new Uint8Array(12));
+ const plaintext=new TextEncoder().encode(JSON.stringify(ingridData));
+ const ciphertext=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,plaintext);
+ localStorage.setItem(INGRID_VAULT_KEY,JSON.stringify({
+  version:3,encrypted:true,algorithm:"AES-256-GCM",kdf:"PBKDF2-SHA256",iterations:310000,
+  salt:toB64(ingridVaultSalt),iv:toB64(iv),ciphertext:toB64(ciphertext),updatedAt:new Date().toISOString()
+ }));
 }
 async function unlockIngridVault(){
  if(!$('ingridConsent')?.checked)return alert('Só prossiga depois de Ingrid autorizar expressamente o registro e o uso dessas informações.');
  const raw=localStorage.getItem(INGRID_VAULT_KEY);
  if(raw){
-  try{
-   const saved=JSON.parse(raw);
-   if(saved.encrypted!==false||saved.version===1){
-    const accepted=confirm('Os dados antigos estão protegidos pela senha esquecida. Não é possível abri-los sem ela. Como você autorizou reiniciar sem senha, continuar apagará esses dados antigos e criará um novo cadastro. Deseja continuar?');
-    if(!accepted)return;
-    localStorage.removeItem(INGRID_VAULT_KEY);
-   }else{
-    ingridData=saved.data;
-    if(!ingridData||typeof ingridData!=='object')throw new Error('Dados inválidos');
-    ingridUnlocked=true;renderIngrid();return;
-   }
-  }catch(e){return alert('Não foi possível ler os dados locais. Nenhuma informação foi alterada.');}
+  let saved;
+  try{saved=JSON.parse(raw)}catch{return alert('O arquivo local do cofre está inválido. Nenhum dado foi alterado.')}
+  if(saved.version===3&&saved.encrypted===true){
+   const pin=prompt('Digite a senha do cofre matrimonial. Ela não será enviada à nuvem.');
+   if(!pin)return;
+   try{
+    const salt=fromB64(saved.salt),iv=fromB64(saved.iv),key=await ingridCryptoKey(pin,salt);
+    const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,fromB64(saved.ciphertext));
+    const parsed=JSON.parse(new TextDecoder().decode(plaintext));
+    if(!parsed||typeof parsed!=="object")throw new Error("Dados inválidos");
+    ingridData=parsed;ingridSessionPin=pin;ingridVaultSalt=salt;ingridUnlocked=true;renderIngrid();return;
+   }catch{return alert('Senha incorreta ou dados criptografados inválidos. O cofre permaneceu bloqueado e nenhum dado foi alterado.')}
+  }
+  if(saved.encrypted===false&&saved.data&&typeof saved.data==="object"){
+   const pin=prompt('Os registros existentes estão sem criptografia. Para preservá-los e protegê-los, crie agora uma senha com pelo menos 10 caracteres. Não a perca: não há recuperação sem ela.');
+   if(!pin||pin.length<10)return alert('A senha precisa ter pelo menos 10 caracteres. Os registros antigos continuam preservados.');
+   const confirmPin=prompt('Confirme a nova senha do cofre.');
+   if(pin!==confirmPin)return alert('As senhas não coincidem. Os registros antigos continuam preservados.');
+   ingridData=saved.data;ingridSessionPin=pin;ingridVaultSalt=crypto.getRandomValues(new Uint8Array(16));
+   try{await saveIngridVault();ingridUnlocked=true;renderIngrid();return}catch{ingridData=null;ingridSessionPin='';ingridVaultSalt=null;return alert('Não foi possível criptografar os registros. O conteúdo antigo permanece armazenado sem alterações.')}
+  }
+  return alert('Este cofre usa um formato antigo ou não reconhecido. Os dados foram preservados, mas não serão abertos nem apagados automaticamente. É necessária uma recuperação compatível antes de continuar.');
  }
+ const pin=prompt('Crie uma senha para proteger o cofre matrimonial (mínimo de 10 caracteres). Ela não será enviada à nuvem e não poderá ser recuperada se for perdida.');
+ if(!pin||pin.length<10)return alert('A senha precisa ter pelo menos 10 caracteres.');
+ const confirmPin=prompt('Confirme a senha do cofre.');
+ if(pin!==confirmPin)return alert('As senhas não coincidem.');
  ingridData={cycle:{lastPeriodStart:'',cycleLength:28,periodDays:5,regularity:'unknown'},entries:[],consentConfirmedAt:new Date().toISOString()};
- await saveIngridVault();ingridUnlocked=true;renderIngrid();
+ ingridSessionPin=pin;ingridVaultSalt=crypto.getRandomValues(new Uint8Array(16));
+ try{await saveIngridVault();ingridUnlocked=true;renderIngrid()}catch{ingridData=null;ingridSessionPin='';ingridVaultSalt=null;return alert('Não foi possível proteger o cofre. Nenhum registro foi criado.')}
 }
 function resetIngridVault(){
  const accepted=confirm('Apagar definitivamente os dados da Ingrid armazenados neste navegador? Esta ação não pode ser desfeita.');
  if(!accepted)return;
- localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin='';renderIngrid();
+ localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin='';ingridVaultSalt=null;renderIngrid();
 }
 function dayOffset(date,days){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+days);return key(d)}
 function cycleStatus(data){
@@ -236,22 +259,136 @@ function renderIngrid(){
  const root=$("ingridContent");if(!root)return;
  if(!ingridUnlocked){
   const exists=!!localStorage.getItem(INGRID_VAULT_KEY);
-  root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Um lembrete visual para cultivar presença, carinho e parceria.</p></div></div><div class="daily-challenge"><div class="eyebrow">Desafio de cuidado de hoje</div><p>Pergunte à Ingrid como ela está e o que seria uma demonstração de cuidado para ela hoje. Escute a resposta sem tentar adivinhar.</p></div><div class="ingrid-lock"><div class="eyebrow">Acesso aos dados pessoais</div><p>O acesso será direto, sem senha. Os registros ficam neste navegador, sem criptografia. Qualquer pessoa com acesso ao seu aparelho e perfil do navegador poderá visualizá-los. Registre somente informações que Ingrid autorizar.</p><label class="consent-line"><input id="ingridConsent" type="checkbox"> Ingrid autorizou o registro e o uso destas informações no MEtanoia.</label><button id="ingridUnlock" class="btn gold">'+(exists?"Acessar dados da Ingrid":"Criar cadastro da Ingrid")+'</button>'+(exists?'<p class="muted">Se os dados anteriores estavam protegidos pela senha esquecida, será necessário reiniciar o cadastro e os registros antigos serão perdidos.</p>':"")+'</div>';
+  root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Um lembrete visual para cultivar presença, carinho e parceria.</p></div></div><div class="daily-challenge"><div class="eyebrow">Desafio de cuidado de hoje</div><p>Pergunte à Ingrid como ela está e o que seria uma demonstração de cuidado para ela hoje. Escute a resposta sem tentar adivinhar.</p></div><div class="ingrid-lock"><div class="eyebrow">Cofre matrimonial protegido</div><p>Os registros são cifrados neste aparelho com AES-256-GCM e uma senha que permanece somente na sessão local. A senha não é enviada ao servidor. Se for esquecida, não será possível recuperar os dados sem uma cópia e a senha correta.</p><label class="consent-line"><input id="ingridConsent" type="checkbox"> Ingrid autorizou expressamente o registro e o uso destas informações no MEtanoia.</label><button id="ingridUnlock" class="btn gold">'+(exists?"Desbloquear cofre da Ingrid":"Criar cofre protegido da Ingrid")+'</button>'+(exists?'<p class="muted">Se os dados antigos estavam sem criptografia, o aplicativo pedirá uma nova senha e tentará protegê-los sem apagá-los.</p>':"")+'</div>';
   $("ingridUnlock").onclick=unlockIngridVault;return;
  }
- if(today()==="2026-11-03"){ingridData.dailyCare=ingridData.dailyCare||[];if(!ingridData.dailyCare.some(x=>x.date===today())){ingridData.dailyCare.push({date:today(),sensitivity:"yes",conversation:"low",note:"Hoje está mais sensível; talvez prefira pouca conversa. Seja generoso, não pressione e acolha se ela der espaço.",at:Date.now()});saveIngridVault();}}
  const c=ingridData.cycle||{},daily=ingridDailyUpdate(ingridData),status=daily.status,todayCare=daily.care,todayEntry=(ingridData.entries||[]).find(x=>x.date===today());
  const archives=(ingridData.archives||[]).slice().sort((a,b)=>b.archivedAt-a.archivedAt);
  const archiveHtml=archives.length?archives.slice(0,6).map(x=>'<article class="area"><b>Ciclo arquivado · '+esc(fmt(x.cycle.lastPeriodStart))+'</b><p>'+esc(x.cycle.cycleLength||"—")+' dias de duração média · sangramento informado: '+esc(x.cycle.periodDays||"—")+' dias · regularidade: '+esc(x.cycle.regularity||"não informada")+'</p><p class="muted">Arquivado em '+esc(fmt(new Date(x.archivedAt).toISOString().slice(0,10)))+'</p></article>').join(""):'<p class="muted">Nenhum ciclo anterior arquivado. Ao salvar uma nova data de início, o ciclo anterior será guardado aqui.</p>';
  const nextDate=status?.nextStart?fmt(status.nextStart):"sem previsão confiável";
  const recent=(ingridData.entries||[]).slice().sort((a,b)=>b.at-a.at).slice(0,5).map(x=>'<article class="area"><b>'+esc(fmt(x.date))+'</b>'+(x.shared?'<p><b>O que ela compartilhou:</b> '+esc(x.shared)+'</p>':"")+(x.request?'<p><b>O que ela pediu:</b> '+esc(x.request)+'</p>':"")+(x.response?'<p><b>Como você respondeu:</b> '+esc(x.response)+'</p>':"")+'</article>').join("");
- root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Conhecê-la, ouvi-la e amá-la com atitudes concretas — não presumir o que ela sente.</p></div></div><div class="area"><div class="eyebrow">Ciclo menstrual</div><h3>'+esc(status?.phase||"Dados do ciclo ainda não cadastrados")+'</h3><p>'+(status?.cycleDay?'Dia '+status.cycleDay+' do ciclo · próxima menstruação estimada: '+esc(nextDate):(status?.phase||"Informe o primeiro dia da última menstruação para iniciar o acompanhamento."))+'</p>'+(status?.fertileStart?'<p>Janela fértil estimada: '+esc(fmt(status.fertileStart))+' a '+esc(fmt(status.ovulation))+' · ovulação estimada: '+esc(fmt(status.ovulation))+'</p>':"")+(c.observedFertileStart?'<p>Início da janela fértil percebido e informado: '+esc(fmt(c.observedFertileStart))+' (observação, não confirmação de ovulação).</p>':"")+(Number(c.periodDays)>7?'<p class="muted">Sangramento acima de 7 dias: vale conversar com ginecologista.</p>':"")+'<p class="muted">Estimativa por calendário, não confirmação de ovulação. Não use para evitar gravidez. O ciclo pode variar; registre ao menos três ciclos para observar um padrão. Sinais corporais e avaliação profissional são mais informativos.</p></div><div class="area"><div class="eyebrow">Configuração do ciclo</div><label>Primeiro dia da última menstruação (dia 1)</label><input id="ingridLastPeriod" class="field" type="date" value="'+esc(c.lastPeriodStart||"")+'"><label>Duração média do ciclo (adultas: geralmente 21–35 dias)</label><input id="ingridCycleLength" class="field" type="number" min="15" max="60" value="'+esc(c.cycleLength||28)+'"><label>Duração do sangramento (habitualmente até 7 dias)</label><input id="ingridPeriodDays" class="field" type="number" min="1" max="14" value="'+esc(c.periodDays||5)+'"><label>Regularidade do ciclo</label><select id="ingridRegularity" class="field"><option value="unknown" '+(!c.regularity||c.regularity==="unknown"?"selected":"")+'>Ainda não sei</option><option value="regular" '+(c.regularity==="regular"?"selected":"")+'>Regular ou previsível</option><option value="irregular" '+(c.regularity==="irregular"?"selected":"")+'>Irregular ou varia bastante</option></select><label>Data em que você informou que Ingrid percebeu início da janela fértil (observação, não confirmação)</label><input id="ingridObservedFertile" class="field" type="date" value="'+esc(c.observedFertileStart||"2026-11-01")+'"><button id="saveIngridCycle" class="btn gold">Salvar ciclo</button></div><div class="daily-challenge"><div class="eyebrow">Atualização diária de cuidado · '+esc(fmt(today()))+'</div><p><b>'+esc(daily.summary)+'</b></p><p>'+esc(daily.challenge)+'</p><p class="muted">A fase é uma estimativa de calendário; a observação direta e a vontade de Ingrid têm prioridade.</p></div><div class="area"><div class="eyebrow">Observação de hoje</div><label>Como ela parece estar hoje? (observação, não conclusão)</label><select id="ingridSensitivity" class="field"><option value="unknown" '+(!todayCare?.sensitivity||todayCare.sensitivity==="unknown"?"selected":"")+'>Ainda não observei / não sei</option><option value="yes" '+(todayCare?.sensitivity==="yes"?"selected":"")+'>Mais sensível hoje</option><option value="no" '+(todayCare?.sensitivity==="no"?"selected":"")+'>Não notei sensibilidade maior</option></select><label>Quanto espaço para conversa parece desejar?</label><select id="ingridConversation" class="field"><option value="unknown" '+(!todayCare?.conversation||todayCare.conversation==="unknown"?"selected":"")+'>Ainda não sei</option><option value="low" '+(todayCare?.conversation==="low"?"selected":"")+'>Pouca conversa; acolher se ela der espaço</option><option value="open" '+(todayCare?.conversation==="open"?"selected":"")+'>Parece aberta a conversar</option></select><label>Nota de cuidado para hoje</label><textarea id="ingridCareNote" class="field" rows="2" placeholder="Ex.: oferecer ajuda prática e não pressionar...">'+esc(todayCare?.note||"Hoje está mais sensível; talvez prefira pouca conversa. Seja generoso, não pressione e acolha se ela der espaço.")+'</textarea><button id="saveIngridCare" class="btn gold">Salvar observação de hoje</button></div><div class="area"><div class="eyebrow">Diário compartilhado do matrimônio</div><p class="muted">Registre apenas o que Ingrid consentiu em compartilhar, o que ela pediu e como você respondeu. Evite transformar o diário em vigilância ou avaliação unilateral.</p><label>O que ela compartilhou sobre como está?</label><textarea id="ingridShared" class="field" rows="2" placeholder="Relato dela, com respeito..."></textarea><label>O que ela pediu ou disse que ajudaria?</label><textarea id="ingridRequest" class="field" rows="2" placeholder="Necessidades expressas por ela..."></textarea><label>Qual atitude você tomou?</label><textarea id="ingridResponse" class="field" rows="2" placeholder="Ação concreta de cuidado..."></textarea><button id="saveIngridEntry" class="btn gold">Salvar registro</button></div><div class="area"><div class="row between"><b>Últimos registros</b><button id="lockIngrid" class="btn">Fechar área da Ingrid</button></div>'+(recent||'<p class="muted">Nenhum registro compartilhado ainda.</p>')+'</div><div class="area"><div class="eyebrow">Histórico mensal</div><h3>Ciclos anteriores arquivados</h3>'+archiveHtml+'</div><button id="deleteIngridVault" class="btn danger">Apagar todos os dados de Ingrid deste aparelho</button>';
+ root.innerHTML='<div class="ingrid-profile"><img src="/icons/ingrid-avatar.svg" alt="Avatar ilustrado da Ingrid"><div><div class="eyebrow">Matrimônio · cuidado diário</div><h2>Ingrid</h2><p>Conhecê-la, ouvi-la e amá-la com atitudes concretas — não presumir o que ela sente.</p></div></div><div class="area"><div class="eyebrow">Ciclo menstrual</div><h3>'+esc(status?.phase||"Dados do ciclo ainda não cadastrados")+'</h3><p>'+(status?.cycleDay?'Dia '+status.cycleDay+' do ciclo · próxima menstruação estimada: '+esc(nextDate):(status?.phase||"Informe o primeiro dia da última menstruação para iniciar o acompanhamento."))+'</p>'+(status?.fertileStart?'<p>Janela fértil estimada: '+esc(fmt(status.fertileStart))+' a '+esc(fmt(status.ovulation))+' · ovulação estimada: '+esc(fmt(status.ovulation))+'</p>':"")+(c.observedFertileStart?'<p>Início da janela fértil percebido e informado: '+esc(fmt(c.observedFertileStart))+' (observação, não confirmação de ovulação).</p>':"")+(Number(c.periodDays)>7?'<p class="muted">Sangramento acima de 7 dias: vale conversar com ginecologista.</p>':"")+'<p class="muted">Estimativa por calendário, não confirmação de ovulação. Não use para evitar gravidez. O ciclo pode variar; registre ao menos três ciclos para observar um padrão. Sinais corporais e avaliação profissional são mais informativos.</p></div><div class="area"><div class="eyebrow">Configuração do ciclo</div><label>Primeiro dia da última menstruação (dia 1)</label><input id="ingridLastPeriod" class="field" type="date" value="'+esc(c.lastPeriodStart||"")+'"><label>Duração média do ciclo (adultas: geralmente 21–35 dias)</label><input id="ingridCycleLength" class="field" type="number" min="15" max="60" value="'+esc(c.cycleLength||28)+'"><label>Duração do sangramento (habitualmente até 7 dias)</label><input id="ingridPeriodDays" class="field" type="number" min="1" max="14" value="'+esc(c.periodDays||5)+'"><label>Regularidade do ciclo</label><select id="ingridRegularity" class="field"><option value="unknown" '+(!c.regularity||c.regularity==="unknown"?"selected":"")+'>Ainda não sei</option><option value="regular" '+(c.regularity==="regular"?"selected":"")+'>Regular ou previsível</option><option value="irregular" '+(c.regularity==="irregular"?"selected":"")+'>Irregular ou varia bastante</option></select><label>Data em que você informou que Ingrid percebeu início da janela fértil (observação, não confirmação)</label><input id="ingridObservedFertile" class="field" type="date" value="'+esc(c.observedFertileStart||"")+'"><button id="saveIngridCycle" class="btn gold">Salvar ciclo</button></div><div class="daily-challenge"><div class="eyebrow">Atualização diária de cuidado · '+esc(fmt(today()))+'</div><p><b>'+esc(daily.summary)+'</b></p><p>'+esc(daily.challenge)+'</p><p class="muted">A fase é uma estimativa de calendário; a observação direta e a vontade de Ingrid têm prioridade.</p></div><div class="area"><div class="eyebrow">Observação de hoje</div><label>Como ela parece estar hoje? (observação, não conclusão)</label><select id="ingridSensitivity" class="field"><option value="unknown" '+(!todayCare?.sensitivity||todayCare.sensitivity==="unknown"?"selected":"")+'>Ainda não observei / não sei</option><option value="yes" '+(todayCare?.sensitivity==="yes"?"selected":"")+'>Mais sensível hoje</option><option value="no" '+(todayCare?.sensitivity==="no"?"selected":"")+'>Não notei sensibilidade maior</option></select><label>Quanto espaço para conversa parece desejar?</label><select id="ingridConversation" class="field"><option value="unknown" '+(!todayCare?.conversation||todayCare.conversation==="unknown"?"selected":"")+'>Ainda não sei</option><option value="low" '+(todayCare?.conversation==="low"?"selected":"")+'>Pouca conversa; acolher se ela der espaço</option><option value="open" '+(todayCare?.conversation==="open"?"selected":"")+'>Parece aberta a conversar</option></select><label>Nota de cuidado para hoje</label><textarea id="ingridCareNote" class="field" rows="2" placeholder="Registre somente o que foi observado ou comunicado diretamente...">'+esc(todayCare?.note||"")+'</textarea><button id="saveIngridCare" class="btn gold">Salvar observação de hoje</button></div><div class="area"><div class="eyebrow">Diário compartilhado do matrimônio</div><p class="muted">Registre apenas o que Ingrid consentiu em compartilhar, o que ela pediu e como você respondeu. Evite transformar o diário em vigilância ou avaliação unilateral.</p><label>O que ela compartilhou sobre como está?</label><textarea id="ingridShared" class="field" rows="2" placeholder="Relato dela, com respeito..."></textarea><label>O que ela pediu ou disse que ajudaria?</label><textarea id="ingridRequest" class="field" rows="2" placeholder="Necessidades expressas por ela..."></textarea><label>Qual atitude você tomou?</label><textarea id="ingridResponse" class="field" rows="2" placeholder="Ação concreta de cuidado..."></textarea><button id="saveIngridEntry" class="btn gold">Salvar registro</button></div><div class="area"><div class="row between"><b>Últimos registros</b><button id="lockIngrid" class="btn">Fechar área da Ingrid</button></div>'+(recent||'<p class="muted">Nenhum registro compartilhado ainda.</p>')+'</div><div class="area"><div class="eyebrow">Histórico mensal</div><h3>Ciclos anteriores arquivados</h3>'+archiveHtml+'</div><button id="deleteIngridVault" class="btn danger">Apagar todos os dados de Ingrid deste aparelho</button>';
  $("saveIngridCycle").onclick=async()=>{const last=$("ingridLastPeriod").value,length=Number($("ingridCycleLength").value),days=Number($("ingridPeriodDays").value);if(!last||length<15||length>60||days<1||days>14)return alert("Confira a data e os intervalos informados.");const previous=ingridData.cycle||{};if(previous.lastPeriodStart&&previous.lastPeriodStart!==last){ingridData.archives=ingridData.archives||[];if(!ingridData.archives.some(x=>x.cycle?.lastPeriodStart===previous.lastPeriodStart)){ingridData.archives.push({cycle:{...previous},archivedAt:Date.now()});}}ingridData.cycle={lastPeriodStart:last,cycleLength:length,periodDays:days,regularity:$("ingridRegularity").value,observedFertileStart:$("ingridObservedFertile").value};await saveIngridVault();renderIngrid();};
  $("saveIngridCare").onclick=async()=>{ingridData.dailyCare=ingridData.dailyCare||[];const record={date:today(),sensitivity:$("ingridSensitivity").value,conversation:$("ingridConversation").value,note:$("ingridCareNote").value.trim(),at:Date.now()};const index=ingridData.dailyCare.findIndex(x=>x.date===today());if(index>=0)ingridData.dailyCare[index]=record;else ingridData.dailyCare.push(record);await saveIngridVault();renderIngrid();};
  $("saveIngridEntry").onclick=async()=>{const shared=$("ingridShared").value.trim(),request=$("ingridRequest").value.trim(),response=$("ingridResponse").value.trim();if(!shared&&!request&&!response)return alert("Registre ao menos uma informação.");ingridData.entries=ingridData.entries||[];ingridData.entries.push({date:today(),shared,request,response,at:Date.now()});await saveIngridVault();renderIngrid();};
- $("lockIngrid").onclick=()=>{ingridData=null;ingridUnlocked=false;ingridSessionPin="";renderIngrid();};
- $("deleteIngridVault").onclick=()=>{if(confirm("Apagar definitivamente os dados de Ingrid deste aparelho?")){localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin="";renderIngrid();}};
+ $("lockIngrid").onclick=()=>{ingridData=null;ingridUnlocked=false;ingridSessionPin="";ingridVaultSalt=null;renderIngrid();};
+ $("deleteIngridVault").onclick=()=>{if(confirm("Apagar definitivamente os dados de Ingrid deste aparelho?")){localStorage.removeItem(INGRID_VAULT_KEY);ingridData=null;ingridUnlocked=false;ingridSessionPin="";ingridVaultSalt=null;renderIngrid();}};
 }
+
+
+const aiSession={token:sessionStorage.getItem("metonoia-session-token")||"",history:[],busy:false,accountDataKey:null};
+const aiDimensionRecords={
+ "Devoção":["Espiritual"],"Matrimônio":["Matrimonial"],"Profissional":["Profissional"],"Cotidiano":["Cotidiano"]
+};
+function buildAiContext(){
+ const scope=$("aiDimension").value;
+ const allowed=aiDimensionRecords[scope];
+ let records=db.journal.slice().sort((a,b)=>b.at-a.at);
+ if(allowed) records=records.filter(x=>allowed.includes(area(x.dimension)));
+ else {
+  const picked=[];
+  for(const dimension of ["Espiritual","Matrimonial","Profissional","Cotidiano"]){
+   picked.push(...records.filter(x=>area(x.dimension)===dimension).slice(0,3));
+  }
+  records=picked.sort((a,b)=>b.at-a.at);
+ }
+ records=records.slice(0,12).map(x=>({date:new Date(x.at).toLocaleDateString("pt-BR"),dimension:area(x.dimension),title:x.title||"",content:String(x.body||"").slice(0,1100),checkin:x.checkin||{}}));
+ const now=today();
+ const agenda=db.items.filter(x=>(!allowed||allowed.includes(area(x.dimension)))&&(!x.date||x.date>=now)).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,10).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto"}));
+ return JSON.stringify({registros:records,agenda},null,2).slice(0,12000);
+}
+function renderAiConversation(){
+ const root=$("aiConversation");
+ root.innerHTML=aiSession.history.map(m=>'<div class="ai-message '+(m.role==="user"?"ai-user":"ai-assistant")+'"><b>'+(m.role==="user"?"Você":"MEtanoia AI")+'</b><p>'+esc(m.content).replace(/\n/g,"<br>")+'</p></div>').join("")||'<div class="empty">Sua conversa aparecerá aqui.</div>';
+ root.scrollTop=root.scrollHeight;
+}
+async function sendAiQuestion(){
+ if(aiSession.busy)return;
+ const token=aiSession.token,question=$("aiQuestion").value.trim();
+ if(!token){$("aiStatus").textContent="Entre com sua conta MEtanoia antes de conversar com a IA.";return}
+ if(!$("aiConsent").checked){$("aiStatus").textContent="Confirme a autorização antes de enviar seus registros.";return}
+ if(!question){$("aiStatus").textContent="Escreva uma pergunta antes de enviar.";return}
+ aiSession.busy=true;$("aiSend").disabled=true;$("aiStatus").textContent="A inteligência está analisando sua pergunta e o contexto autorizado...";
+ const previous=aiSession.history.slice(-8);
+ aiSession.history.push({role:"user",content:question});renderAiConversation();$("aiQuestion").value="";
+ try{
+  const response=await fetch("/api/ai/chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({dimension:$("aiDimension").value,context:buildAiContext(),history:previous,question})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Não foi possível acessar o serviço de IA.");
+  aiSession.history.push({role:"assistant",content:data.answer});$("aiStatus").textContent="Resposta gerada pelo modelo conectado. A conversa permanece apenas nesta sessão.";
+ }catch(error){
+  aiSession.history.pop();$("aiStatus").textContent=error.message||"Falha de conexão. A análise local continua disponível.";
+ }finally{
+  aiSession.busy=false;$("aiSend").disabled=false;renderAiConversation();
+ }
+}
+
+$("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
+const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
+const setAccountSession=(data)=>{
+ aiSession.token=data.token;sessionStorage.setItem("metonoia-session-token",data.token);
+ sessionStorage.setItem("metonoia-user-id",data.userId||"");sessionStorage.setItem("metonoia-device-id",data.deviceId||"");
+ $("accountLogout").hidden=false;accountStatus("Conta autenticada neste navegador. A sessão expira em até 30 dias.");
+};
+async function accountRequest(path,payload,extraHeaders={}){
+ const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json",...extraHeaders},body:JSON.stringify(payload)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.error||"Não foi possível autenticar a conta.");
+ return data;
+}
+async function unlockAccountCrypto(){
+ const phrase=$("accountEncryptionPassphrase").value;
+ if(!aiSession.token){accountStatus("Entre na conta antes de inicializar a criptografia.");return}
+ if(!window.MEtanoiaAccountCrypto){accountStatus("Módulo de criptografia indisponível. Atualize o aplicativo.");return}
+ if(phrase.length<12){accountStatus("Informe uma frase exclusiva com pelo menos 12 caracteres.");return}
+ const headers={Authorization:"Bearer "+aiSession.token};
+ $("accountUnlock").disabled=true;accountStatus("Verificando chave criptográfica...");
+ try{
+  let response=await fetch("/api/crypto/key-envelope",{headers});
+  let data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Não foi possível consultar a chave da conta.");
+  if(data.envelope){
+   aiSession.accountDataKey=await window.MEtanoiaAccountCrypto.openEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase,data.envelope);
+  }else{
+   const envelope=await window.MEtanoiaAccountCrypto.createEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase);
+   response=await fetch("/api/crypto/key-envelope",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify({envelope})});
+   data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.error||"Não foi possível inicializar a chave da conta.");
+   aiSession.accountDataKey=await window.MEtanoiaAccountCrypto.openEnvelope(sessionStorage.getItem("metonoia-user-id"),phrase,envelope);
+  }
+  $("accountEncryptionPassphrase").value="";
+  accountStatus("Criptografia da conta desbloqueada neste navegador. A chave permanece somente na memória desta sessão.");
+ }catch(error){
+  aiSession.accountDataKey=null;
+  accountStatus(error.message||"Não foi possível desbloquear a criptografia.");
+ }finally{$("accountUnlock").disabled=false}
+}
+$("accountUnlock").onclick=unlockAccountCrypto;
+$("accountLogin").onclick=async()=>{
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
+ if(!email||!password){accountStatus("Informe e-mail e senha.");return}
+ $("accountLogin").disabled=true;accountStatus("Autenticando...");
+ try{setAccountSession(await accountRequest("/api/auth/login",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"}))}
+ catch(error){accountStatus(error.message)}
+ finally{$("accountLogin").disabled=false}
+};
+$("accountRegister").onclick=async()=>{
+ const email=$("accountEmail").value.trim(),password=$("accountPassword").value,key=$("registrationKey").value.trim();
+ if(!email||password.length<12||!key){accountStatus("Informe e-mail, senha de pelo menos 12 caracteres e código de convite.");return}
+ $("accountRegister").disabled=true;accountStatus("Criando conta...");
+ try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"},{"X-Registration-Key":key}));$("registrationKey").value=""}
+ catch(error){accountStatus(error.message)}
+ finally{$("accountRegister").disabled=false}
+};
+$("accountLogout").onclick=async()=>{
+ try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
+ aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
+};
+if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
+$("aiSend").onclick=sendAiQuestion;
+$("aiQuestion").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAiQuestion()}});
+$("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatus").textContent="Conversa limpa. Os registros locais não foram alterados."};
 
 function show(id){["word","agenda","diary","intel","evolution","ingrid"].forEach(n=>$(n).classList.toggle("hidden",n!==id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));renderHomeReminder();if(id==="agenda")renderAgenda();if(id==="ingrid")renderIngrid();if(id==="diary")renderDiary();if(id==="intel")renderIntel();if(id==="evolution")renderEvolution()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));

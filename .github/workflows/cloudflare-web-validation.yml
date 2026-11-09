@@ -1,0 +1,50 @@
+name: Validate MEtanoia web and Worker
+on:
+  pull_request:
+    paths:
+      - "web/**"
+      - "worker/**"
+      - "migrations/**"
+      - "scripts/**"
+      - "wrangler*.jsonc"
+      - ".github/workflows/cloudflare-web-validation.yml"
+      - ".github/workflows/deploy-cloudflare.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-worker-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate browser JavaScript syntax
+        run: |
+          node --check web/app.js
+          node --check web/crypto.js
+          node --check web/sw.js
+      - name: Validate PWA manifest and referenced local assets
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('web/manifest.webmanifest','utf8'));
+          if (m.name?.split(' ')[0] !== 'MEtanoia') throw new Error('Unexpected PWA name.');
+          if (m.start_url !== '/?source=home-screen' || m.scope !== '/' || m.display !== 'standalone') throw new Error('PWA install metadata mismatch.');
+          for (const icon of m.icons || []) if (!fs.existsSync('web' + icon.src)) throw new Error('Missing PWA icon: ' + icon.src);
+          const html = fs.readFileSync('web/index.html','utf8');
+          for (const asset of ['/crypto.js','/app.js','/manifest.webmanifest','/icons/metonoia.svg']) if (!html.includes(asset)) throw new Error('Missing HTML asset reference: ' + asset);
+          if (!html.includes('data-tab="agenda"')) throw new Error('Independent Agenda navigation is missing.');
+          NODE
+      - name: Validate D1 migration SQL
+        run: python3 scripts/validate_d1_migrations.py
+      - name: Install Wrangler
+        run: npm install --global wrangler
+      - name: Run local D1 and Worker integration tests
+        run: node scripts/test_d1_api.mjs
+      - name: Validate Cloudflare Worker bundle (no deployment)
+        run: wrangler deploy --dry-run --outdir .wrangler/dry-run
