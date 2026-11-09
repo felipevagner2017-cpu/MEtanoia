@@ -97,7 +97,9 @@ if (!token) {
       `Falha na API Cloudflare: ${error.message}. Verifique D1 Read e Account ID; token não é exibido.`);
   }
 }
-add("Migrações locais", migrationFiles.length === 2 ? "APROVADA" : "REPROVADA",
+const expectedMigrations = ["0001_initial.sql", "0002_account_key_envelopes.sql", "0003_sync_crypto_metadata.sql"];
+const localMigrationsOk = JSON.stringify(migrationFiles) === JSON.stringify(expectedMigrations);
+add("Migrações locais", localMigrationsOk ? "APROVADA" : "REPROVADA",
   `${migrationFiles.length} arquivo(s): ${migrationFiles.join(", ") || "nenhum"}.`);
 add("Worker bindings", "APROVADA",
   "wrangler.jsonc declara DB (D1), AI (Workers AI) e ASSETS; identidade do banco esperada está fixada na configuração.");
