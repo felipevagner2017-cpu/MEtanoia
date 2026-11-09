@@ -55,7 +55,7 @@ class AccountCryptoInstrumentedTest {
         } finally {
             first?.fill(0)
             second?.fill(0)
-            phrase.fill('\\u0000')
+            phrase.fill(0.toChar())
         }
     }
 
