@@ -123,7 +123,7 @@ internal fun DashboardPage(
                     Text("AGENDA DE HOJE", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Text(if (todayItems.isEmpty()) "Seu dia está livre de registros." else "$pending pendente(s) · $completed concluído(s)", color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
                 }
-                TextButton(onClick = { onNavigate("Cotidiano") }) {
+                TextButton(onClick = { onNavigate("Agenda") }) {
                     Text("VER AGENDA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
             }
