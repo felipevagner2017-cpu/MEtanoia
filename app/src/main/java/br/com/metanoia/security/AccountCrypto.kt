@@ -81,7 +81,7 @@ class AccountCrypto(
             try {
                 for (round in 2..rounds) {
                     mac.update(current)
-                    check(mac.doFinal(next, 0) == next.size) { "HMAC-SHA256 retornou tamanho inesperado." }
+                    mac.doFinal(next, 0)
                     for (index in output.indices) {
                         output[index] = (output[index].toInt() xor next[index].toInt()).toByte()
                     }
