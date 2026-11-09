@@ -677,7 +677,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var diary by remember(todayKey,entries) { mutableStateOf(todayEntry?.content.orEmpty()) }
  var confession by remember(todayKey,confessions) { mutableStateOf(todayConfession?.content.orEmpty()) }
  var confessionExpanded by remember(todayKey,confessions) { mutableStateOf(todayConfession!=null) }
- val violet=Ivory
+ val violet=CardSurface
  val gold=GoldChampagne
  val todayAgenda=agenda.filter {
   Instant.ofEpochMilli(it.scheduledAt).atZone(ZoneId.systemDefault()).toLocalDate()==LocalDate.now()
