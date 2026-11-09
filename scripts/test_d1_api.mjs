@@ -115,9 +115,39 @@ try {
   if (stale.data.results?.[0]?.status !== "conflict" || stale.data.results[0].currentRevision !== 1)
     throw new Error("Optimistic conflict check failed: " + JSON.stringify(stale));
 
+  const v2Operation = {
+    operationId: "operation-v2-local-0001",
+    recordId: "record-v2-local-0001",
+    operation: "upsert",
+    dimension: "MATRIMONIAL",
+    recordType: "journal",
+    payloadCiphertext: "v2.local-ciphertext-test",
+    encryptionVersion: 2,
+    sourceDeviceId: session.deviceId,
+    purpose: "record",
+    baseRevision: 0,
+    deviceId: session.deviceId,
+    clientUpdatedAt: Date.now()
+  };
+  const pushedV2 = await request("/api/sync/push", "POST", { operations: [v2Operation] }, session.token);
+  if (pushedV2.status !== 200 || pushedV2.data.results?.[0]?.status !== "applied")
+    throw new Error("v2 sync push failed: " + JSON.stringify(pushedV2));
+  const forgedV2 = await request("/api/sync/push", "POST", { operations: [{
+    ...v2Operation, operationId: "operation-v2-forged-0001",
+    recordId: "record-v2-forged-0001", sourceDeviceId: "00000000-0000-4000-8000-000000000000"
+  }] }, session.token);
+  if (forgedV2.data.results?.[0]?.status !== "rejected")
+    throw new Error("v2 source-device metadata was not bound to the authenticated device.");
+
   const pulled = await request("/api/sync/pull?since=0", "GET", undefined, session.token);
-  if (pulled.status !== 200 || pulled.data.records?.length !== 1 || pulled.data.records[0].record_id !== operation.recordId)
-    throw new Error("Sync pull failed: " + JSON.stringify(pulled));
+  const pulledV2 = pulled.data.records?.find(record => record.record_id === v2Operation.recordId);
+  if (pulled.status !== 200 || pulled.data.records?.length !== 2 ||
+      pulled.data.records[0].record_id !== operation.recordId ||
+      pulledV2?.encryption_version !== 2 ||
+      pulledV2?.source_device_id !== session.deviceId ||
+      pulledV2?.purpose !== "record" ||
+      pulledV2?.payload_ciphertext !== v2Operation.payloadCiphertext)
+    throw new Error("Sync pull failed to preserve v2 ciphertext metadata: " + JSON.stringify(pulled));
 
   const backup = await request("/api/backups/create", "POST", {
     deviceId: session.deviceId, payloadCiphertext: "encrypted-backup-test", recordCount: 1, formatVersion: 1
