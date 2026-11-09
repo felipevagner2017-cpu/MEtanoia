@@ -72,7 +72,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Verify remote tables, indexes and migration history
-        run: node scripts/audit_cloudflare_d1.mjs
+        run: node scripts/verify_d1_schema.mjs
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -81,6 +81,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metonoia-d1-post-migration-audit
-          path: d1-audit-report.md
+          path: d1-post-migration-report.md
           if-no-files-found: ignore
           retention-days: 30
