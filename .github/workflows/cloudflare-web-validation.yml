@@ -30,6 +30,7 @@ jobs:
           node --check web/sync.js
           node --check web/sw.js
           node --check scripts/require_remote_migrations.mjs
+          node --check scripts/deploy_cloudflare_preview.mjs
       - name: Validate PWA manifest and referenced local assets
         run: |
           node - <<'NODE'
