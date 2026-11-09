@@ -65,8 +65,13 @@ if (!token) {
         const empty = appTables.length === 0 && applied.length === 0;
         const initial = same(appTables, expectedInitial) && same(applied, ["0001_initial.sql"]);
         const complete = same(appTables, expectedComplete) && same(indexes, expectedIndexes) && same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql"]);
-        const schemaOk = empty || initial || complete;
-        const schemaState = complete ? "completo" : initial ? "migration 0001 aplicada; 0002 pendente" : empty ? "vazio; duas migrations pendentes" : "estado inesperado/incompleto";
+        const completeV2 = same(appTables, expectedComplete) && same(indexes, expectedIndexes) &&
+          same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql", "0003_sync_crypto_metadata.sql"]);
+        const schemaOk = empty || initial || complete || completeV2;
+        const schemaState = completeV2 ? "completo com metadados criptográficos v2" :
+          complete ? "completo; migration 0003 pendente" :
+          initial ? "migration 0001 aplicada; 0002 e 0003 pendentes" :
+          empty ? "vazio; três migrations pendentes" : "estado inesperado/incompleto";
         add("Catálogo D1 — tabelas e índices", schemaOk ? "APROVADA" : "REPROVADA",
           `Estado=${schemaState}; tabelas da aplicação=${appTables.length}/11; índices explícitos=${indexes.length}/10; tabelas=${appTables.join(", ") || "nenhuma"}; índices=${indexes.join(", ") || "nenhum"}.`);
         const pending = migrationFiles.filter((name) => !applied.includes(name));
