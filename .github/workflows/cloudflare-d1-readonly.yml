@@ -17,6 +17,10 @@ on:
       - ".github/workflows/cloudflare-d1-readonly.yml"
 permissions:
   contents: read
+
+concurrency:
+  group: metonoia-d1-readonly-audit
+  cancel-in-progress: false
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -67,6 +71,11 @@ jobs:
             echo "- SQLite PRAGMA foreign_key_check: **zero violações**."
             echo "- Arquivo exportado removido do runner ao final."
           } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo ""
+            echo "| Integridade física via export SQLite | **APROVADA** | PRAGMA integrity_check=ok. |"
+            echo "| Integridade referencial via export SQLite | **APROVADA** | PRAGMA foreign_key_check=zero violações. |"
+          } >> d1-audit-report.md
       - name: Upload audit report
         if: always()
         uses: actions/upload-artifact@v4
