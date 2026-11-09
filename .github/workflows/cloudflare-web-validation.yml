@@ -28,6 +28,7 @@ jobs:
           node --check web/app.js
           node --check web/crypto.js
           node --check web/sw.js
+          node --check scripts/require_remote_migrations.mjs
       - name: Validate PWA manifest and referenced local assets
         run: |
           node - <<'NODE'
