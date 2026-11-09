@@ -121,6 +121,18 @@ async function pushOperations(operations){
  }
  return applied;
 }
+function deletionQueueKey(){return "metonoia-pwa-deletions:"+configuration.accountId;}
+function readDeletionQueue(){try{return JSON.parse(localStorage.getItem(deletionQueueKey())||"[]")}catch{return []}}
+function writeDeletionQueue(queue){localStorage.setItem(deletionQueueKey(),json(queue))}
+function markDeleted(kind,id,dimension){
+ const accountId=configuration?.accountId||sessionStorage.getItem("metonoia-user-id");
+ if(!accountId||!PREFIX[kind])return;
+ const key="metonoia-pwa-deletions:"+accountId;
+ let queue=[];try{queue=JSON.parse(localStorage.getItem(key)||"[]")}catch{}
+ const recordId=PREFIX[kind]+id;
+ if(!queue.some(x=>x.recordId===recordId))queue.push({recordId,kind,id:String(id),dimension:dimensionOf(kind,{dimension}),at:Date.now()});
+ localStorage.setItem(key,json(queue));
+}
 async function syncOnce(){
  const remoteRows=await pullAll(),remoteById=new Map(remoteRows.map(r=>[r.record_id,r]));
  const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
@@ -132,13 +144,8 @@ async function syncOnce(){
   const decoded=await decryptRemote(row);
   const localRecord=local.get(row.record_id),shadow=shadows.get(row.record_id);
   const localDirty=!!shadow&&!!localRecord&&localRecord.plain!==shadow.plain;
-  const locallyDeleted=!!shadow&&!localRecord&&!shadow.deleted;
   if(localDirty){
    pending.push({kind,id:localRecord.id,record:localRecord,baseRevision:Number(row.revision||0)});
-   continue;
-  }
-  if(locallyDeleted){
-   pending.push({kind,id:row.record_id.slice(PREFIX[kind].length),deleted:true,baseRevision:Number(row.revision||0),dimension:row.dimension});
    continue;
   }
   if(row.deleted_at){
@@ -152,13 +159,12 @@ async function syncOnce(){
  for(const [recordId,record] of local){
   if(remoteById.has(recordId))continue;
   const shadow=shadows.get(recordId);
-  if(!shadow||shadow.deleted)pending.push({kind:record.kind,id:record.id,record,baseRevision:0});
-  else pending.push({kind:record.kind,id:record.id,record,baseRevision:Number(shadow.revision||0)});
+  pending.push({kind:record.kind,id:record.id,record,baseRevision:0});
  }
- for(const [recordId,shadow] of shadows){
-  if(local.has(recordId)||remoteById.has(recordId)||shadow.deleted)continue;
-  const kind=Object.keys(PREFIX).find(k=>recordId.startsWith(PREFIX[k]));
-  if(kind)pending.push({kind,id:recordId.slice(PREFIX[kind].length),deleted:true,baseRevision:Number(shadow.revision||0),dimension:"DAILY"});
+ const deletionQueue=readDeletionQueue();
+ for(const item of deletionQueue){
+  const remote=remoteById.get(item.recordId);
+  if(remote&&!remote.deleted_at)pending.push({kind:item.kind,id:item.id,deleted:true,baseRevision:Number(remote.revision||0),dimension:item.dimension});
  }
  if(changed)configuration.onApply?.();
  const operations=[];
@@ -171,11 +177,14 @@ async function syncOnce(){
   }
  }
  const results=await pushOperations(operations);
+ const completedDeletes=new Set();
  for(const {operation,result} of results){
   const kind=kindFromRecord({record_id:operation.recordId});
   const localRecord=collectLocal().get(operation.recordId);
   await putMeta({key:"shadow:"+configuration.accountId+":"+operation.recordId,plain:operation.operation==="delete"?"":localRecord?.plain||"",revision:Number(result.revision||operation.baseRevision+1),deleted:operation.operation==="delete"});
+  if(operation.operation==="delete")completedDeletes.add(operation.recordId);
  }
+ if(completedDeletes.size)writeDeletionQueue(deletionQueue.filter(x=>!completedDeletes.has(x.recordId)));
  if(operations.length){
   const verify=await pullAll(),map=new Map(verify.map(r=>[r.record_id,r]));
   for(const op of operations){
@@ -207,5 +216,5 @@ function configure(options){
  configuration=options;
 }
 function clear(){clearTimeout(timer);timer=null;configuration=null;}
-window.MEtanoiaSync=Object.freeze({configure,sync,schedule,clear});
+window.MEtanoiaSync=Object.freeze({configure,sync,schedule,markDeleted,clear});
 })();
