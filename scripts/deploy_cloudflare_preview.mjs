@@ -40,6 +40,11 @@ function run(args){
 }
 run(["d1","migrations","apply","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
 run(["d1","migrations","list","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
+const previewMigrationQuery=await cf("/accounts/"+accountId+"/d1/database/"+database.uuid+"/query","POST",{sql:"SELECT name FROM d1_migrations ORDER BY id"});
+const previewApplied=(previewMigrationQuery[0]?.results||[]).map(row=>row.name);
+if(!previewApplied.includes("0003_sync_crypto_metadata.sql"))throw new Error("Isolated Preview D1 has not applied migration 0003.");
+console.log("PREVIEW_D1_UUID="+database.uuid);
+console.log("PREVIEW_D1_MIGRATIONS="+previewApplied.join(","));
 run(["deploy","--keep-vars","--config","wrangler.preview.jsonc"]);
 const subdomainResult=await cf("/accounts/"+accountId+"/workers/subdomain");
 const subdomain=subdomainResult?.subdomain;
