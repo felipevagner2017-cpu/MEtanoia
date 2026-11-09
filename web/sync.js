@@ -137,12 +137,18 @@ async function syncOnce(){
  const remoteRows=await pullAll(),remoteById=new Map(remoteRows.map(r=>[r.record_id,r]));
  const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
  const shadows=new Map(shadowRows.map(x=>[x.key.slice(("shadow:"+configuration.accountId+":").length),x]));
+ const deletionQueue=readDeletionQueue(),deletionIds=new Set(deletionQueue.map(x=>x.recordId));
  const pending=[];
  let changed=false;
  for(const row of remoteRows){
   const kind=kindFromRecord(row);if(!kind)continue;
   const decoded=await decryptRemote(row);
   const localRecord=local.get(row.record_id),shadow=shadows.get(row.record_id);
+  if(deletionIds.has(row.record_id)){
+   const queued=deletionQueue.find(x=>x.recordId===row.record_id);
+   if(!row.deleted_at)pending.push({kind:queued.kind,id:queued.id,deleted:true,baseRevision:Number(row.revision||0),dimension:queued.dimension});
+   continue;
+  }
   const localDirty=!!shadow&&!!localRecord&&localRecord.plain!==shadow.plain;
   if(localDirty){
    pending.push({kind,id:localRecord.id,record:localRecord,baseRevision:Number(row.revision||0)});
@@ -158,7 +164,6 @@ async function syncOnce(){
  }
  for(const [recordId,record] of local){
   if(remoteById.has(recordId))continue;
-  const shadow=shadows.get(recordId);
   pending.push({kind:record.kind,id:record.id,record,baseRevision:0});
  }
  const deletionQueue=readDeletionQueue();
