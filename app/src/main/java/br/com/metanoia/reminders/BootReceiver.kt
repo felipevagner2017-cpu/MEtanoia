@@ -17,11 +17,15 @@ class BootReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val dao = MetanoiaDatabase.get(context).agendaDao()
-                val scheduler = ReminderScheduler(context)
-                scheduler.scheduleDailyReminders()
-                dao.pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule)
+                reschedulePending(context)
             } finally { pendingResult.finish() }
         }
+    }
+
+    internal suspend fun reschedulePending(context: Context) {
+        val dao = MetanoiaDatabase.get(context).agendaDao()
+        val scheduler = ReminderScheduler(context)
+        scheduler.scheduleDailyReminders()
+        dao.pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule)
     }
 }
