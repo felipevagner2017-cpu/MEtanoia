@@ -58,11 +58,11 @@ class ReminderFlowInstrumentedTest {
         listOf(7, 12, 18).forEach(scheduler::cancelDaily)
     }
 
-    private fun insertFutureEvent(recurrence: String? = null): AgendaItem {
+    private fun insertFutureEvent(recurrence: String? = null, offsetHours: Long = 4): AgendaItem {
         val now = System.currentTimeMillis()
         val item = AgendaItem(
             title = "Compromisso de teste",
-            scheduledAt = now + 4 * 60 * 60 * 1000L,
+            scheduledAt = now + offsetHours * 60 * 60 * 1000L,
             reminderAt = now,
             recurrenceRule = recurrence
         )
@@ -92,24 +92,29 @@ class ReminderFlowInstrumentedTest {
 
     @Test
     fun schedulerRegistersCommitmentAlarmsAndBootReceiverRestoresRecurringOnes() {
-        val item = insertFutureEvent("FREQ=DAILY")
-        scheduler.schedule(item)
+        val occurrences = listOf(
+            insertFutureEvent("DAILY", 4),
+            insertFutureEvent("DAILY", 28),
+            insertFutureEvent("DAILY", 52)
+        )
+        occurrences.forEach(scheduler::schedule)
 
         assertTrue(
-            "O AlarmManager deve registrar os três alarmes de antecedência do compromisso.",
-            await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 3 }
+            "O AlarmManager deve registrar os alarmes de antecedência dos compromissos.",
+            await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 9 }
         )
 
         context.sendBroadcast(Intent(context, BootReceiver::class.java).setAction(Intent.ACTION_BOOT_COMPLETED))
         assertTrue(
-            "A inicialização deve restaurar os alarmes diários e os compromissos pendentes.",
-            await { alarmDump().contains("ReminderReceiver") }
+            "A inicialização deve restaurar alarmes diários e todas as ocorrências pendentes.",
+            await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 12 }
         )
 
-        val stored = kotlinx.coroutines.runBlocking { dao.findById(item.id) }
-        assertNotNull(stored)
-        assertEquals("FREQ=DAILY", stored?.recurrenceRule)
-        assertEquals(item.scheduledAt, stored?.scheduledAt)
+        val stored = kotlinx.coroutines.runBlocking { dao.pendingReminders(System.currentTimeMillis()) }
+            .filter { it.recurrenceRule == "DAILY" }
+        assertEquals("As três ocorrências recorrentes devem continuar no Room.", 3, stored.size)
+        assertEquals(3, stored.map { it.scheduledAt }.distinct().size)
+        assertTrue(stored.all { it.reminderAt != null && !it.completed })
     }
 
     @Test
