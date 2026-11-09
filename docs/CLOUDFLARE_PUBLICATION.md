@@ -8,14 +8,15 @@ The Android application source and Android workflows are intentionally not copie
 
 The Worker name is `metanoia`, matching the requested production hostname `metanoia.restaura-lar.workers.dev`. Static assets are served from `web/`; the Worker entry point is `worker/index.ts`.
 
-## Current production blocker — D1 is not provisioned
+## Remote D1 status — provisioned; additive v2 migration pending
 
-The source documentation and configuration audit indicate that the remote MEtanoia D1 database has not yet been provisioned or bound. The Worker requires binding `DB` for registration, login, device/session management, encrypted key envelopes, sync, backups, consents, and the authenticated AI endpoint. Without it, those routes return HTTP 503. The local test database is not a production database and its ID must never be copied to production.
+The read-only Cloudflare audit on 2026-11-09 confirmed the dedicated remote database `metanoia` (`1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0`), binding `DB`, all 11 application tables, and the original 10 indexes. Migrations `0001_initial.sql` and `0002_account_key_envelopes.sql` are applied. The additive `0003_sync_crypto_metadata.sql` is prepared locally and remains pending remotely; it adds only `source_device_id` and `purpose` to `records`, required to preserve the v2 cryptographic derivation context.
 
-Do not deploy this Worker until the dedicated MEtanoia D1 database exists, its real database ID and name are added to `wrangler.jsonc` as binding `DB`, and the remote migration status has been reviewed. No remote database was created, changed, or migrated by this PR.
+The D1 audit exported the remote database and verified SQLite `integrity_check=ok` and zero foreign-key violations. Direct remote PRAGMA queries were denied by D1 (`SQLITE_AUTH`), so the successful export-based checks are the integrity evidence.
 
-The required schema files are `migrations/0001_initial.sql` and `migrations/0002_account_key_envelopes.sql`. The deployment workflow only lists remote migration status; it deliberately does not apply migrations. Applying them requires a separate explicit approval after reviewing the target database identity and migration plan.
+The Worker requires binding `DB` for registration, login, device/session management, encrypted key envelopes, sync, backups, consents, and the authenticated AI endpoint. The configured binding points to the verified dedicated MEtanoia database.
 
+Do not apply migration 0003 remotely until it is separately approved. The deployment workflow must stop when any local migration remains pending; it never applies migrations automatically.
 ## Workers AI and secrets
 
 The current Worker uses the native Workers AI binding `AI` configured in `wrangler.jsonc`; no separate AI API token is referenced by the current Worker implementation.
@@ -23,7 +24,7 @@ The current Worker uses the native Workers AI binding `AI` configured in `wrangl
 Required GitHub Actions secrets for a later approved production run:
 - `CLOUDFLARE_API_TOKEN` — token with Workers Scripts edit/deploy and D1 read permissions (D1 write only if separately approved migrations are ever added).
 - `CLOUDFLARE_ACCOUNT_ID` — account containing the Worker and the dedicated MEtanoia D1 database.
-- `METANOIA_REGISTRATION_KEY` — high-entropy invitation secret; the workflow installs it as a Worker secret only after explicit production confirmation.
+- `METANOIA_REGISTRATION_KEY` — optional high-entropy invitation secret. It is required only to create new accounts through `POST /api/auth/register`; existing-account login and authenticated sync do not require it. If absent, registration stays closed while login remains available.
 
 Secret presence cannot be inferred from workflow YAML. GitHub does not expose secret values to repository read APIs. The workflow checks them at runtime without printing values.
 
