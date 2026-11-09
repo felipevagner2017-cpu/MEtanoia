@@ -69,16 +69,33 @@ class AccountCrypto(
             val mac = Mac.getInstance("HmacSHA256")
             mac.init(SecretKeySpec(passwordBytes, "HmacSHA256"))
             val block = salt + byteArrayOf(0, 0, 0, 1)
-            var u = mac.doFinal(block)
-            val output = u.copyOf()
-            for (round in 2..rounds) {
-                u = mac.doFinal(u)
-                for (index in output.indices) output[index] = (output[index].toInt() xor u[index].toInt()).toByte()
+            // Reuse the two HMAC output buffers for every PBKDF2 round. Calling
+            // Mac.doFinal(input) allocates a fresh byte array each time; at 600,000+
+            // rounds that creates millions of short-lived objects on Android and can
+            // exhaust the native Scudo allocator on constrained devices/emulators.
+            val first = mac.doFinal(block)
+            val second = ByteArray(mac.macLength)
+            var current = first
+            var next = second
+            val output = first.copyOf()
+            try {
+                for (round in 2..rounds) {
+                    mac.update(current)
+                    check(mac.doFinal(next, 0) == next.size) { "HMAC-SHA256 retornou tamanho inesperado." }
+                    for (index in output.indices) {
+                        output[index] = (output[index].toInt() xor next[index].toInt()).toByte()
+                    }
+                    val previous = current
+                    current = next
+                    next = previous
+                }
+                // SecretKeySpec copies the supplied key bytes; clear our working copy.
+                return SecretKeySpec(output, "AES")
+            } finally {
+                first.fill(0)
+                second.fill(0)
+                output.fill(0)
             }
-            u.fill(0)
-            val result = SecretKeySpec(output, "AES")
-            output.fill(0)
-            return result
         } finally { passwordBytes.fill(0) }
     }
     private fun recordAad(userId: String, id: String, dimension: String, type: String) =
