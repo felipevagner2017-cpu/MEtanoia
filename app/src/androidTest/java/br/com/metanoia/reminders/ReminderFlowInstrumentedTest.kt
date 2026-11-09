@@ -147,8 +147,8 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
-        val revoke = shell("pm revoke br.com.metanoia android.permission.POST_NOTIFICATIONS")
-        assertFalse("A permissão precisa estar revogada durante o teste.", revoke.contains("Exception"))
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        uiAutomation.revokeRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
 
         try {
             val intent = Intent(context, ReminderReceiver::class.java)
@@ -163,7 +163,7 @@ class ReminderFlowInstrumentedTest {
                 notifications.activeNotifications.any { it.id == notificationId }
             )
         } finally {
-            shell("pm grant br.com.metanoia android.permission.POST_NOTIFICATIONS")
+            uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
