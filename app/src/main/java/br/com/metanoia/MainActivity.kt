@@ -221,10 +221,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews by vm.reviews.collectAsStateWithLifecycle()
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
- var cotidianoTab by remember { mutableStateOf("Agenda") }
+ var cotidianoTab by remember { mutableStateOf("Diário") }
  var showAiAssistant by remember { mutableStateOf(false) }
  var aiInitialDimension by remember { mutableStateOf("Visão integrada") }
- val sectionLabels = listOf("Painel","Devoção","Matrimônio","Profissional","Cotidiano")
+ val sectionLabels = listOf("Painel","Devoção","Matrimônio","Profissional","Cotidiano","Agenda")
  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
  val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -261,7 +261,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
       style=MaterialTheme.typography.headlineMedium,
       fontWeight=FontWeight.Bold,
       modifier=Modifier.clickable {
-       aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";else->"Cotidiano"}
+       aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";4->"Cotidiano";else->"Agenda"}
        showAiAssistant=true
       }
      )
@@ -304,20 +304,19 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   ) { page ->
    when(page) {
     0 -> DashboardPage(agenda, journal, analyses) { destination ->
-     val target = when(destination) { "Devocional" -> 1; "Matrimônio" -> 2; "Profissional" -> 3; else -> 4 }
+     val target = when(destination) { "Devocional" -> 1; "Matrimônio" -> 2; "Profissional" -> 3; "Agenda" -> 5; else -> 4 }
      pagerScope.launch { pagerState.animateScrollToPage(target) }
     }
     1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
     2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
     3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
-    else -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
+    4 -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
      Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-      listOf("Agenda","Diário","Revisões","Alertas").forEach { label ->
+      listOf("Diário","Revisões","Alertas").forEach { label ->
        TextButton(onClick={cotidianoTab=label}) { Text(label,color=if(cotidianoTab==label) GoldBright else Ivory,fontWeight=if(cotidianoTab==label) FontWeight.Bold else FontWeight.Normal) }
       }
      }
      when(cotidianoTab) {
-      "Agenda" -> AgendaPage(agenda,vm)
       "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
       "Revisões" -> ReviewPage(reviews,vm)
       else -> NotificationSettingsPage(context,agenda,{
@@ -343,6 +342,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
       })
      }
     }
+    5 -> AgendaPage(agenda,vm)
    }
   }
   if(showAiAssistant) {
