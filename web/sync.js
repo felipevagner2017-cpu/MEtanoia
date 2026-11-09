@@ -216,5 +216,7 @@ function configure(options){
  configuration=options;
 }
 function clear(){clearTimeout(timer);timer=null;configuration=null;}
+window.addEventListener("online",schedule);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)schedule()});
 window.MEtanoiaSync=Object.freeze({configure,sync,schedule,markDeleted,clear});
 })();
