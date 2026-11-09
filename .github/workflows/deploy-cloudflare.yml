@@ -38,7 +38,6 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN."; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID."; exit 1; }
-          test -n "$METANOIA_REGISTRATION_KEY" || { echo "Missing METANOIA_REGISTRATION_KEY."; exit 1; }
           node - <<'NODE'
           const fs = require('fs');
           const text = fs.readFileSync('wrangler.jsonc','utf8').replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/.*$/gm,'');
@@ -63,8 +62,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Configure invitation secret
-        run: printf '%s' "$METANOIA_REGISTRATION_KEY" | wrangler secret put METANOIA_REGISTRATION_KEY
+      - name: Configure invitation secret when new-account registration is enabled
+        run: |
+          if [[ -n "$METANOIA_REGISTRATION_KEY" ]]; then
+            printf '%s' "$METANOIA_REGISTRATION_KEY" | wrangler secret put METANOIA_REGISTRATION_KEY
+          else
+            echo "Invitation secret absent: existing-account login remains available; new registrations remain disabled."
+          fi
         env:
           METANOIA_REGISTRATION_KEY: ${{ secrets.METANOIA_REGISTRATION_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
