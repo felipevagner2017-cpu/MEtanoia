@@ -1,0 +1,211 @@
+/* Encrypted, revision-aware PWA synchronization. Plaintext never leaves the browser. */
+(()=> {
+"use strict";
+const DB_NAME="metonoia-sync-v1",DB_VERSION=1,PURPOSE="record";
+const DIMENSION={Espiritual:"DEVOTION",Matrimonial:"MATRIMONIAL",Profissional:"PROFESSIONAL",Cotidiano:"DAILY"};
+const TYPES={items:"pwa-agenda-item",journal:"pwa-journal-entry",reviews:"pwa-review-entry",words:"pwa-word-entry"};
+const PREFIX={items:"pwa-item-",journal:"pwa-journal-",reviews:"pwa-review-",words:"pwa-word-"};
+const encoder=new TextEncoder(),decoder=new TextDecoder();
+let configuration=null,running=null,timer=null;
+const uuid=()=>crypto.randomUUID();
+const json=value=>JSON.stringify(value);
+const parse=value=>JSON.parse(value);
+function openDb(){
+ return new Promise((resolve,reject)=>{
+  const request=indexedDB.open(DB_NAME,DB_VERSION);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("meta"))db.createObjectStore("meta",{keyPath:"key"});if(!db.objectStoreNames.contains("counters"))db.createObjectStore("counters",{keyPath:"key"});};
+  request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error("Não foi possível abrir o armazenamento seguro de sincronização."));
+ });
+}
+async function getMeta(key){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readonly"),r=tx.objectStore("meta").get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});}finally{db.close();}}
+async function putMeta(value){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readwrite");tx.objectStore("meta").put(value);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error("Falha ao persistir metadados de sincronização."));});}finally{db.close();}}
+async function allMeta(prefix){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readonly"),r=tx.objectStore("meta").getAll();r.onsuccess=()=>resolve((r.result||[]).filter(x=>x.key.startsWith(prefix)));r.onerror=()=>reject(r.error);});}finally{db.close();}}
+async function nextCounter(accountId,deviceId){
+ const db=await openDb(),key=accountId+":"+deviceId+":"+PURPOSE;
+ try{return await new Promise((resolve,reject)=>{
+  const tx=db.transaction("counters","readwrite"),store=tx.objectStore("counters"),request=store.get(key);let value=0;
+  request.onsuccess=()=>{value=Number(request.result?.value||0)+1;store.put({key,value});};
+  request.onerror=()=>reject(request.error);tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error("Falha ao reservar contador criptográfico."));
+ });}finally{db.close();}
+}
+const authHeaders=()=>({Authorization:"Bearer "+configuration.token});
+async function api(path,options={}){
+ const response=await fetch(path,{cache:"no-store",...options,headers:{...authHeaders(),...(options.headers||{})}});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(data.error||("Falha HTTP "+response.status+" em "+path));
+ return data;
+}
+function dimensionOf(kind,value){
+ if(kind==="items"||kind==="journal")return DIMENSION[value.dimension]||"DAILY";
+ return "DAILY";
+}
+function collectLocal(){
+ const db=configuration.getDb(),records=new Map();
+ for(const kind of Object.keys(TYPES)){
+  const list=Array.isArray(db[kind])?db[kind]:[];
+  for(const entity of list){
+   if(!entity.id)entity.id=uuid();
+   const recordId=PREFIX[kind]+entity.id;
+   records.set(recordId,{recordId,kind,id:String(entity.id),dimension:dimensionOf(kind,entity),recordType:TYPES[kind],entity,plain:json(entity)});
+  }
+ }
+ return records;
+}
+function kindFromRecord(record){
+ for(const kind of Object.keys(PREFIX))if(record.record_id?.startsWith(PREFIX[kind]))return kind;
+ return null;
+}
+function removeLocal(kind,id){
+ const list=configuration.getDb()[kind];configuration.getDb()[kind]=list.filter(x=>String(x.id)!==id);
+}
+function applyLocal(kind,id,entity){
+ const db=configuration.getDb(),list=db[kind],index=list.findIndex(x=>String(x.id)===id);
+ if(index<0)list.push(entity);else list[index]=entity;
+}
+async function pullAll(){
+ let since=0,afterId="",records=[];
+ for(let page=0;page<100;page++){
+  const suffix="?since="+encodeURIComponent(since)+(afterId?"&afterId="+encodeURIComponent(afterId):"");
+  const data=await api("/api/sync/pull"+suffix);
+  records.push(...(data.records||[]));
+  if(!data.hasMore)break;
+  if(!data.nextCursor||page===99)throw Error("A recuperação excedeu o limite de páginas; nenhum dado local foi substituído.");
+  since=Number(data.nextCursor.since);afterId=String(data.nextCursor.afterId||"");
+ }
+ return records;
+}
+async function decryptRemote(record){
+ if(record.deleted_at)return null;
+ const cryptoApi=window.MEtanoiaAccountCrypto;
+ if(!cryptoApi)throw Error("Módulo criptográfico indisponível.");
+ const kind=kindFromRecord(record);
+ if(!kind)return undefined;
+ const source=record.source_device_id||"";
+ const purpose=record.purpose||"";
+ let bytes;
+ if(Number(record.encryption_version)===2){
+  if(!source||purpose!==PURPOSE)throw Error("Metadados v2 ausentes para "+record.record_id+".");
+  bytes=await cryptoApi.decryptRecordV2(configuration.accountId,source,purpose,record.record_id,record.dimension,record.record_type,configuration.dataKey,record.payload_ciphertext);
+ }else if(Number(record.encryption_version)===1){
+  bytes=await cryptoApi.decryptRecord(configuration.accountId,record.record_id,record.dimension,record.record_type,configuration.dataKey,record.payload_ciphertext);
+ }else throw Error("Versão criptográfica desconhecida em "+record.record_id+".");
+ const entity=parse(decoder.decode(bytes));
+ if(!entity||typeof entity!=="object"||String(entity.id)!==record.record_id.slice(PREFIX[kind].length))throw Error("Identidade do registro divergente em "+record.record_id+".");
+ return {kind,id:String(entity.id),entity,plain:json(entity)};
+}
+async function encryptLocal(record){
+ const counter=await nextCounter(configuration.accountId,configuration.deviceId);
+ const ciphertext=await window.MEtanoiaAccountCrypto.encryptRecordV2(
+  configuration.accountId,configuration.deviceId,PURPOSE,record.recordId,record.dimension,
+  record.recordType,configuration.dataKey,counter,encoder.encode(record.plain)
+ );
+ return {
+  operationId:uuid(),recordId:record.recordId,operation:"upsert",dimension:record.dimension,
+  recordType:record.recordType,payloadCiphertext:ciphertext,encryptionVersion:2,
+  sourceDeviceId:configuration.deviceId,purpose:PURPOSE,baseRevision:record.baseRevision||0,
+  deviceId:configuration.deviceId,clientUpdatedAt:Date.now()
+ };
+}
+async function pushOperations(operations){
+ const applied=[];
+ for(let i=0;i<operations.length;i++){
+  const op=operations[i];
+  if(op.operation==="upsert"&&op.payloadCiphertext.length>49000)throw Error("Um registro excede o limite seguro de sincronização (49 KB). Ele permanece salvo neste aparelho.");
+  const data=await api("/api/sync/push",{method:"POST",headers:{"Content-Type":"application/json"},body:json({operations:[op]})});
+  const result=data.results?.[0];
+  if(result?.status==="applied"||result?.duplicate){
+   applied.push({operation:op,result});continue;
+  }
+  if(result?.status==="conflict")throw Object.assign(Error("Conflito de edição em "+op.recordId+"; os dados locais foram preservados. Sincronize novamente para reconciliar."),{conflict:true});
+  throw Error("O servidor rejeitou "+op.recordId+": "+(result?.reason||result?.status||"resposta inválida"));
+ }
+ return applied;
+}
+async function syncOnce(){
+ const remoteRows=await pullAll(),remoteById=new Map(remoteRows.map(r=>[r.record_id,r]));
+ const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
+ const shadows=new Map(shadowRows.map(x=>[x.key.slice(("shadow:"+configuration.accountId+":").length),x]));
+ const pending=[];
+ let changed=false;
+ for(const row of remoteRows){
+  const kind=kindFromRecord(row);if(!kind)continue;
+  const decoded=await decryptRemote(row);
+  const localRecord=local.get(row.record_id),shadow=shadows.get(row.record_id);
+  const localDirty=!!shadow&&!!localRecord&&localRecord.plain!==shadow.plain;
+  const locallyDeleted=!!shadow&&!localRecord&&!shadow.deleted;
+  if(localDirty){
+   pending.push({kind,id:localRecord.id,record:localRecord,baseRevision:Number(row.revision||0)});
+   continue;
+  }
+  if(locallyDeleted){
+   pending.push({kind,id:row.record_id.slice(PREFIX[kind].length),deleted:true,baseRevision:Number(row.revision||0),dimension:row.dimension});
+   continue;
+  }
+  if(row.deleted_at){
+   if(localRecord){removeLocal(kind,localRecord.id);local.delete(row.record_id);changed=true;}
+   await putMeta({key:"shadow:"+configuration.accountId+":"+row.record_id,plain:"",revision:Number(row.revision||0),deleted:true});
+  }else if(decoded){
+   applyLocal(kind,decoded.id,decoded.entity);local.set(row.record_id,{...decoded,recordId:row.record_id,dimension:row.dimension,recordType:row.record_type});changed=true;
+   await putMeta({key:"shadow:"+configuration.accountId+":"+row.record_id,plain:decoded.plain,revision:Number(row.revision||0),deleted:false});
+  }
+ }
+ for(const [recordId,record] of local){
+  if(remoteById.has(recordId))continue;
+  const shadow=shadows.get(recordId);
+  if(!shadow||shadow.deleted)pending.push({kind:record.kind,id:record.id,record,baseRevision:0});
+  else pending.push({kind:record.kind,id:record.id,record,baseRevision:Number(shadow.revision||0)});
+ }
+ for(const [recordId,shadow] of shadows){
+  if(local.has(recordId)||remoteById.has(recordId)||shadow.deleted)continue;
+  const kind=Object.keys(PREFIX).find(k=>recordId.startsWith(PREFIX[k]));
+  if(kind)pending.push({kind,id:recordId.slice(PREFIX[kind].length),deleted:true,baseRevision:Number(shadow.revision||0),dimension:"DAILY"});
+ }
+ if(changed)configuration.onApply?.();
+ const operations=[];
+ for(const item of pending){
+  if(item.deleted){
+   operations.push({operationId:uuid(),recordId:PREFIX[item.kind]+item.id,operation:"delete",dimension:item.dimension||"DAILY",recordType:"tombstone",payloadCiphertext:"",encryptionVersion:1,baseRevision:item.baseRevision,deviceId:configuration.deviceId});
+  }else{
+   const record={...item.record,baseRevision:item.baseRevision};
+   operations.push(await encryptLocal(record));
+  }
+ }
+ const results=await pushOperations(operations);
+ for(const {operation,result} of results){
+  const kind=kindFromRecord({record_id:operation.recordId});
+  const localRecord=collectLocal().get(operation.recordId);
+  await putMeta({key:"shadow:"+configuration.accountId+":"+operation.recordId,plain:operation.operation==="delete"?"":localRecord?.plain||"",revision:Number(result.revision||operation.baseRevision+1),deleted:operation.operation==="delete"});
+ }
+ if(operations.length){
+  const verify=await pullAll(),map=new Map(verify.map(r=>[r.record_id,r]));
+  for(const op of operations){
+   const row=map.get(op.recordId);
+   if(!row||Number(row.revision)<Number(op.baseRevision)+1)throw Error("Persistência remota não confirmada para "+op.recordId+".");
+  }
+ }
+ return {pulled:remoteRows.length,pushed:operations.length};
+}
+async function sync(){
+ if(!configuration)return {skipped:true};
+ if(running)return running;
+ running=(async()=>{
+  configuration.status?.("Sincronizando registros criptografados…");
+  try{
+   const result=await syncOnce();
+   configuration.status?.("Sincronização concluída · "+result.pulled+" registros verificados · "+result.pushed+" enviados.");
+   return result;
+  }catch(error){
+   configuration.status?.("Sincronização pendente: "+(error.message||"falha de conexão")+". Os dados locais foram preservados.");
+   throw error;
+  }finally{running=null;}
+ })();
+ return running;
+}
+function schedule(){if(!configuration)return;clearTimeout(timer);timer=setTimeout(()=>sync().catch(()=>{}),1200);}
+function configure(options){
+ if(!options?.token||!options?.accountId||!options?.deviceId||!(options.dataKey instanceof Uint8Array))throw Error("Sessão ou chave criptográfica incompleta para sincronizar.");
+ configuration=options;
+}
+function clear(){clearTimeout(timer);timer=null;configuration=null;}
+window.MEtanoiaSync=Object.freeze({configure,sync,schedule,clear});
+})();
