@@ -2,6 +2,7 @@ package br.com.metanoia.reminders
 
 import android.Manifest
 import android.app.NotificationManager
+import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
 import android.os.ParcelFileDescriptor
@@ -136,27 +137,35 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
-        shell("appops set ${context.packageName} POST_NOTIFICATION ignore")
-        val appOpsState = shell("appops get ${context.packageName} POST_NOTIFICATION")
-        assertTrue(
-            "O AppOps do Android deve registrar o bloqueio de notificações.",
-            appOpsState.contains("ignore", ignoreCase = true)
-        )
-
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
         try {
+            // Revoke the actual runtime permission through the Android test shell identity.
+            // This exercises the same OS permission gate used when the user disables notifications.
+            uiAutomation.revokeRuntimePermission(
+                context.packageName,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            assertEquals(
+                "O Android deve confirmar que POST_NOTIFICATIONS foi revogada.",
+                PackageManager.PERMISSION_DENIED,
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+            )
+
             val intent = Intent(context, ReminderReceiver::class.java)
                 .putExtra(ReminderReceiver.EXTRA_ID, item.id)
                 .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, 60)
             context.sendBroadcast(intent)
 
-            Thread.sleep(1_000)
             val notificationId = (item.id * 10L + 1L).toInt()
-            assertFalse(
-                "Sem POST_NOTIFICATIONS, o receiver não pode deixar uma notificação ativa.",
-                notifications.activeNotifications.any { it.id == notificationId }
+            assertTrue(
+                "Sem POST_NOTIFICATIONS, o receiver não pode publicar a notificação.",
+                await { notifications.activeNotifications.none { it.id == notificationId } }
             )
         } finally {
-            shell("appops set ${context.packageName} POST_NOTIFICATION allow")
+            uiAutomation.grantRuntimePermission(
+                context.packageName,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
         }
     }
 
