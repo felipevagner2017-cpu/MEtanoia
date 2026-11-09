@@ -11,6 +11,10 @@ on:
         description: "Type APLICAR_MIGRATIONS"
         required: true
         type: string
+  push:
+    branches: [deploy/cloudflare-metanoia-web]
+    paths:
+      - "scripts/execute-d1-migrations.trigger"
 
 permissions:
   contents: read
@@ -23,16 +27,30 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
-      - name: Require exact migration authorization
+      - name: Resolve exact authorized commit
         env:
-          TARGET_SHA: ${{ inputs.target_sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SHA: ${{ github.sha }}
+          INPUT_SHA: ${{ inputs.target_sha }}
           CONFIRM: ${{ inputs.confirm_migrations }}
         run: |
-          [[ "$CONFIRM" == "APLICAR_MIGRATIONS" ]] || { echo "Migration confirmation missing."; exit 1; }
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$CONFIRM" == "APLICAR_MIGRATIONS" ]] || { echo "Migration confirmation missing."; exit 1; }
+            TARGET_SHA="$INPUT_SHA"
+          else
+            TARGET_SHA="$EVENT_SHA"
+          fi
           [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character SHA is required."; exit 1; }
+          echo "TARGET_SHA=$TARGET_SHA" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.target_sha }}
+          ref: ${{ env.TARGET_SHA }}
+      - name: Verify one-file migration trigger authorization
+        if: github.event_name == 'push'
+        run: |
+          [[ "$(cat scripts/execute-d1-migrations.trigger)" == "APLICAR_MIGRATIONS" ]] || { echo "Explicit migration trigger missing."; exit 1; }
+          CHANGED="$(git diff-tree --no-commit-id --name-only -r "$TARGET_SHA")"
+          [[ "$CHANGED" == "scripts/execute-d1-migrations.trigger" ]] || { echo "Trigger commit may change only the authorization file."; exit 1; }
       - name: Review exact SQL files and production binding
         run: |
           node --input-type=module <<'NODE'
