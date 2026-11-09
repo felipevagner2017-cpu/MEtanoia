@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "metanoia",
   "main": "./worker/index.ts",
+  "migrations_dir": "./migrations",
   "compatibility_date": "2026-11-03",
   "workers_dev": true,
   "assets": {
