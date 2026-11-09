@@ -86,6 +86,18 @@ jobs:
           path: app/build/outputs/apk/debug/MEtanoia-Android.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Publish downloadable isolated Preview APK
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/phase1-integrated-main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-preview
+          target_commitish: ${{ github.event.pull_request.head.sha }}
+          name: MEtanoia Android Preview — 0.5.1-preview
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          files: app/build/outputs/apk/debug/MEtanoia-Android.apk
       - name: Publish durable release files
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
