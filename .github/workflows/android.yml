@@ -39,7 +39,7 @@ jobs:
           test -x "$APKSIGNER" || { echo "apksigner não encontrado." >&2; exit 1; }
           test -x "$AAPT" || { echo "aapt não encontrado." >&2; exit 1; }
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/metanoia-debug-cert.txt"
-          CERT_SHA256=$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-debug-cert.txt" | head -n1)
+          CERT_SHA256=$(sed -n 's/^V2 Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-debug-cert.txt" | head -n1)
           test -n "$CERT_SHA256" || { echo "Certificado do APK não foi identificado." >&2; exit 1; }
           PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
           for expected in "name='br.com.metanoia'" "versionCode='7'" "versionName='0.5.1'"; do
