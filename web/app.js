@@ -1,6 +1,6 @@
 (()=> {
 const $=id=>document.getElementById(id),K="metonoia-pwa-v1",areas=["Espiritual","Matrimonial","Profissional","Cotidiano"],days=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
-let db;try{db=JSON.parse(localStorage.getItem(K))||{items:[],journal:[],reviews:[],words:[]}}catch{db={items:[],journal:[],reviews:[],words:[]}}
+let syncEngine=null,db;try{db=JSON.parse(localStorage.getItem(K))||{items:[],journal:[],reviews:[],words:[]}}catch{db={items:[],journal:[],reviews:[],words:[]}}
 db.items=db.items||[];db.journal=db.journal||[];db.reviews=db.reviews||[];db.words=db.words||[];
 const uid=()=>crypto.randomUUID?.()||String(Date.now()+Math.random()),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"),parse=k=>new Date(k+"T00:00:00"),today=()=>key(new Date()),fmt=k=>parse(k).toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
@@ -8,7 +8,7 @@ const fixed=x=>x.schedule==="weekly"||x.fixedWeekly===true,area=x=>areas.include
 db.items.forEach(x=>{x.dimension=area(x.dimension);if(x.fixedWeekly===true&&!x.schedule)x.schedule="weekly";if(x.repeat==="weekly"&&!x.schedule)x.schedule="weekly";if(x.schedule==="weekly"&&!Array.isArray(x.weekdays))x.weekdays=[1,2,3,4,5];});
 db.journal.forEach(x=>x.dimension=area(x.dimension));localStorage.setItem(K,JSON.stringify(db));
 let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected),calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1),observedToday=today(),promptInstall=null;
-const save=()=>localStorage.setItem(K,JSON.stringify(db));
+const save=()=>{localStorage.setItem(K,JSON.stringify(db));syncEngine?.schedule()};
 const occurrence=(x,k)=>x.completions?.[k]||{done:!!x.done&&x.date===k,note:""};
 function occursOn(x,d){const k=key(d);if(!fixed(x))return x.date===k;if(k<(x.date||"0000-01-01")||(x.endDate&&k>x.endDate))return false;return (Array.isArray(x.weekdays)?x.weekdays:[]).includes(d.getDay())}function forDate(d){return db.items.filter(x=>occursOn(x,d)).sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 const categoryColor=x=>({"Espiritual":"#7986CB","Matrimonial":"#E67C73","Profissional":"#039BE5","Cotidiano":"#33B679"}[area(x.dimension)]||"#9E9E9E");
@@ -325,6 +325,12 @@ async function sendAiQuestion(){
 
 $("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
 const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
+function persistentDeviceId(email){
+ const storageKey="metonoia-device:"+String(email||"").trim().toLowerCase();
+ let id=localStorage.getItem(storageKey);
+ if(!id){id=crypto.randomUUID();localStorage.setItem(storageKey,id);}
+ return id;
+}
 const setAccountSession=(data)=>{
  aiSession.token=data.token;sessionStorage.setItem("metonoia-session-token",data.token);
  sessionStorage.setItem("metonoia-user-id",data.userId||"");sessionStorage.setItem("metonoia-device-id",data.deviceId||"");
@@ -358,6 +364,17 @@ async function unlockAccountCrypto(){
   }
   $("accountEncryptionPassphrase").value="";
   accountStatus("Criptografia da conta desbloqueada neste navegador. A chave permanece somente na memória desta sessão.");
+  try{
+   syncEngine=window.MEtanoiaSync;
+   syncEngine.configure({
+    token:aiSession.token,accountId:sessionStorage.getItem("metonoia-user-id"),
+    deviceId:sessionStorage.getItem("metonoia-device-id"),dataKey:aiSession.accountDataKey,
+    getDb:()=>db,
+    onApply:()=>{localStorage.setItem(K,JSON.stringify(db));renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder()},
+    status:accountStatus
+   });
+   await syncEngine.sync();
+  }catch(syncError){accountStatus("Criptografia desbloqueada. Sincronização pendente: "+(syncError.message||"falha de conexão")+". Seus dados locais foram preservados.");}
  }catch(error){
   aiSession.accountDataKey=null;
   accountStatus(error.message||"Não foi possível desbloquear a criptografia.");
@@ -368,7 +385,7 @@ $("accountLogin").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
  if(!email||!password){accountStatus("Informe e-mail e senha.");return}
  $("accountLogin").disabled=true;accountStatus("Autenticando...");
- try{setAccountSession(await accountRequest("/api/auth/login",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"}))}
+ try{setAccountSession(await accountRequest("/api/auth/login",{email,password,platform:"pwa",deviceLabel:"Navegador PWA",deviceId:persistentDeviceId(email)}))}
  catch(error){accountStatus(error.message)}
  finally{$("accountLogin").disabled=false}
 };
@@ -376,13 +393,13 @@ $("accountRegister").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value,key=$("registrationKey").value.trim();
  if(!email||password.length<12||!key){accountStatus("Informe e-mail, senha de pelo menos 12 caracteres e código de convite.");return}
  $("accountRegister").disabled=true;accountStatus("Criando conta...");
- try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA"},{"X-Registration-Key":key}));$("registrationKey").value=""}
+ try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA",deviceId:persistentDeviceId(email)},{"X-Registration-Key":key}));$("registrationKey").value=""}
  catch(error){accountStatus(error.message)}
  finally{$("accountRegister").disabled=false}
 };
 $("accountLogout").onclick=async()=>{
  try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
- aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ syncEngine?.clear();syncEngine=null;aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
  $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
 };
 if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
@@ -393,7 +410,7 @@ $("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatu
 function show(id){["word","agenda","diary","intel","evolution","ingrid"].forEach(n=>$(n).classList.toggle("hidden",n!==id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));renderHomeReminder();if(id==="agenda")renderAgenda();if(id==="ingrid")renderIngrid();if(id==="diary")renderDiary();if(id==="intel")renderIntel();if(id==="evolution")renderEvolution()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("addCommitment").onclick=()=>modal(null);$("agendaDate").value=agendaDate;$("agendaDate").onchange=()=>{agendaDate=$("agendaDate").value||today();const d=parse(agendaDate);calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);renderAgenda()};$("prevMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$("nextMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};setInterval(()=>{checkReminderClock();renderHomeReminder();const now=today();if(now!==observedToday){if(agendaDate===observedToday){agendaDate=now;calendarMonth=new Date(parse(now).getFullYear(),parse(now).getMonth(),1);renderAgenda()}observedToday=now;renderWord();$("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}},15000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkReminderClock()});
-document.body.addEventListener("click",e=>{const areaAction=e.target.closest("[data-open-section]");if(areaAction){const target=areaAction.dataset.openSection;show(target);if(target==="diary"){$("jd").value=areaAction.dataset.dimension;renderJournalPrompts();}return;}const calendarDay=e.target.closest("[data-calendar-date]");if(calendarDay){agendaDate=calendarDay.dataset.calendarDate;renderAgenda();return}const diary=e.target.closest("[data-open-diary]");if(diary){show("diary")}const ans=e.target.closest("[data-answer]"),ed=e.target.closest("[data-edit]"),del=e.target.closest("[data-del]");if(ans){const x=db.items.find(z=>z.id===ans.dataset.answer);if(x)answer(x,ans.dataset.date)}else if(ed){const x=db.items.find(z=>z.id===ed.dataset.edit);if(x)modal(x)}else if(del){const id=del.dataset.del;if(confirm("Excluir este compromisso?")){db.items=db.items.filter(x=>x.id!==id);save();renderAgenda();renderEvolution()}}});
+document.body.addEventListener("click",e=>{const areaAction=e.target.closest("[data-open-section]");if(areaAction){const target=areaAction.dataset.openSection;show(target);if(target==="diary"){$("jd").value=areaAction.dataset.dimension;renderJournalPrompts();}return;}const calendarDay=e.target.closest("[data-calendar-date]");if(calendarDay){agendaDate=calendarDay.dataset.calendarDate;renderAgenda();return}const diary=e.target.closest("[data-open-diary]");if(diary){show("diary")}const ans=e.target.closest("[data-answer]"),ed=e.target.closest("[data-edit]"),del=e.target.closest("[data-del]");if(ans){const x=db.items.find(z=>z.id===ans.dataset.answer);if(x)answer(x,ans.dataset.date)}else if(ed){const x=db.items.find(z=>z.id===ed.dataset.edit);if(x)modal(x)}else if(del){const id=del.dataset.del;if(confirm("Excluir este compromisso?")){const deleted=db.items.find(x=>x.id===id);syncEngine?.markDeleted("items",id,deleted?.dimension||"Cotidiano");db.items=db.items.filter(x=>x.id!==id);save();renderAgenda();renderEvolution()}}});
 function confessionAdvice(raw){
  const t=normalizeText(raw);
  if(/irmao|irma|ofendi|ofensa|mago|feri|machuquei|injusti/.test(t))return {title:"Quando você pecou contra alguém",ref:"Mateus 5:23–24; Mateus 18:15; Efésios 4:25–32",text:"Jesus ensina que a reconciliação com o irmão não deve ser tratada como detalhe. Efésios chama a abandonar a mentira, a amargura e palavras que destroem, buscando palavras que edifiquem. O texto não manda esconder o dano: chama à verdade e à responsabilidade.",step:"Se você prejudicou alguém, reconheça com clareza o que fez, sem justificar nem transferir a culpa. Procure seu irmão em particular quando for seguro e apropriado, peça perdão e pergunte como pode reparar o dano. Se a situação for complexa, procure seu pastor para acompanhamento."};
@@ -410,7 +427,7 @@ function runConfession(){
  $("confessionResult").scrollIntoView({behavior:"smooth",block:"start"});
  $("finishConfession").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML='<div class="empty">Relato temporário encerrado. O texto digitado não foi salvo no diário nem no histórico do aplicativo.</div>';};
 }
-$("jd").onchange=renderJournalPrompts;$("confessionRun").onclick=runConfession;$("confessionClear").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML="";};$("saveJ").onclick=()=>{const body=$("jb").value.trim(),dimension=$("jd").value,checkin={};document.querySelectorAll("[data-jprompt]").forEach(el=>{if(el.value.trim())checkin[el.dataset.jprompt]=el.value.trim()});if(!body&&!Object.keys(checkin).length)return alert("Registre ao menos uma informação.");db.journal.push({id:uid(),title:$("jt").value.trim(),body,dimension,checkin,at:Date.now()});save();$("jt").value="";$("jb").value="";renderDiary();renderIntel();renderEvolution();alert("Registro salvo neste aparelho. A análise considerará somente o que você informou.")};
+$("jd").onchange=renderJournalPrompts;$("confessionRun").onclick=runConfession;$("confessionClear").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML="";};$("saveJ").onclick=()=>{const body=$("jb").value.trim(),dimension=$("jd").value,checkin={};document.querySelectorAll("[data-jprompt]").forEach(el=>{if(el.value.trim())checkin[el.dataset.jprompt]=el.value.trim()});if(!body&&!Object.keys(checkin).length)return alert("Registre ao menos uma informação.");db.journal.push({id:uid(),title:$("jt").value.trim(),body,dimension,checkin,at:Date.now()});save();$("jt").value="";$("jb").value="";renderDiary();renderIntel();renderEvolution();alert("Registro salvo neste aparelho. A sincronização criptografada ocorrerá quando a conta estiver autenticada e a criptografia desbloqueada.")};
 $("saveR").onclick=()=>{const body=$("rb").value.trim();if(!body)return alert("Escreva sua revisão.");db.reviews.push({id:uid(),body,at:Date.now()});save();$("rb").value="";renderEvolution()};
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("install").hidden=false});$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
 if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});await registration.update();}catch(error){console.warn("Não foi possível verificar atualização do MEtanoia",error);}});
