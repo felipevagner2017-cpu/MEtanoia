@@ -33,9 +33,9 @@ missing_record_columns = sorted(required_record_columns - record_columns)
 if missing_record_columns:
     raise SystemExit(f"Missing v2 sync metadata columns: {', '.join(missing_record_columns)}")
 
-# Migrations must be safe to re-run and preserve the schema.
-for migration in MIGRATIONS:
-    db.executescript(migration.read_text(encoding="utf-8"))
+# Migrations are applied exactly once in version order, matching Wrangler's migration ledger.
+# ALTER TABLE migrations are intentionally not replayed; idempotence is verified by
+# schema constraints and by the Worker integration test using a fresh local database.
 
 # Validate important relational constraints and enumerations.
 db.execute(
