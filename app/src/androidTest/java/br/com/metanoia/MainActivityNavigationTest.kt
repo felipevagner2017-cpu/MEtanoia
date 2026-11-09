@@ -87,14 +87,14 @@ class MainActivityNavigationTest {
         captureScreen("04-profissional")
 
         clickNavigationControl("Cotidiano")
-        assertPageVisible("Cotidiano", "Minha agenda")
+        assertPageVisible("Cotidiano", "Diário de hoje")
         captureScreen("05-cotidiano")
-        // Capture the actual Agenda state after advancing one day; do not
-        // duplicate the Cotidiano screenshot under a second filename.
-        clickNavigationControl("Próximo dia  ›")
-        assertPageVisible("Agenda", "Próximo dia  ›")
-        captureScreen("06-agenda-marca-dagua")
 
+        clickNavigationControl("Agenda")
+        assertPageVisible("Agenda", "Minha agenda")
+        captureScreen("06-agenda")
+
+        clickNavigationControl("Cotidiano")
         clickNavigationControl("Diário")
         assertPageVisible("Diário", "Diário de hoje")
         captureScreen("07-diario")
