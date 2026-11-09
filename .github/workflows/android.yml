@@ -138,17 +138,35 @@ jobs:
             exit 1
           fi
           PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
+          for expected in "name='br.com.metanoia'" "versionCode='7'" "versionName='0.5.1'"; do
+            case "$PACKAGE_INFO" in
+              *"$expected"*) ;;
+              *) echo "Metadado Android inesperado: $expected" >&2; exit 1 ;;
+            esac
+          done
+          APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
           echo "### APK release assinado" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "$PACKAGE_INFO" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Package: br.com.metanoia' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Version code: 7' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Version name: 0.5.1' >> "$GITHUB_STEP_SUMMARY"
           echo "Certificate SHA-256: $CERT_SHA256" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload signed release APK
+          echo "APK SHA-256: $APK_SHA256" >> "$GITHUB_STEP_SUMMARY"
+      - name: Package source and release checksums
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          gradle wrapper --gradle-version 8.9 --distribution-type bin
+          git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
+          zip -u MEtanoia-codigo-fonte.zip gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
+          sha256sum app/build/outputs/apk/release/app-release.apk MEtanoia-codigo-fonte.zip > metonoia-release-SHA256SUMS.txt
+      - name: Upload signed release and source package
         if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: metanoia-android-release
-          path: app/build/outputs/apk/release/app-release.apk
+          name: metonoia-android-release
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            MEtanoia-codigo-fonte.zip
+            metonoia-release-SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
 
