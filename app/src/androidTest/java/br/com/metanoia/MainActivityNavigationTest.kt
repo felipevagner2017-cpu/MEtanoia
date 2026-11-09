@@ -97,7 +97,6 @@ class MainActivityNavigationTest {
         clickNavigationControl("Cotidiano")
         clickNavigationControl("Diário")
         assertPageVisible("Diário", "Diário de hoje")
-        captureScreen("07-diario")
 
         clickNavigationControl("Revisões")
         assertPageVisible("Revisões", "Revisões históricas")
