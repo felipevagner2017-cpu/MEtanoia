@@ -96,8 +96,8 @@ class ReminderFlowInstrumentedTest {
         scheduler.schedule(item)
 
         assertTrue(
-            "O AlarmManager deve registrar os PendingIntents do ReminderReceiver.",
-            await { alarmDump().contains("ReminderReceiver") }
+            "O AlarmManager deve registrar os três alarmes de antecedência do compromisso.",
+            await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 3 }
         )
 
         context.sendBroadcast(Intent(context, BootReceiver::class.java).setAction(Intent.ACTION_BOOT_COMPLETED))
@@ -115,19 +115,17 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun receiverDeliversCommitmentNotificationWithoutWaitingForItsFutureTime() {
         val item = insertFutureEvent()
-        val intent = Intent(context, ReminderReceiver::class.java)
-            .putExtra(ReminderReceiver.EXTRA_ID, item.id)
-            .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, 120)
-
-        context.sendBroadcast(intent)
-
-        val notificationId = (item.id * 10L).toInt()
-        assertTrue(
-            "O receiver deve publicar a notificação do compromisso.",
-            await {
-                notifications.activeNotifications.any { it.id == notificationId }
-            }
-        )
+        listOf(120, 60, 30).forEachIndexed { index, lead ->
+            val intent = Intent(context, ReminderReceiver::class.java)
+                .putExtra(ReminderReceiver.EXTRA_ID, item.id)
+                .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, lead)
+            context.sendBroadcast(intent)
+            val notificationId = (item.id * 10L + index).toInt()
+            assertTrue(
+                "O receiver deve entregar o lembrete de $lead minutos sem aguardar o horário real.",
+                await { notifications.activeNotifications.any { it.id == notificationId } }
+            )
+        }
     }
 
     @Test
@@ -155,19 +153,19 @@ class ReminderFlowInstrumentedTest {
 
     @Test
     fun dailyReceiverPublishesAndSchedulesTheNextOccurrence() {
-        val intent = Intent(context, ReminderReceiver::class.java)
-            .putExtra(ReminderReceiver.EXTRA_DAILY, true)
-            .putExtra(ReminderReceiver.EXTRA_HOUR, 7)
-
-        context.sendBroadcast(intent)
-
+        listOf(7, 12, 18).forEach { hour ->
+            val intent = Intent(context, ReminderReceiver::class.java)
+                .putExtra(ReminderReceiver.EXTRA_DAILY, true)
+                .putExtra(ReminderReceiver.EXTRA_HOUR, hour)
+            context.sendBroadcast(intent)
+            assertTrue(
+                "O lembrete diário das $hour horas deve ser entregue sem esperar o relógio.",
+                await { notifications.activeNotifications.any { it.id == 70000 + hour } }
+            )
+        }
         assertTrue(
-            "O lembrete diário deve ser entregue sem aguardar o horário real.",
-            await { notifications.activeNotifications.any { it.id == 70007 } }
-        )
-        assertTrue(
-            "Após entregar, o receiver deve agendar a próxima ocorrência diária.",
-            await { alarmDump().contains("ReminderReceiver") }
+            "Após entregar, o receiver deve agendar as próximas ocorrências diárias.",
+            await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 3 }
         )
     }
 }
