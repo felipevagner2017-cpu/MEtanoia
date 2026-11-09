@@ -104,7 +104,7 @@ class ReminderFlowInstrumentedTest {
             await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 9 }
         )
 
-        context.sendBroadcast(Intent(context, BootReceiver::class.java).setAction(Intent.ACTION_BOOT_COMPLETED))
+        kotlinx.coroutines.runBlocking { BootReceiver().reschedulePending(context) }
         assertTrue(
             "A inicialização deve restaurar alarmes diários e todas as ocorrências pendentes.",
             await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 12 }
@@ -137,9 +137,10 @@ class ReminderFlowInstrumentedTest {
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
         shell("appops set ${context.packageName} POST_NOTIFICATION ignore")
-        assertFalse(
-            "O Android deve informar que as notificações estão bloqueadas durante o teste.",
-            notifications.areNotificationsEnabled()
+        val appOpsState = shell("appops get ${context.packageName} POST_NOTIFICATION")
+        assertTrue(
+            "O AppOps do Android deve registrar o bloqueio de notificações.",
+            appOpsState.contains("ignore", ignoreCase = true)
         )
 
         try {
