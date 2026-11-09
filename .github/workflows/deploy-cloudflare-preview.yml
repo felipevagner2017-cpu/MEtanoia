@@ -1,0 +1,28 @@
+name: Deploy isolated MEtanoia Preview
+on:
+  push:
+    branches: [deploy/cloudflare-metanoia-web]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: metanoia-cloudflare-preview
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy/cloudflare-metanoia-web
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Wrangler
+        run: npm install --global wrangler
+      - name: Create or reuse isolated Preview D1, apply its migrations, and deploy Preview Worker
+        run: node scripts/deploy_cloudflare_preview.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          METANOIA_REGISTRATION_KEY: ${{ secrets.METANOIA_REGISTRATION_KEY }}
