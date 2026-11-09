@@ -41,6 +41,24 @@ class AccountCryptoInstrumentedTest {
         assertArrayEquals("Conteúdo criado na PWA e aberto no Android".toByteArray(Charsets.UTF_8), webPlain)
     }
 
+    @Test fun pbkdf2EnvelopeCanBeRecoveredRepeatedlyWithoutChangingTheKey() {
+        val crypto = AccountCrypto()
+        val userId = "pbkdf2-buffer-reuse-regression"
+        val phrase = "frase de teste suficientemente longa".toCharArray()
+        var first: ByteArray? = null
+        var second: ByteArray? = null
+        try {
+            val envelope = parseEnvelope(crypto.createEnvelope(userId, phrase))
+            first = crypto.openEnvelope(userId, phrase, envelope)
+            second = crypto.openEnvelope(userId, phrase, envelope)
+            assertArrayEquals("Repetir PBKDF2 deve recuperar a mesma chave de conta.", first, second)
+        } finally {
+            first?.fill(0)
+            second?.fill(0)
+            phrase.fill('\\u0000')
+        }
+    }
+
     @Test fun accountDekIsWrappedByKeystoreAndSeparatedPerAccount() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = AccountKeyStore(context)
