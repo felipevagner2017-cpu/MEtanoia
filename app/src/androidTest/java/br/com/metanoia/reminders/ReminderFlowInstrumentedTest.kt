@@ -100,7 +100,7 @@ class ReminderFlowInstrumentedTest {
             await { alarmDump().contains("ReminderReceiver") }
         )
 
-        BootReceiver().onReceive(context, Intent(Intent.ACTION_BOOT_COMPLETED))
+        context.sendBroadcast(Intent(context, BootReceiver::class.java).setAction(Intent.ACTION_BOOT_COMPLETED))
         assertTrue(
             "A inicialização deve restaurar os alarmes diários e os compromissos pendentes.",
             await { alarmDump().contains("ReminderReceiver") }
@@ -119,7 +119,7 @@ class ReminderFlowInstrumentedTest {
             .putExtra(ReminderReceiver.EXTRA_ID, item.id)
             .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, 120)
 
-        ReminderReceiver().onReceive(context, intent)
+        context.sendBroadcast(intent)
 
         val notificationId = (item.id * 10L).toInt()
         assertTrue(
@@ -140,7 +140,7 @@ class ReminderFlowInstrumentedTest {
             val intent = Intent(context, ReminderReceiver::class.java)
                 .putExtra(ReminderReceiver.EXTRA_ID, item.id)
                 .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, 60)
-            ReminderReceiver().onReceive(context, intent)
+            context.sendBroadcast(intent)
 
             Thread.sleep(1_000)
             val notificationId = (item.id * 10L + 1L).toInt()
@@ -159,7 +159,7 @@ class ReminderFlowInstrumentedTest {
             .putExtra(ReminderReceiver.EXTRA_DAILY, true)
             .putExtra(ReminderReceiver.EXTRA_HOUR, 7)
 
-        ReminderReceiver().onReceive(context, intent)
+        context.sendBroadcast(intent)
 
         assertTrue(
             "O lembrete diário deve ser entregue sem aguardar o horário real.",
