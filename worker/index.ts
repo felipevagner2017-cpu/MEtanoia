@@ -12,6 +12,9 @@ const ALLOWED_ORIGINS = new Set([
   "https://metanoia.restaura-lar.workers.dev",
   "https://metonoia.restaura-lar.workers.dev",
 ]);
+function isAllowedOrigin(origin?: string) {
+  return !origin || ALLOWED_ORIGINS.has(origin) || /^https:\/\/metanoia-preview\.[a-z0-9-]+\.workers\.dev$/.test(origin);
+}
 
 const SYSTEM_PROMPT = `Você é a inteligência assistiva integrada do aplicativo MEtanoia. Responda sempre em português brasileiro, com clareza, profundidade e respeito.
 
@@ -32,7 +35,7 @@ function json(data: unknown, status = 200, origin?: string) {
     "X-Content-Type-Options": "nosniff",
     "Vary": "Origin",
   };
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
     headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type";
     headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
@@ -47,7 +50,7 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     const origin = request.headers.get("Origin") || undefined;
-    if (origin && !ALLOWED_ORIGINS.has(origin)) return json({ error: "Origem não autorizada." }, 403);
+    if (origin && !isAllowedOrigin(origin)) return json({ error: "Origem não autorizada." }, 403);
     const d1Response = await handleD1Api(request, env, url, origin);
     if (d1Response) return d1Response;
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": origin || "", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" } });
