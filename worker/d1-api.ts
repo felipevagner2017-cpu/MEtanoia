@@ -1,6 +1,7 @@
 export interface D1Env {
   DB?: D1Database;
   METANOIA_REGISTRATION_KEY?: string;
+  METANOIA_PREVIEW_OPEN_REGISTRATION?: string;
 }
 
 const json = (data: unknown, status = 200, origin?: string) => {
@@ -62,7 +63,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
 
   try {
     if (url.pathname === "/api/auth/register" && request.method === "POST") {
-      if (!env.METANOIA_REGISTRATION_KEY || request.headers.get("X-Registration-Key") !== env.METANOIA_REGISTRATION_KEY)
+      if (env.METANOIA_PREVIEW_OPEN_REGISTRATION !== "true" && (!env.METANOIA_REGISTRATION_KEY || request.headers.get("X-Registration-Key") !== env.METANOIA_REGISTRATION_KEY))
         return json({ error: "Cadastro protegido: convite inválido ou não configurado." }, 403, origin);
       const body = await parseBody(request, 8000);
       const email = String(body.email || "").trim().toLowerCase();
