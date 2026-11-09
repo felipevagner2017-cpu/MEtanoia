@@ -2,7 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "metanoia",
   "main": "./worker/index.ts",
-  "migrations_dir": "./migrations",
   "compatibility_date": "2026-11-03",
   "workers_dev": true,
   "assets": {
@@ -23,7 +22,8 @@
     {
       "binding": "DB",
       "database_name": "metanoia",
-      "database_id": "1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0"
+      "database_id": "1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0",
+      "migrations_dir": "./migrations"
     }
   ]
 }
