@@ -29,6 +29,7 @@ if(!database?.uuid)throw new Error("Cloudflare did not return the isolated previ
 const config=JSON.parse(fs.readFileSync("wrangler.jsonc","utf8"));
 config.name="metanoia-preview";
 config.workers_dev=true;
+config.keep_vars=true;
 config.vars={...(config.vars||{}),METANOIA_PREVIEW_OPEN_REGISTRATION:"true"};
 config.d1_databases=(config.d1_databases||[]).map(item=>item.binding==="DB"?{...item,database_name:"metanoia-preview",database_id:database.uuid}:item);
 if(config.d1_databases.filter(x=>x.binding==="DB"&&x.database_id===database.uuid).length!==1)throw new Error("Preview D1 binding could not be isolated from production.");
@@ -38,7 +39,8 @@ function run(args){
  if(result.status!==0)throw new Error("wrangler "+args.join(" ")+" failed with exit "+result.status);
 }
 run(["d1","migrations","apply","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
-run(["deploy","--config","wrangler.preview.jsonc"]);
+run(["d1","migrations","list","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
+run(["deploy","--keep-vars","--config","wrangler.preview.jsonc"]);
 const subdomainResult=await cf("/accounts/"+accountId+"/workers/subdomain");
 const subdomain=subdomainResult?.subdomain;
 if(!subdomain)throw new Error("Worker was deployed but Cloudflare did not return an active workers.dev subdomain.");
