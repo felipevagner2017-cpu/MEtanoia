@@ -27,6 +27,7 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/crypto.js
+          node --check web/sync.js
           node --check web/sw.js
           node --check scripts/require_remote_migrations.mjs
       - name: Validate PWA manifest and referenced local assets
@@ -38,9 +39,11 @@ jobs:
           if (m.start_url !== '/?source=home-screen' || m.scope !== '/' || m.display !== 'standalone') throw new Error('PWA install metadata mismatch.');
           for (const icon of m.icons || []) if (!fs.existsSync('web' + icon.src)) throw new Error('Missing PWA icon: ' + icon.src);
           const html = fs.readFileSync('web/index.html','utf8');
-          for (const asset of ['/crypto.js','/app.js','/manifest.webmanifest','/icons/metonoia.svg']) if (!html.includes(asset)) throw new Error('Missing HTML asset reference: ' + asset);
+          for (const asset of ['/crypto.js','/sync.js','/app.js','/manifest.webmanifest','/icons/metonoia.svg']) if (!html.includes(asset)) throw new Error('Missing HTML asset reference: ' + asset);
           if (!html.includes('data-tab="agenda"')) throw new Error('Independent Agenda navigation is missing.');
           NODE
+      - name: Test encrypted PWA synchronization across two devices
+        run: node scripts/test_pwa_sync.mjs
       - name: Validate D1 migration SQL
         run: python3 scripts/validate_d1_migrations.py
       - name: Install Wrangler
