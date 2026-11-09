@@ -27,6 +27,12 @@ missing = sorted(required - tables)
 if missing:
     raise SystemExit(f"Missing tables: {', '.join(missing)}")
 
+record_columns = {row[1] for row in db.execute("PRAGMA table_info(records)")}
+required_record_columns = {"source_device_id", "purpose", "encryption_version"}
+missing_record_columns = sorted(required_record_columns - record_columns)
+if missing_record_columns:
+    raise SystemExit(f"Missing v2 sync metadata columns: {', '.join(missing_record_columns)}")
+
 # Migrations must be safe to re-run and preserve the schema.
 for migration in MIGRATIONS:
     db.executescript(migration.read_text(encoding="utf-8"))
