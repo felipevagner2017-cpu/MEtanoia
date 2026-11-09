@@ -45,6 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
       - name: Verify one-file migration trigger authorization
         if: github.event_name == 'push'
         run: |
