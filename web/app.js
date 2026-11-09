@@ -391,9 +391,9 @@ $("accountLogin").onclick=async()=>{
 };
 $("accountRegister").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value,key=$("registrationKey").value.trim();
- if(!email||password.length<12||!key){accountStatus("Informe e-mail, senha de pelo menos 12 caracteres e código de convite.");return}
+ if(!email||password.length<12){accountStatus("Informe e-mail e senha de pelo menos 12 caracteres.");return}
  $("accountRegister").disabled=true;accountStatus("Criando conta...");
- try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA",deviceId:persistentDeviceId(email)},{"X-Registration-Key":key}));$("registrationKey").value=""}
+ try{setAccountSession(await accountRequest("/api/auth/register",{email,password,platform:"pwa",deviceLabel:"Navegador PWA",deviceId:persistentDeviceId(email)},key?{"X-Registration-Key":key}:{}));$("registrationKey").value=""}
  catch(error){accountStatus(error.message)}
  finally{$("accountRegister").disabled=false}
 };
