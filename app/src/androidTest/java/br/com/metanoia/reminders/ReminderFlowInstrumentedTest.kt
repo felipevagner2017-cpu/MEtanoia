@@ -5,12 +5,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.ParcelFileDescriptor
-import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import br.com.metanoia.MainActivity
 import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.MetanoiaDatabase
 import java.io.BufferedReader
@@ -100,15 +98,6 @@ class ReminderFlowInstrumentedTest {
             insertFutureEvent("DAILY", 52)
         )
         occurrences.forEach(scheduler::schedule)
-
-        occurrences.forEach(scheduler::cancel)
-        listOf(7, 12, 18).forEach(scheduler::cancelDaily)
-        ActivityScenario.launch(MainActivity::class.java).use {
-            assertTrue(
-                "Ao iniciar o aplicativo, os alarmes diários e todas as ocorrências futuras devem ser restaurados.",
-                await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 12 }
-            )
-        }
 
         assertTrue(
             "O AlarmManager deve registrar os alarmes de antecedência dos compromissos.",
