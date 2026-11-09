@@ -31,6 +31,10 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".preview"
+            versionNameSuffix = "-preview"
+        }
         getByName("release") {
             isMinifyEnabled = false
             isShrinkResources = false
