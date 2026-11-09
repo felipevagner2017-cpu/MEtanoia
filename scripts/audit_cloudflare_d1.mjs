@@ -56,7 +56,7 @@ if (!token) {
           return result.result?.[0]?.results || [];
         };
         const tableRows = await query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
-        const remoteTables = tableRows.map((row) => row.name);
+        const allRemoteTables = tableRows.map((row) => row.name);\n        const remoteTables = allRemoteTables.filter((name) => !name.startsWith("_cf_"));
         add("Leitura do catálogo de tabelas", "APROVADA",
           remoteTables.length ? `${remoteTables.length} tabela(s): ${remoteTables.join(", ")}.` : "Banco sem tabelas de usuário.");
         try {
@@ -66,7 +66,7 @@ if (!token) {
           const unknown = applied.filter((file) => !migrationFiles.includes(file));
           const status = pending.length === 0 && unknown.length === 0 ? "APROVADA" : "REPROVADA";
           add("Comparação das migrations remotas", status,
-            `Aplicadas: ${applied.join(", ") || "nenhuma"}; pendentes: ${pending.join(", ") || "nenhuma"}; remotas sem arquivo local: ${unknown.join(", ") || "nenhuma"}.`);
+            `Tabela de histórico: ${migrationTableExists ? "presente" : "ausente (nenhuma migration registrada)"}; aplicadas: ${applied.join(", ") || "nenhuma"}; pendentes: ${pending.join(", ") || "nenhuma"}; remotas sem arquivo local: ${unknown.join(", ") || "nenhuma"}.`);
         } catch (error) {
           add("Histórico de migrations remoto", "NÃO VERIFICADA",
             `A API permitiu consultar a identidade/tabelas, mas não o histórico d1_migrations: ${error.message}. Pode faltar permissão de consulta SQL D1 Read para o endpoint de query.`);
