@@ -407,7 +407,7 @@ private fun DimensionRecordPage(
                         },
                         enabled = recordTitle.isNotBlank() && when {
                             isSpiritual -> contextNotes.isNotBlank() || analysisNotes.isNotBlank() || applicationNotes.isNotBlank()
-                            isProfessional -> body.isNotBlank() || obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
+                            isProfessional -> obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
                             else -> body.isNotBlank()
                         },
                         modifier = Modifier.fillMaxWidth()
