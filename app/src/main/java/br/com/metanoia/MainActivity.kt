@@ -255,11 +255,17 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      contentScale=ContentScale.Fit
     )
     Column(Modifier.weight(1f)) {
-     Text("MEtanoia",color=GoldBright,style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
+     Text(
+      "MEtonoia",
+      color=GoldBright,
+      style=MaterialTheme.typography.headlineMedium,
+      fontWeight=FontWeight.Bold,
+      modifier=Modifier.clickable {
+       aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";else->"Cotidiano"}
+       showAiAssistant=true
+      }
+     )
      Text("UMA MENTE RENOVADA",color=Ivory.copy(alpha=.86f),style=MaterialTheme.typography.labelSmall,letterSpacing=1.2.sp)
-    }
-    TextButton(onClick={aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";else->"Cotidiano"};showAiAssistant=true}) {
-     Text("IA",color=DeepViolet,fontWeight=FontWeight.Bold,modifier=Modifier.background(GoldChampagne,MaterialTheme.shapes.large).padding(horizontal=15.dp,vertical=8.dp))
     }
    }
    Text(
