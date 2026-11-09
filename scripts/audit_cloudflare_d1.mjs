@@ -76,7 +76,7 @@ if (!token) {
           `Estado=${schemaState}; tabelas da aplicação=${appTables.length}/11; índices explícitos=${indexes.length}/10; tabelas=${appTables.join(", ") || "nenhuma"}; índices=${indexes.join(", ") || "nenhum"}.`);
         const pending = migrationFiles.filter((name) => !applied.includes(name));
         const unknown = applied.filter((name) => !migrationFiles.includes(name));
-        const migrationOk = unknown.length === 0 && (empty || initial || complete);
+        const migrationOk = unknown.length === 0 && schemaOk;
         add("Histórico remoto das migrations", migrationOk ? "APROVADA" : "REPROVADA",
           `Aplicadas=${applied.join(", ") || "nenhuma"}; pendentes=${pending.join(", ") || "nenhuma"}; remotas sem arquivo local=${unknown.join(", ") || "nenhuma"}.`);
         try {
