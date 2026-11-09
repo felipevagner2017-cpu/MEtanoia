@@ -47,7 +47,7 @@ jobs:
           if (cfg.ai?.binding !== 'AI') throw new Error('Workers AI binding AI is missing.');
           const db = (cfg.d1_databases || []).filter(x => x.binding === 'DB' && x.database_id && x.database_name);
           if (db.length !== 1) throw new Error('A real D1 binding DB with database_name and database_id must be configured before production.');
-          if (!cfg.migrations_dir) throw new Error('migrations_dir is required for read-only migration status checks.');
+          if (!db[0].migrations_dir) throw new Error('d1_databases[DB].migrations_dir is required for read-only migration status checks.');
           NODE
       - name: Install Wrangler
         run: npm install --global wrangler
