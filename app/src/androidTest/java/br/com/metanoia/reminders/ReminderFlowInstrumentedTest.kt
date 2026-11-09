@@ -2,7 +2,6 @@ package br.com.metanoia.reminders
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.pm.PackageManager
 import android.content.Context
 import android.content.Intent
 import android.os.ParcelFileDescriptor
@@ -137,18 +136,19 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
-        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
         try {
-            // Revoke the actual runtime permission through the Android test shell identity.
-            // This exercises the same OS permission gate used when the user disables notifications.
-            uiAutomation.revokeRuntimePermission(
-                context.packageName,
-                Manifest.permission.POST_NOTIFICATIONS
+            // POST_NOTIFICATION is a UID-scoped security AppOp on Android.
+            // Set the UID mode (not package mode) so NotificationManager observes the denial
+            // without revoking the runtime grant and killing the instrumented app process.
+            shell("appops set --uid ${context.packageName} POST_NOTIFICATION ignore")
+            val appOpsState = shell("appops get --uid ${context.packageName} POST_NOTIFICATION")
+            assertTrue(
+                "O Android deve registrar POST_NOTIFICATION como ignore para o UID do app: $appOpsState",
+                appOpsState.contains("ignore", ignoreCase = true)
             )
-            assertEquals(
-                "O Android deve confirmar que POST_NOTIFICATIONS foi revogada.",
-                PackageManager.PERMISSION_DENIED,
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+            assertFalse(
+                "O NotificationManager deve reconhecer que o app está sem permissão para notificar.",
+                notifications.areNotificationsEnabled()
             )
 
             val intent = Intent(context, ReminderReceiver::class.java)
@@ -158,14 +158,11 @@ class ReminderFlowInstrumentedTest {
 
             val notificationId = (item.id * 10L + 1L).toInt()
             assertTrue(
-                "Sem POST_NOTIFICATIONS, o receiver não pode publicar a notificação.",
+                "Com POST_NOTIFICATION bloqueada no UID, o receiver não pode publicar a notificação.",
                 await { notifications.activeNotifications.none { it.id == notificationId } }
             )
         } finally {
-            uiAutomation.grantRuntimePermission(
-                context.packageName,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
+            shell("appops set --uid ${context.packageName} POST_NOTIFICATION allow")
         }
     }
 
