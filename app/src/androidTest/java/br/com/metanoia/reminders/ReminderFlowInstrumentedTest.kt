@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -136,15 +137,18 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
         try {
-            // POST_NOTIFICATION is a UID-scoped security AppOp on Android.
-            // Set the UID mode (not package mode) so NotificationManager observes the denial
-            // without revoking the runtime grant and killing the instrumented app process.
-            shell("appops set --uid ${context.packageName} POST_NOTIFICATION ignore")
-            val appOpsState = shell("appops get --uid ${context.packageName} POST_NOTIFICATION")
-            assertTrue(
-                "O Android deve registrar POST_NOTIFICATION como ignore para o UID do app: $appOpsState",
-                appOpsState.contains("ignore", ignoreCase = true)
+            // Revoke the actual Android 13+ runtime permission. A UID AppOp alone does
+            // not reliably make NotificationManager.areNotificationsEnabled() false.
+            uiAutomation.revokeRuntimePermission(
+                context.packageName,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            assertEquals(
+                "O Android deve confirmar que POST_NOTIFICATIONS foi revogada.",
+                PackageManager.PERMISSION_DENIED,
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
             )
             assertFalse(
                 "O NotificationManager deve reconhecer que o app está sem permissão para notificar.",
@@ -158,11 +162,14 @@ class ReminderFlowInstrumentedTest {
 
             val notificationId = (item.id * 10L + 1L).toInt()
             assertTrue(
-                "Com POST_NOTIFICATION bloqueada no UID, o receiver não pode publicar a notificação.",
+                "Sem POST_NOTIFICATIONS, o receiver não pode publicar a notificação.",
                 await { notifications.activeNotifications.none { it.id == notificationId } }
             )
         } finally {
-            shell("appops set --uid ${context.packageName} POST_NOTIFICATION allow")
+            uiAutomation.grantRuntimePermission(
+                context.packageName,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
         }
     }
 
