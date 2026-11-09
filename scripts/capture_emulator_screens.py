@@ -8,7 +8,7 @@ OUT = "screenshots"
 APK = "app/build/outputs/apk/debug/app-debug.apk"
 os.makedirs(OUT, exist_ok=True)
 
-def package_from_apk():
+def package_and_activity_from_apk():
     build_tools = os.path.join(os.environ.get("ANDROID_HOME", ""), "build-tools")
     candidates = []
     if os.path.isdir(build_tools):
@@ -20,16 +20,23 @@ def package_from_apk():
     if not aapt:
         raise RuntimeError("aapt não encontrado para identificar o package ID do APK.")
     result = subprocess.run([aapt, "dump", "badging", APK], capture_output=True, text=True, check=True)
+    import re
+    package = activity = None
     for line in result.stdout.splitlines():
         if line.startswith("package:"):
-            import re
             match = re.search(r"name='([^']+)'", line)
-            if match:
-                return match.group(1)
-    raise RuntimeError("Não foi possível identificar o package ID do APK debug.")
+            package = match.group(1) if match else package
+        elif line.startswith("launchable-activity:"):
+            match = re.search(r"name='([^']+)'", line)
+            activity = match.group(1) if match else activity
+    if not package or not activity:
+        raise RuntimeError("Não foi possível identificar package ID e Activity principal do APK debug.")
+    return package, activity
 
-PACKAGE = package_from_apk()
-ACTIVITY = f"{PACKAGE}/.MainActivity"
+if not os.path.isfile(APK):
+    raise RuntimeError("APK debug do mesmo commit não encontrado: " + APK)
+PACKAGE, MAIN_ACTIVITY = package_and_activity_from_apk()
+ACTIVITY = f"{PACKAGE}/{MAIN_ACTIVITY}"
 
 def adb(*args, binary=False, check=True, timeout=30):
     p = subprocess.run(["adb", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
