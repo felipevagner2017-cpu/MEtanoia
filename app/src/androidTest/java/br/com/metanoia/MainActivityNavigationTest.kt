@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.printToLog
 import androidx.test.rule.GrantPermissionRule
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -71,6 +72,16 @@ class MainActivityNavigationTest {
 
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
+        composeRule.waitForIdle()
+        val alarmDescriptor = InstrumentationRegistry.getInstrumentation()
+            .uiAutomation.executeShellCommand("dumpsys alarm")
+        val alarmDump = ParcelFileDescriptor.AutoCloseInputStream(alarmDescriptor).use { input ->
+            input.reader().readText()
+        }
+        assertTrue(
+            "Ao iniciar a Activity, os três lembretes diários devem estar agendados.",
+            Regex("ReminderReceiver").findAll(alarmDump).count() >= 3
+        )
         assertPageVisible("Painel", "Mensagens e desafios")
         assertPageVisible("Painel", "SUAS QUATRO DIMENSÕES")
         captureScreen("01-dashboard")
