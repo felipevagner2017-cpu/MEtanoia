@@ -18,5 +18,12 @@
       "enabled": true,
       "invocation_logs": true
     }
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "metanoia",
+      "database_id": "1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0"
+    }
+  ]
 }
