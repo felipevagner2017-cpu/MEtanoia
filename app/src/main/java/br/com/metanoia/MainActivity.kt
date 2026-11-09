@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -383,7 +384,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val selectedItems=items.filter { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate()==selectedDate }.sortedBy { it.scheduledAt }
  val monthItems=items.groupBy { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate() }
  val weekdays=listOf("SEG","TER","QUA","QUI","SEX","SÁB","DOM")
- Column(Modifier.fillMaxSize().padding(horizontal=14.dp, vertical=10.dp)) {
+ Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=14.dp, vertical=10.dp)) {
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
     Text("Minha agenda",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
