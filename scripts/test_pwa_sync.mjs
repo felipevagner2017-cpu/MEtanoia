@@ -77,6 +77,7 @@ function makeDevice(deviceId, initialDb) {
     window: null, crypto: webcrypto, Uint8Array, TextEncoder, TextDecoder, btoa, atob,
     indexedDB: createIndexedDB(), localStorage, sessionStorage,
     setTimeout, clearTimeout, Date, JSON, Map, Error, Promise, console,
+    addEventListener: () => {}, document: { hidden: false, addEventListener: () => {} },
     fetch: async (url, options = {}) => {
       assert.equal(options.headers?.Authorization, "Bearer test-session");
       const path = new URL(url, "https://metanoia.test").pathname;
