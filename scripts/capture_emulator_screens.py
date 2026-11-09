@@ -61,7 +61,7 @@ for name in [
     "03-matrimonio",
     "04-profissional",
     "05-cotidiano",
-    "06-agenda-marca-dagua",
+    "06-agenda",
     "07-diario",
     "08-revisoes",
     "09-alertas",
