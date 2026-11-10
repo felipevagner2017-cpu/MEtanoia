@@ -220,8 +220,8 @@ function renderDimensionOverview(dimension){
  let domainStats="";
  if(dimension==="Cotidiano"){
   const c=entries.map(x=>x.checkin||{}),ex=c.map(x=>x.exercise).filter(x=>["Pratiquei","Não pratiquei"].includes(x)),food=c.map(x=>x.food).filter(x=>["Equilibrada","Irregular","Precisa de atenção"].includes(x)),well=c.map(x=>x.wellbeing).filter(x=>["Bem","Estável","Sobrecarregado","Preciso de apoio"].includes(x));
-  achievement+=" Exercício: "+ex.filter(x=>x==="Pratiquei").length+"/"+ex.length+" práticas entre respostas válidas; alimentação equilibrada: "+food.filter(x=>x==="Equilibrada").length+"/"+food.length+".";
-  attention+=" "+well.filter(x=>x==="Sobrecarregado"||x==="Preciso de apoio").length+" de "+well.length+" autoavaliações indicaram sobrecarga ou necessidade de apoio; isso não é diagnóstico.";
+  achievement+=" "+(ex.length?"Exercício: "+ex.filter(x=>x==="Pratiquei").length+"/"+ex.length+" respostas indicaram prática.":"Ainda não há respostas válidas sobre exercício.")+" "+(food.length?"Alimentação equilibrada: "+food.filter(x=>x==="Equilibrada").length+"/"+food.length+" respostas.":"Ainda não há respostas válidas sobre alimentação.");
+  attention+=" "+(well.length?well.filter(x=>x==="Sobrecarregado"||x==="Preciso de apoio").length+" de "+well.length+" autoavaliações indicaram sobrecarga ou necessidade de apoio; isso não é diagnóstico.":"Ainda não há autoavaliações de bem-estar registradas.");
   domainStats='<div class="dimension-overview-stat"><strong>'+well.length+'</strong><span>autoavaliações de bem-estar</span></div><div class="dimension-overview-stat"><strong>'+ex.length+'</strong><span>respostas sobre exercício</span></div>';
  }else{
   const label={Profissional:"registros profissionais",Matrimonial:"relatos matrimoniais",Espiritual:"registros devocionais"}[dimension];
