@@ -12,6 +12,7 @@ import androidx.test.rule.GrantPermissionRule
 import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.MetanoiaDatabase
 import br.com.metanoia.wallpaper.LockScreenAgendaNotification
+import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import org.junit.After
@@ -261,7 +262,10 @@ class ReminderFlowInstrumentedTest {
     @Test
     fun changingAndDeletingCommitmentCancelsAndReplacesItsScheduledAlarms() {
         val original = insertFutureEvent()
+        val baseline = Regex("ReminderReceiver").findAll(alarmDump()).count()
         scheduler.schedule(original)
+        val afterFirstSchedule = Regex("ReminderReceiver").findAll(alarmDump()).count()
+        assertTrue("Os três alarmes escolhidos devem ser registrados.", afterFirstSchedule >= baseline + 3)
         val changed = original.copy(
             scheduledAt = original.scheduledAt + 60L * 60_000L,
             reminderAt = original.scheduledAt + 60L * 60_000L - 120L * 60_000L
@@ -269,14 +273,23 @@ class ReminderFlowInstrumentedTest {
         scheduler.cancel(original)
         kotlinx.coroutines.runBlocking { dao.update(changed) }
         scheduler.schedule(changed)
-        val afterUpdate = alarmDump()
-        assertTrue("O compromisso editado deve continuar agendado.", afterUpdate.contains("ReminderReceiver"))
+        val afterUpdate = Regex("ReminderReceiver").findAll(alarmDump()).count()
+        assertTrue("Editar deve substituir os alarmes antigos, sem duplicar os três novos.", afterUpdate >= baseline + 3 && afterUpdate <= afterFirstSchedule)
         scheduler.cancel(changed)
-        val afterDelete = alarmDump()
-        val requestCode = (original.id * 10L).toInt().toString()
-        assertFalse(
-            "Após cancelar/excluir, o alarme do compromisso não deve permanecer registrado.",
-            afterDelete.contains("requestCode=$requestCode")
+        val afterDelete = Regex("ReminderReceiver").findAll(alarmDump()).count()
+        assertTrue("Após cancelar/excluir, os alarmes do compromisso devem ser removidos.", afterDelete <= baseline)
+    }
+
+    @Test
+    fun agendaWallpaperIsAppliedToTheAndroidLockScreenSlot() {
+        val manager = android.app.WallpaperManager.getInstance(context)
+        kotlinx.coroutines.runBlocking {
+            LockScreenAgendaWallpaper.refreshNow(context, MetanoiaDatabase.get(context))
+        }
+        val lockWallpaperId = manager.getWallpaperId(android.app.WallpaperManager.FLAG_LOCK)
+        assertTrue(
+            "A agenda deve ser aplicada ao slot de papel de parede da tela bloqueada no Android.",
+            lockWallpaperId >= 0
         )
     }
 
