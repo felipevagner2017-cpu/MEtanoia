@@ -18,9 +18,26 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
   if (!response || !response.ok()) throw new Error("Preview root returned HTTP " + (response?.status() ?? "no response"));
-  await page.waitForSelector("#word:not(.hidden)", { timeout: 20000 });
-  if (!(await page.locator("body").innerText()).includes("MEtonoia")) {
-    throw new Error("MEtonoia brand text is missing from the live Preview.");
+  await page.waitForSelector("#word", { timeout: 20000 });
+  const initialDiagnostics = await page.evaluate(() => {
+    const word = document.querySelector("#word");
+    return {
+      title: document.title,
+      bodyText: document.body.innerText.slice(0, 1000),
+      wordExists: Boolean(word),
+      wordClass: word?.className ?? null,
+      wordDisplay: word ? getComputedStyle(word).display : null,
+      wordVisibility: word ? getComputedStyle(word).visibility : null,
+      appScript: [...document.scripts].map(script => script.src).filter(Boolean),
+    };
+  });
+  console.log("PREVIEW_INITIAL_DIAGNOSTICS=" + JSON.stringify(initialDiagnostics));
+  await page.screenshot({ path: path.join(outDir, "00-initial-diagnostics.png"), fullPage: true });
+  if (!initialDiagnostics.bodyText.includes("MEtonoia")) {
+    throw new Error("MEtonoia brand text is missing from the live Preview: " + JSON.stringify(initialDiagnostics));
+  }
+  if (initialDiagnostics.wordDisplay === "none" || initialDiagnostics.wordVisibility === "hidden") {
+    throw new Error("Jornada diária is hidden on the live Preview: " + JSON.stringify(initialDiagnostics));
   }
 
   async function capture(name, section) {
