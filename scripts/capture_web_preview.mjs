@@ -77,9 +77,16 @@ try {
     await overview.locator(".dimension-overview-ring").waitFor();
     if (!(await overview.innerText()).toLowerCase().includes("painel de desenvolvimento")) throw new Error("Missing specialized development panel for " + area);
     if (!(await overview.locator("[data-dimension-ai]").count())) throw new Error("Missing contextual AI action for " + area);
+    if (!(await overview.locator(".dimension-evidence li").count())) throw new Error("Missing real diary evidence or explicit no-data explanation for " + area);
+    if (!(await overview.innerText()).includes("Método do círculo")) throw new Error("Transparent metric methodology is missing for " + area);
     const box = await overview.locator(".dimension-overview-ring").boundingBox();
     if (!box || box.width < 80 || box.height < 80) throw new Error("Progress ring is not rendered correctly for " + area);
-    await page.screenshot({ path: path.join(outDir, "dimension-" + area.toLowerCase() + ".png"), fullPage: false });
+    await page.screenshot({ path: path.join(outDir, "dimension-" + area.toLowerCase() + ".png"), fullPage: true });
+    await overview.locator("[data-dimension-ai]").click();
+    const aiPrompt = await page.locator("#aiQuestion").inputValue();
+    const requiredPrompt = {Espiritual:"texto bíblico",Matrimonial:"perspectiva",Profissional:"metas",Cotidiano:"bem-estar"}[area];
+    if (!aiPrompt.toLowerCase().includes(requiredPrompt)) throw new Error("AI prompt is not specialized for " + area);
+    await tab("areas");
   }
   await tab("dashboard");
   await capture("00-dashboard-evolucao", "dashboard");
@@ -94,6 +101,8 @@ try {
   if (await page.locator("#word .word-swipe-hint").count()) throw new Error("The unwanted Jornada Diária swipe-hint component is still present.");
   await tab("areas");
   await capture("02-areas", "areas");
+  if (await page.locator("#areas .word-welcome").count()) throw new Error("The rejected oversized Areas hero remains in the interface.");
+  if (!(await page.locator("#areas .areas-intro").isVisible())) throw new Error("The compact Areas introduction is missing.");
   await openArea("Espiritual", "pastoralStudy");
   if (!(await page.locator("#pastoralStudy").innerText()).includes("John Wesley")) {
     throw new Error("Pastoral study references are missing from the deployed PWA.");
