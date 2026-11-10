@@ -143,6 +143,15 @@ try {
   }));
   if (!pwa.serviceWorker) throw new Error("The live PWA did not register its Service Worker.");
   if (!pwa.manifest) throw new Error("The live PWA manifest link is missing.");
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), null, { timeout: 15000 }).catch(() => {});
+  if (!(await page.evaluate(() => Boolean(navigator.serviceWorker?.controller)))) {
+    throw new Error("The live Service Worker did not take control of the Preview page.");
+  }
+  await context.setOffline(true);
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForSelector("#word:not(.hidden)", { timeout: 15000 });
+  await page.screenshot({ path: path.join(outDir, "offline-jornada.png"), fullPage: true });
+  await context.setOffline(false);
   fs.writeFileSync(path.join(outDir, "inspection.json"), JSON.stringify({
     url: baseUrl,
     viewport: "390x844",
