@@ -15,18 +15,16 @@ async function cf(path,method="GET",body){
  return data.result;
 }
 const dbPath="/accounts/"+accountId+"/d1/database";
-let list=await cf(dbPath+"?name=metanoia-preview");
-let database=Array.isArray(list)?list.find(x=>x.name==="metanoia-preview"):null;
-if(!database){
- try{database=await cf(dbPath,"POST",{name:"metanoia-preview"});}
- catch(error){
-  list=await cf(dbPath+"?name=metanoia-preview");
-  database=Array.isArray(list)?list.find(x=>x.name==="metanoia-preview"):null;
-  if(!database)throw error;
- }
-}
-if(!database?.uuid)throw new Error("Cloudflare did not return the isolated preview D1 database ID.");
+const EXPECTED_PREVIEW_D1_ID="08740f17-371b-43b9-aa7f-518337a91b22";
+const list=await cf(dbPath+"?name=metanoia-preview");
+const database=Array.isArray(list)?list.find(x=>x.name==="metanoia-preview"):null;
+if(!database?.uuid)throw new Error("The existing isolated Preview D1 was not found; deployment will not create or recreate databases.");
+if(database.uuid!==EXPECTED_PREVIEW_D1_ID)throw new Error("Preview D1 identity mismatch; refusing to deploy against an unexpected database.");
+
 const config=JSON.parse(fs.readFileSync("wrangler.jsonc","utf8"));
+const productionDatabase=(config.d1_databases||[]).find(item=>item.binding==="DB")?.database_id;
+if(!productionDatabase||productionDatabase===database.uuid)throw new Error("Production/Preview D1 isolation check failed; deployment stopped.");
+if(config.routes?.length)throw new Error("Preview config inherited production routes; refusing deployment.");
 config.name="metanoia-preview";
 config.workers_dev=true;
 config.keep_vars=true;
