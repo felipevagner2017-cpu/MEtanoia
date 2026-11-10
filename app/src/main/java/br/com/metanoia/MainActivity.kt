@@ -475,7 +475,15 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   for(dayNumber in 1..dayCount) add(displayedMonth.atDay(dayNumber))
   while(size%7!=0) add(null)
  }
+ val weekStart=selectedDate.minusDays((selectedDate.dayOfWeek.value-1).toLong())
+ val weekDates=(0..6).map { weekStart.plusDays(it.toLong()) }
+ val weekEnd=weekDates.last()
  val selectedItems=items.filter { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate()==selectedDate }.sortedBy { it.scheduledAt }
+ val weekItems=items.filter {
+  val date=Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate()
+  !date.isBefore(weekStart) && !date.isAfter(weekEnd)
+ }.sortedBy { it.scheduledAt }
+ val displayedItems=if(calendarMode=="SEMANA") weekItems else selectedItems
  val monthItems=items.groupBy { Instant.ofEpochMilli(it.scheduledAt).atZone(zone).toLocalDate() }
  val weekdays=listOf("SEG","TER","QUA","QUI","SEX","SÁB","DOM")
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=14.dp, vertical=10.dp)) {
@@ -488,9 +496,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(12.dp)) {
-    val weekStart=selectedDate.minusDays((selectedDate.dayOfWeek.value-1).toLong())
-     val weekDates=(0..6).map { weekStart.plusDays(it.toLong()) }
-     val calendarTitle=when(calendarMode) {
+    val calendarTitle=when(calendarMode) {
       "DIA" -> selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() }
       "SEMANA" -> "Semana · "+weekStart.format(DateTimeFormatter.ofPattern("dd/MM"))+" – "+weekDates.last().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
       else -> displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year
@@ -554,8 +560,8 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
   Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
    Column {
-    Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=GoldBright,fontWeight=FontWeight.Bold)
-    Text("${selectedItems.count{!it.completed}} pendentes · ${selectedItems.count{it.completed}} concluídos",color=Gold,style=MaterialTheme.typography.labelSmall)
+    Text(if(calendarMode=="SEMANA") "Compromissos da semana" else selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=GoldBright,fontWeight=FontWeight.Bold)
+    Text("${displayedItems.count{!it.completed}} pendentes · ${displayedItems.count{it.completed}} concluídos"+if(calendarMode=="SEMANA") " na semana" else "",color=Gold,style=MaterialTheme.typography.labelSmall)
    }
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
   }
@@ -617,19 +623,20 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  if(selectedItems.isEmpty()) {
+  if(displayedItems.isEmpty()) {
    Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
-    Text("Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodyMedium)
+    Text(if(calendarMode=="SEMANA") "Nenhum compromisso nesta semana." else "Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodyMedium)
    }
   } else {
    LazyColumn(Modifier.weight(1f).padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-    items(selectedItems,key={it.id}) { item->
+    items(displayedItems,key={it.id}) { item->
      Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(2.dp)) {
-        Text(item.title,color=GoldBright,fontWeight=FontWeight.SemiBold)
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
+        if(calendarMode=="SEMANA") Text(itemTime.format(DateTimeFormatter.ofPattern("EEEE, dd/MM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() },color=Gold,style=MaterialTheme.typography.labelSmall)
+        Text(item.title,color=GoldBright,fontWeight=FontWeight.SemiBold)
         val endTime=item.endAt?.let { Instant.ofEpochMilli(it).atZone(zone) }
         val timeLabel="%02d:%02d".format(itemTime.hour,itemTime.minute)+(endTime?.let { " – %02d:%02d".format(it.hour,it.minute) } ?: "")
         Text(timeLabel+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Ivory.copy(alpha=.78f))
