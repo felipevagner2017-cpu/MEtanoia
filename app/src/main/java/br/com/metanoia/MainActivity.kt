@@ -781,7 +781,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  }
  val runtimePermissionGranted = permissionRefresh >= 0 && LockScreenAgendaNotification.hasRuntimePermission(context)
  val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
- val canNotify = runtimePermissionGranted && notificationsEnabled && LockScreenAgendaNotification.canPost(context)
+ val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+ val dailyChannelId = "metanoia_daily_${prefs.dailySound().hashCode().toUInt().toString(16)}"
+ val eventChannelId = "metanoia_event_${prefs.eventSound().hashCode().toUInt().toString(16)}"
+ val reminderChannelsBlocked = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && listOf(dailyChannelId,eventChannelId).any {
+  notificationManager.getNotificationChannel(it)?.importance == android.app.NotificationManager.IMPORTANCE_NONE
+ }
+ val canNotify = runtimePermissionGranted && notificationsEnabled && LockScreenAgendaNotification.canPost(context) && !reminderChannelsBlocked
  val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
  val power = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
@@ -792,14 +798,21 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
     Text(if(canNotify) "NOTIFICAÇÕES ATIVAS" else "NOTIFICAÇÕES BLOQUEADAS",color=if(canNotify) GoldBright else Color(0xFFFF9A8B),fontWeight=FontWeight.Bold)
+    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+     val dailyState = notificationManager.getNotificationChannel(dailyChannelId)?.let { if(it.importance == android.app.NotificationManager.IMPORTANCE_NONE) "bloqueado" else "ativo" } ?: "aguardando primeiro envio"
+     val eventState = notificationManager.getNotificationChannel(eventChannelId)?.let { if(it.importance == android.app.NotificationManager.IMPORTANCE_NONE) "bloqueado" else "ativo" } ?: "aguardando primeiro envio"
+     Text("Canal diário: $dailyState · compromissos: $eventState",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
+    }
     Text(
      when {
       Build.VERSION.SDK_INT >= 33 && !runtimePermissionGranted ->
        "O Android 13 ou superior exige sua autorização. Sem POST_NOTIFICATIONS, o aplicativo não pode mostrar lembretes nem a agenda persistente na tela bloqueada."
       !notificationsEnabled ->
        "A permissão do aplicativo está bloqueada nas configurações do Android. Habilite as notificações do MEtanoia para receber os lembretes."
+      !canNotify ->
+       "Um dos canais de lembrete ou o canal da agenda está bloqueado no Android. Reative os canais do MEtanoia nas configurações do aplicativo."
       else ->
-       "Permissão do Android concedida. O MEtanoia pode exibir lembretes e manter o resumo da agenda; a tela bloqueada ainda respeita a privacidade definida no aparelho."
+       "Permissão do Android concedida e canais de lembrete habilitados. O MEtanoia pode exibir os avisos e manter o resumo da agenda; a tela bloqueada ainda respeita a privacidade definida no aparelho."
      },color=Ivory,style=MaterialTheme.typography.bodySmall
     )
     if(Build.VERSION.SDK_INT >= 33 && !runtimePermissionGranted) {

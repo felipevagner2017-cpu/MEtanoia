@@ -132,7 +132,15 @@ class ReminderFlowInstrumentedTest {
                 "O receiver deve entregar o lembrete de $lead minutos sem aguardar o horário real.",
                 await { notifications.activeNotifications.any { it.id == notificationId } }
             )
+            val posted = notifications.activeNotifications.first { it.id == notificationId }
+            val channel = notifications.getNotificationChannel(posted.notification.channelId)
+            assertEquals("O canal do compromisso deve permitir exibição pública na tela bloqueada.", android.app.Notification.VISIBILITY_PUBLIC, channel?.lockscreenVisibility)
         }
+        scheduler.cancel(item)
+        assertTrue(
+            "Editar, concluir ou excluir o compromisso deve remover os avisos antigos já publicados.",
+            await { notifications.activeNotifications.none { it.id in listOf((item.id * 10L).toInt(), (item.id * 10L + 1L).toInt(), (item.id * 10L + 2L).toInt()) } }
+        )
     }
 
     @Test

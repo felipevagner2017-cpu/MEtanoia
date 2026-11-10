@@ -97,14 +97,27 @@ for name in [
     "08-revisoes",
     "09-alertas",
 ]:
-    pull_test_capture(name)
+    if name == "09-alertas":
+        # Hide the software keyboard so the real settings content is visible.
+        adb("shell", "input", "keyevent", "4", check=False)
+        time.sleep(0.5)
+        capture(name)
+    else:
+        pull_test_capture(name)
 
-# Capture the actual Android keyguard after the app refreshes its persistent agenda notification.
-# The emulator may hide notification details if its own lock-screen privacy policy says so.
+# Set a disposable PIN on the CI emulator so waking the device shows a real keyguard.
+# This affects only the temporary GitHub Actions emulator, never the user's phone.
+pin_setup = adb("shell", "locksettings", "set-pin", "2468", check=False)
+print("Configuração do PIN de teste:", pin_setup.strip(), flush=True)
 adb("shell", "input", "keyevent", "223", check=False)
 time.sleep(1)
 adb("shell", "input", "keyevent", "224", check=False)
-time.sleep(2)
+time.sleep(3)
+keyguard = adb("shell", "dumpsys", "window", "policy")
+keyguard_lines = [line.strip() for line in keyguard.splitlines() if "mShowingLockscreen" in line or "mKeyguardShowing" in line or "mInputRestricted" in line]
+print("Estado do keyguard:", " | ".join(keyguard_lines), flush=True)
+if not any("mShowingLockscreen=true" in line or "mKeyguardShowing=true" in line for line in keyguard_lines):
+    raise RuntimeError("O emulador não exibiu o keyguard; a captura não será rotulada como tela bloqueada.")
 capture("10-tela-bloqueada-agenda")
 print("Captura real da tela bloqueada:", os.path.join(OUT, "10-tela-bloqueada-agenda.png"), flush=True)
 
