@@ -648,57 +648,95 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
  }
  if (editingItem != null) {
-  EditAgendaDialog(item=editingItem!!, onDismiss={editingItem=null}, onSave={updated->vm.updateAgenda(updated);editingItem=null})
+  EditAgendaDialog(item=editingItem!!,onDismiss={editingItem=null},onSave={updated,applyToSeries->vm.updateAgenda(updated,applyToSeries);editingItem=null},onDeleteSeries={vm.deleteSeries(editingItem!!);editingItem=null})
  }
 }
 
-@Composable private fun EditAgendaDialog(item:AgendaItem,onDismiss:()->Unit,onSave:(AgendaItem)->Unit) {
+@Composable private fun EditAgendaDialog(
+ item:AgendaItem,
+ onDismiss:()->Unit,
+ onSave:(AgendaItem,Boolean)->Unit,
+ onDeleteSeries:()->Unit
+) {
  val context=LocalContext.current
  val zone=remember { ZoneId.systemDefault() }
+ val startDateTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
+ val endDateTime=item.endAt?.let { Instant.ofEpochMilli(it).atZone(zone) }
  var title by remember(item.id) { mutableStateOf(item.title) }
+ var description by remember(item.id) { mutableStateOf(item.description) }
+ var location by remember(item.id) { mutableStateOf(item.location) }
  var kind by remember(item.id) { mutableStateOf(item.kind) }
  var dimension by remember(item.id) { mutableStateOf(item.dimension) }
- var date by remember(item.id) { mutableStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).toLocalDate()) }
- var hour by remember(item.id) { mutableIntStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).hour) }
- var minute by remember(item.id) { mutableIntStateOf(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).minute) }
- var reminder by remember(item.id) { mutableStateOf(item.reminderAt != null) }
+ var date by remember(item.id) { mutableStateOf(startDateTime.toLocalDate()) }
+ var hour by remember(item.id) { mutableIntStateOf(startDateTime.hour) }
+ var minute by remember(item.id) { mutableIntStateOf(startDateTime.minute) }
+ var endTimeEnabled by remember(item.id) { mutableStateOf(endDateTime!=null) }
+ var endHour by remember(item.id) { mutableIntStateOf(endDateTime?.hour ?: (startDateTime.hour+1)%24) }
+ var endMinute by remember(item.id) { mutableIntStateOf(endDateTime?.minute ?: startDateTime.minute) }
+ var reminderOffsets by remember(item.id) { mutableStateOf(item.reminderOffsets.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()) }
+ var applyToSeries by remember(item.id) { mutableStateOf(false) }
  var dimensionMenu by remember { mutableStateOf(false) }
+ val endInvalid=endTimeEnabled && (endHour*60+endMinute<=hour*60+minute)
  AlertDialog(
   onDismissRequest=onDismiss,
-  title={Text("Editar registro",color=GoldBright,fontWeight=FontWeight.Bold)},
+  title={Text("Editar compromisso",color=GoldBright,fontWeight=FontWeight.Bold)},
   text={
    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
     OutlinedTextField(value=title,onValueChange={title=it},label={Text("Título")},singleLine=true)
+    OutlinedTextField(value=description,onValueChange={description=it},label={Text("Descrição")},minLines=2,maxLines=3)
+    OutlinedTextField(value=location,onValueChange={location=it},label={Text("Local (opcional)")},singleLine=true)
     Text("Tipo",color=GoldBright,fontWeight=FontWeight.SemiBold)
     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-     AgendaKind.entries.forEach { v->FilterChip(selected=kind==v,onClick={kind=v},label={Text(kindLabel(v))}) }
+     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value},label={Text(kindLabel(value))}) }
     }
     Box {
      OutlinedButton(onClick={dimensionMenu=true}) { Text(dimensionLabel(dimension),color=Navy) }
      DropdownMenu(expanded=dimensionMenu,onDismissRequest={dimensionMenu=false}) {
-      LifeDimension.entries.forEach { v->DropdownMenuItem(text={Text(dimensionLabel(v))},onClick={dimension=v;dimensionMenu=false}) }
+      LifeDimension.entries.forEach { value->DropdownMenuItem(text={Text(dimensionLabel(value))},onClick={dimension=value;dimensionMenu=false}) }
      }
     }
     OutlinedButton(onClick={
      DatePickerDialog(context,{_,y,m,d->date=LocalDate.of(y,m+1,d)},date.year,date.monthValue-1,date.dayOfMonth).show()
     }) { Text("Data: "+date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),color=Navy) }
-    OutlinedButton(onClick={
-     TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()
-    }) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
-    Row(verticalAlignment=Alignment.CenterVertically) {
-     Checkbox(checked=reminder,onCheckedChange={reminder=it})
-     Text("Lembretes 2 horas, 1 hora e 30 minutos antes",color=Navy)
+    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+     TextButton(onClick={TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()}) { Text("Início: %02d:%02d".format(hour,minute),color=Navy) }
+     Row(verticalAlignment=Alignment.CenterVertically) {
+      Checkbox(checked=endTimeEnabled,onCheckedChange={endTimeEnabled=it})
+      Text("Definir término",color=Navy,style=MaterialTheme.typography.labelSmall)
+     }
+    }
+    if(endTimeEnabled) TextButton(onClick={TimePickerDialog(context,{_,h,m->endHour=h;endMinute=m},endHour,endMinute,true).show()}) { Text("Término: %02d:%02d".format(endHour,endMinute),color=Navy) }
+    if(endInvalid) Text("O término deve ser posterior ao início.",color=Color(0xFFFF9A8B),style=MaterialTheme.typography.labelSmall)
+    Text("Lembretes",color=GoldBright,fontWeight=FontWeight.SemiBold)
+    Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+     listOf(120 to "2 horas",60 to "1 hora",30 to "30 min").forEach { (minutes,label)->
+      FilterChip(selected=minutes in reminderOffsets,onClick={reminderOffsets=if(minutes in reminderOffsets) reminderOffsets-minutes else reminderOffsets+minutes},label={Text(label)})
+     }
+    }
+    if(item.seriesId!=null) {
+     Row(verticalAlignment=Alignment.CenterVertically) {
+      Checkbox(checked=applyToSeries,onCheckedChange={applyToSeries=it})
+      Text("Aplicar alterações a toda a série",color=Navy,style=MaterialTheme.typography.bodySmall)
+     }
+     Text("Desmarcado: altera somente esta ocorrência. Marcado: atualiza as ocorrências vinculadas.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.labelSmall)
     }
    }
   },
   confirmButton={
-   TextButton(enabled=title.isNotBlank(),onClick={
+   TextButton(enabled=title.isNotBlank()&&!endInvalid,onClick={
     val scheduled=date.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
-    val reminderAt=if(reminder) scheduled-30*60*1000L else null
-    onSave(item.copy(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,reminderAt=reminderAt))
+    val endAt=if(endTimeEnabled) date.atTime(endHour,endMinute).atZone(zone).toInstant().toEpochMilli() else null
+    val offsetsCsv=reminderOffsets.filter { it in listOf(120,60,30) }.sortedDescending().joinToString(",")
+    val reminderAt=reminderOffsets.maxOrNull()?.let { scheduled-it*60_000L }
+    onSave(item.copy(title=title.trim(),description=description.trim(),location=location.trim(),kind=kind,dimension=dimension,scheduledAt=scheduled,endAt=endAt,reminderAt=reminderAt,reminderOffsets=offsetsCsv),applyToSeries)
    }) { Text("Salvar alterações",color=Gold) }
   },
-  dismissButton={TextButton(onClick=onDismiss) { Text("Cancelar",color = Ivory.copy(alpha = .78f)) }}
+  dismissButton={
+   Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+    if(item.seriesId!=null) TextButton(onClick=onDeleteSeries) { Text("Excluir série",color=Color(0xFFFF9A8B)) }
+    TextButton(onClick=onDismiss) { Text("Cancelar",color=Ivory.copy(alpha=.78f)) }
+   }
+  }
  )
 }
 
