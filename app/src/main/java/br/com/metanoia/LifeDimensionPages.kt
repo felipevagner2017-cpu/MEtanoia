@@ -27,29 +27,86 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private data class DailyWord(
+    val title: String,
+    val reference: String,
+    val context: String,
+    val reflection: String,
+    val challenge: String
+)
+
+private val dailyWords = listOf(
+    DailyWord(
+        "Renovar a mente", "Romanos 12:2",
+        "Paulo apresenta a transformação da vida como resultado de uma mente renovada, em contraste com a conformidade aos padrões deste século.",
+        "Observe quais ideias têm orientado suas decisões. A renovação bíblica não é pensamento positivo: é permitir que a verdade de Deus reoriente escolhas concretas.",
+        "Identifique um pensamento que tem conduzido uma atitude sua. Confronte-o com o ensino de Romanos 12:2 e escolha uma resposta prática coerente com a vontade de Deus."
+    ),
+    DailyWord(
+        "Guardar o coração", "Provérbios 4:23",
+        "No contexto dos conselhos de sabedoria, guardar o coração significa vigiar as fontes interiores que orientam palavras, desejos e caminhos.",
+        "Preste atenção ao que tem alimentado sua atenção e influenciado suas reações. Sabedoria também envolve escolher o que merece entrar e permanecer.",
+        "Afaste hoje uma influência que alimenta uma reação destrutiva e substitua-a por uma prática que favoreça sabedoria e domínio próprio."
+    ),
+    DailyWord(
+        "Praticar a Palavra", "Tiago 1:22–25",
+        "Tiago adverte contra ouvir a mensagem sem colocá-la em prática. A escuta verdadeira aparece na obediência perseverante.",
+        "Não transforme conhecimento bíblico em acúmulo de informação. Pergunte qual atitude precisa mudar à luz do texto que você já compreendeu.",
+        "Escolha um ensinamento bíblico que você conhece e transforme-o em uma atitude observável ainda hoje."
+    ),
+    DailyWord(
+        "Perseverar no bem", "Gálatas 6:9–10",
+        "Paulo encoraja a comunidade a não se cansar de fazer o bem, relacionando perseverança com a oportunidade de servir ao próximo.",
+        "Nem todo fruto aparece imediatamente. Fidelidade também é continuar fazendo o que é correto sem depender de reconhecimento instantâneo.",
+        "Faça uma ação de bem que você vem adiando. Defina quando irá realizá-la e cumpra sem esperar aplausos."
+    ),
+    DailyWord(
+        "Edificar com palavras", "Efésios 4:29",
+        "No ensino sobre a nova vida em Cristo, Paulo orienta que a fala deixe de corromper e passe a contribuir para a edificação de quem ouve.",
+        "Antes de responder, considere se suas palavras são verdadeiras, necessárias e adequadas à situação. Firmeza não exige agressividade.",
+        "Em uma conversa de hoje, substitua uma resposta impulsiva por palavras honestas, respeitosas e construtivas."
+    ),
+    DailyWord(
+        "Cultivar bons pensamentos", "Filipenses 4:8–9",
+        "Paulo orienta a comunidade a considerar o que é verdadeiro, justo, puro e digno de louvor, e a praticar o que aprendeu.",
+        "A atenção molda a disposição e as escolhas. Examine o conteúdo que ocupa sua mente e aproxime pensamento e prática dos valores do evangelho.",
+        "Reserve alguns minutos para identificar um pensamento recorrente. Pergunte se ele é verdadeiro e digno; depois escolha uma ação coerente com essa avaliação."
+    ),
+    DailyWord(
+        "Entregar o caminho", "Salmo 37:3–7",
+        "O salmo chama à confiança no Senhor e à prática do bem em meio à aparente prosperidade da injustiça. É um convite à fidelidade paciente.",
+        "Confiar em Deus não significa abandonar responsabilidades. Significa agir com integridade e não permitir que a ansiedade determine seus caminhos.",
+        "Defina uma responsabilidade que está ao seu alcance, execute o próximo passo possível e entregue a Deus aquilo que não está sob seu controle."
+    )
+)
+
 @Composable
-internal fun DashboardPage(
-    agenda: List<AgendaItem>,
+internal fun DailyJourneyPage(
     journal: List<JournalEntry>,
-    analyses: List<DailyAnalysisEntry>,
-    onNavigate: (String) -> Unit
+    analyses: List<DailyAnalysisEntry>
 ) {
-    val zone = ZoneId.systemDefault()
-    val today = LocalDate.now(zone)
-    val start = today.atStartOfDay(zone).toInstant().toEpochMilli()
-    val end = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-    val todayItems = agenda.filter { it.scheduledAt in start..end }.sortedBy { it.scheduledAt }
-    val pending = todayItems.count { !it.completed }
-    val completed = todayItems.count { it.completed }
+    val today = LocalDate.now()
+    val word = dailyWords[(today.dayOfYear - 1) % dailyWords.size]
     val todayAnalysis = analyses.firstOrNull { it.dayKey == today.toString() }
+    val personalizedReference = todayAnalysis?.scriptureReference?.takeIf { it.isNotBlank() }
+    val reference = personalizedReference ?: word.reference
+    val context = if (personalizedReference != null) todayAnalysis?.scriptureContext?.takeIf { it.isNotBlank() } ?: word.context else word.context
+    val challenge = todayAnalysis?.nextStep?.takeIf { it.isNotBlank() } ?: word.challenge
     val dateLabel = today.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM", Locale("pt", "BR")))
         .replaceFirstChar { it.uppercase(Locale("pt", "BR")) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 18.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(top = 18.dp, bottom = 30.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("Jornada diária", color = GoldBright, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(dateLabel, color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodyMedium)
+                Text("Uma mente renovada. Uma vida intencional.", color = GoldChampagne, style = MaterialTheme.typography.labelMedium)
+            }
+        }
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -59,99 +116,51 @@ internal fun DashboardPage(
                 Column(
                     Modifier.fillMaxWidth()
                         .background(Brush.linearGradient(listOf(VioletPrimary, DeepViolet, VioletSecondary)))
-                        .padding(22.dp),
-                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("METANOIA  /  PAINEL PESSOAL", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
-                    Text("Mensagens e desafios", color = GoldBright, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(dateLabel, color = GoldBright, style = MaterialTheme.typography.titleMedium)
-                    Text("Uma mente renovada. Uma vida intencional.", color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(Modifier.width(34.dp).height(3.dp).background(GoldChampagne, CircleShape))
-                        Text("ROMANOS 12:2", color = GoldChampagne, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                    }
+                    Text("PALAVRA DO DIA", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                    Text(word.title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(reference, color = Ivory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(context, color = Ivory.copy(alpha = .92f), style = MaterialTheme.typography.bodyMedium)
                 }
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SummaryMetricCard(Modifier.weight(1f), pending.toString(), "PENDENTES HOJE", GoldBright)
-                SummaryMetricCard(Modifier.weight(1f), completed.toString(), "CONCLUÍDOS HOJE", Color(0xFF9ED6B5))
-            }
-        }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("SUAS QUATRO DIMENSÕES", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
-                Text("Escolha onde deseja investir sua atenção.", color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DimensionAccessCard(Modifier.weight(1f), "01", "DEVOCIONAL", "Palavra, formação e vida com Deus.") { onNavigate("Devocional") }
-                DimensionAccessCard(Modifier.weight(1f), "02", "MATRIMÔNIO", "Presença, cuidado e parceria.") { onNavigate("Matrimônio") }
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DimensionAccessCard(Modifier.weight(1f), "03", "PROFISSIONAL", "Metas, projetos e realizações.") { onNavigate("Profissional") }
-                DimensionAccessCard(Modifier.weight(1f), "04", "COTIDIANO", "Agenda, hábitos e organização.") { onNavigate("Cotidiano") }
             }
         }
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = CardSurface),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = CardSurface)
             ) {
                 Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("LEITURA DO DIA", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    if (todayAnalysis != null) {
-                        Text(todayAnalysis.emotionalState, color = GoldBright, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(todayAnalysis.nextStep, color = Ivory.copy(alpha = .84f), style = MaterialTheme.typography.bodyMedium)
-                    } else {
-                        Text("Seu dia ainda está em construção.", color = GoldBright, style = MaterialTheme.typography.titleMedium)
-                        Text("Registre sua reflexão no Diário para reunir acontecimentos, sentimentos e próximos passos em uma visão integrada.", color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
-                    }
-                    Text("${journal.count { it.dayKey == today.toString() }} registro(s) feitos hoje", color = GoldBright, style = MaterialTheme.typography.labelSmall)
+                    Text("REFLEXÃO", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                    Text(word.reflection, color = Ivory, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text("AGENDA DE HOJE", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    Text(if (todayItems.isEmpty()) "Seu dia está livre de registros." else "$pending pendente(s) · $completed concluído(s)", color = Ivory.copy(alpha = .90f), style = MaterialTheme.typography.bodySmall)
-                }
-                TextButton(onClick = { onNavigate("Agenda") }) {
-                    Text("VER AGENDA  →", color = GoldBright, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        if (todayItems.isEmpty()) {
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
-                    Text("Adicione um compromisso para visualizar seus próximos horários aqui.", modifier = Modifier.padding(16.dp), color = Ivory.copy(alpha = .78f), style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-        items(todayItems.take(5), key = { "today-${it.id}" }) { item ->
             Card(
-                colors = CardDefaults.cardColors(containerColor = CardSurface),
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = VioletSurface)
             ) {
-                Row(Modifier.padding(horizontal = 15.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(Instant.ofEpochMilli(item.scheduledAt).atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")), color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                        Box(Modifier.padding(top = 5.dp).width(24.dp).height(2.dp).background(GoldChampagne, CircleShape))
+                Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("DESAFIO DE HOJE", color = GoldBright, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                    Text(challenge, color = Ivory, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+        if (todayAnalysis != null) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = CardSurface)
+                ) {
+                    Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("APLICAÇÃO A PARTIR DO SEU REGISTRO", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Text(todayAnalysis.attention, color = Ivory, style = MaterialTheme.typography.bodyMedium)
                     }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(item.title, color = Ivory, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-                        Text(if (item.completed) "Concluído" else "Previsto · ${dimensionName(item.dimension)}", color = Ivory.copy(alpha = .86f), style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (item.completed) Text("✓", color = Color(0xFF9ED6B5), fontWeight = FontWeight.Bold)
                 }
             }
         }
