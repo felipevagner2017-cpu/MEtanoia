@@ -243,6 +243,8 @@ jobs:
   publish-preview:
     if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/phase1-integrated-main') || github.ref == 'refs/heads/work/phase1-integrated-main'
     needs: [build, room-integration]
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Download tested Preview APK
