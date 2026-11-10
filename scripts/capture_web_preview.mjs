@@ -51,21 +51,22 @@ try {
   await openArea("Profissional", "professional");
   await openArea("Cotidiano", "cotidiano");
 
+  async function openCotidianoTool(name, section) {
+    if (!(await page.locator("#cotidiano").isVisible())) {
+      await tab("areas");
+      const card = page.locator('[data-word-slide="Cotidiano"]').first();
+      await card.scrollIntoViewIfNeeded();
+      await card.locator('[data-open-section="cotidiano"]').click();
+    }
+    await page.locator('#cotidiano [data-open-section="' + section + '"]').click();
+    await capture(name, section);
+  }
   for (const [name, section] of [
     ["habitos", "habits"],
     ["diario", "diary"],
     ["revisoes", "evolution"],
     ["alertas", "alerts"],
-  ]) {
-    await page.locator('#cotidiano [data-open-section="' + section + '"]').click().catch(async () => {
-      await tab("areas");
-      const card = page.locator('[data-word-slide="Cotidiano"]').first();
-      await card.scrollIntoViewIfNeeded();
-      await card.locator('[data-open-section="cotidiano"]').click();
-      await page.locator('#cotidiano [data-open-section="' + section + '"]').click();
-    });
-    await capture(name, section);
-  }
+  ]) await openCotidianoTool(name, section);
 
   await tab("agenda");
   await capture("agenda", "agenda");
