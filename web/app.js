@@ -393,7 +393,7 @@ function buildAiContext(){
  }
  records=records.slice(0,12).map(x=>({date:new Date(x.at).toLocaleDateString("pt-BR"),dimension:area(x.dimension),title:x.title||"",content:String(x.body||"").slice(0,1100),checkin:x.checkin||{}}));
  const now=today(),start=new Date();start.setDate(start.getDate()-30);const startKey=key(start);
- const agenda=db.items.filter(x=>(!allowed||allowed.includes(area(x.dimension)))&&(!x.date||x.date>=startKey)).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,20).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",kind:x.kind||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto",conclusoes:Object.entries(x.completions||{}).filter(([date])=>date>=startKey&&date<=now).map(([date,value])=>({date,concluido:!!value.done,observacao:String(value.note||"").slice(0,300)}))}));
+ const agenda=db.items.filter(x=>(!allowed||allowed.includes(area(x.dimension)))&&(fixed(x)||!x.date||x.date>=startKey||Object.keys(x.completions||{}).some(date=>date>=startKey&&date<=now))).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).slice(0,20).map(x=>({date:x.date||"",time:x.time||"",title:x.title||"",kind:x.kind||"",dimension:area(x.dimension),status:x.done?"concluído":"previsto",conclusoes:Object.entries(x.completions||{}).filter(([date])=>date>=startKey&&date<=now).map(([date,value])=>({date,concluido:!!value.done,observacao:String(value.note||"").slice(0,300)}))}));
  const reviews=db.reviews.filter(x=>x.at>=start.getTime()).slice(-6).map(x=>({date:new Date(x.at).toLocaleDateString("pt-BR"),reflection:String(x.body||"").slice(0,700)}));
  return JSON.stringify({registros:records,agenda,habitosECompromissos:agenda,revisoes:reviews,periodo:"últimos 30 dias"},null,2).slice(0,12000);
 }
