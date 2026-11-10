@@ -84,12 +84,13 @@ time.sleep(5)
 # The Compose instrumented test captures each page while it is displayed.
 # This avoids relying on UIAutomator's incomplete view of Compose semantics.
 for name in [
-    "01-dashboard",
+    "01-jornada-diaria",
     "02-devocao",
     "03-matrimonio",
     "04-profissional",
     "05-cotidiano",
     "06-agenda",
+    "07-diario",
     "08-revisoes",
     "09-alertas",
 ]:
