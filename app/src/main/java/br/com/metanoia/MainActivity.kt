@@ -767,7 +767,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val lifecycleOwner = LocalLifecycleOwner.current
  DisposableEffect(lifecycleOwner) {
   val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-   if(event == Lifecycle.Event.ON_RESUME) permissionRefresh++
+   if(event == Lifecycle.Event.ON_RESUME) {
+    permissionRefresh++
+    LockScreenAgendaNotification.refresh(context, MetanoiaDatabase.get(context))
+   }
   }
   lifecycleOwner.lifecycle.addObserver(observer)
   onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
