@@ -43,6 +43,7 @@ try {
 
   async function capture(name, section) {
     await page.waitForSelector("#" + section + ":not(.hidden)", { timeout: 15000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(250);
     await page.screenshot({ path: path.join(outDir, name + ".png"), fullPage: true });
     console.log("CAPTURED " + name + " -> #" + section);
