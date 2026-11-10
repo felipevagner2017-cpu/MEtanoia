@@ -627,10 +627,15 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
-       Column(Modifier.weight(1f)) {
+       Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(2.dp)) {
         Text(item.title,color=GoldBright,fontWeight=FontWeight.SemiBold)
         val itemTime=Instant.ofEpochMilli(item.scheduledAt).atZone(zone)
-        Text("%02d:%02d".format(itemTime.hour,itemTime.minute)+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
+        val endTime=item.endAt?.let { Instant.ofEpochMilli(it).atZone(zone) }
+        val timeLabel="%02d:%02d".format(itemTime.hour,itemTime.minute)+(endTime?.let { " – %02d:%02d".format(it.hour,it.minute) } ?: "")
+        Text(timeLabel+" · "+kindLabel(item.kind)+" · "+dimensionLabel(item.dimension),style=MaterialTheme.typography.labelSmall,color=Ivory.copy(alpha=.78f))
+        if(item.description.isNotBlank()) Text(item.description,color=Ivory.copy(alpha=.88f),style=MaterialTheme.typography.bodySmall)
+        if(item.location.isNotBlank()) Text("Local: "+item.location,color=Ivory.copy(alpha=.68f),style=MaterialTheme.typography.labelSmall)
+        if(item.seriesId!=null) Text("Série recorrente",color=Gold,style=MaterialTheme.typography.labelSmall)
        }
        Column(horizontalAlignment=Alignment.End) {
         TextButton(onClick={editingItem=item}) { Text("Editar",color=Gold) }
