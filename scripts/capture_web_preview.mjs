@@ -15,6 +15,7 @@ try {
     hasTouch: true,
   });
   const page = await context.newPage();
+  await page.addInitScript(() => { localStorage.clear(); sessionStorage.clear(); });
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
