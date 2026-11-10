@@ -152,19 +152,19 @@ try {
   await page.waitForSelector("#word:not(.hidden)", { timeout: 15000 });
   await page.screenshot({ path: path.join(outDir, "offline-jornada.png"), fullPage: true });
   await context.setOffline(false);
-  fs.writeFileSync(path.join(outDir, "inspection.json"), JSON.stringify({
-    url: baseUrl,
-    viewport: "390x844",
-    screenshots: fs.readdirSync(outDir).filter(x => x.endsWith(".png")),
-    pwa,
-    pageErrors: errors,
-  }, null, 2));
-  if (errors.length) throw new Error("Browser runtime errors: " + errors.join(" | "));
-
   const desktop = await browser.newPage({ viewport: { width: 1365, height: 900 } });
   desktop.on("pageerror", error => errors.push(error.message));
   await desktop.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
   await desktop.screenshot({ path: path.join(outDir, "desktop-jornada.png"), fullPage: true });
+  if (errors.length) throw new Error("Browser runtime errors: " + errors.join(" | "));
+  fs.writeFileSync(path.join(outDir, "inspection.json"), JSON.stringify({
+    url: baseUrl,
+    mobileViewport: "390x844",
+    desktopViewport: "1365x900",
+    screenshots: fs.readdirSync(outDir).filter(x => x.endsWith(".png")),
+    pwa,
+    pageErrors: errors,
+  }, null, 2));
   console.log("LIVE PREVIEW BROWSER INSPECTION PASSED: " + baseUrl);
 } finally {
   await browser.close();
