@@ -26,7 +26,9 @@ class LockScreenAgendaRefreshReceiver : BroadcastReceiver() {
             try {
                 val app = context.applicationContext
                 LockScreenWallpaperWorker.schedule(app)
-                LockScreenAgendaWallpaper.refreshNow(app, MetanoiaDatabase.get(app))
+                val db = MetanoiaDatabase.get(app)
+                LockScreenAgendaWallpaper.refreshNow(app, db)
+                LockScreenAgendaNotification.refreshNow(app, db)
             } catch (_: Exception) {
                 // WorkManager remains the periodic fallback if this immediate refresh is interrupted.
             } finally {
