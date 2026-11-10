@@ -164,6 +164,8 @@ try {
   if (!(await page.evaluate(() => Boolean(navigator.serviceWorker?.controller)))) {
     throw new Error("The live Service Worker did not take control of the Preview page.");
   }
+  await tab("word");
+  await capture("offline-jornada-online-check", "word");
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector("#word:not(.hidden)", { timeout: 15000 });
