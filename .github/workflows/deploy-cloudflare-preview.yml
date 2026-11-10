@@ -40,3 +40,28 @@ jobs:
           path: artifacts/web-preview/
           if-no-files-found: error
           retention-days: 14
+      - name: Build a source bundle for both isolated platform branches
+        run: |
+          mkdir -p artifacts/source/web artifacts/source/android
+          git fetch origin deploy/cloudflare-metanoia-web work/phase1-integrated-main
+          git archive origin/deploy/cloudflare-metanoia-web | tar -x -C artifacts/source/web
+          git archive origin/work/phase1-integrated-main | tar -x -C artifacts/source/android
+          WEB_SHA="$(git rev-parse origin/deploy/cloudflare-metanoia-web)"
+          ANDROID_SHA="$(git rev-parse origin/work/phase1-integrated-main)"
+          cat > artifacts/source/README.txt <<EOF
+          MEtanoia source snapshot
+          Web/PWA branch: deploy/cloudflare-metanoia-web
+          Web/PWA commit: $WEB_SHA
+          Android branch: work/phase1-integrated-main
+          Android commit: $ANDROID_SHA
+          Each folder is a complete source snapshot of its isolated branch.
+          No production branch, production database, signing key or secrets are included.
+          EOF
+          cd artifacts && zip -qr MEtanoia-complete-source.zip source
+      - name: Upload complete source bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-complete-source
+          path: artifacts/MEtanoia-complete-source.zip
+          if-no-files-found: error
+          retention-days: 14
