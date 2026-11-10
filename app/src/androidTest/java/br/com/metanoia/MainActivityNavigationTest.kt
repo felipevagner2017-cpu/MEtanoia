@@ -95,6 +95,7 @@ class MainActivityNavigationTest {
         assertPageVisible("Agenda", "Minha agenda")
         captureScreen("06-agenda")
 
+        clickNavigationControl("Áreas")
         clickNavigationControl("Cotidiano")
         clickNavigationControl("Diário")
         assertPageVisible("Diário", "Diário de hoje")
