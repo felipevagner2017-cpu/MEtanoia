@@ -75,6 +75,12 @@ try {
   }
   await tab("dashboard");
   await capture("00-dashboard-evolucao", "dashboard");
+  await page.locator("#dashOpenAi").click();
+  await page.waitForSelector("#intel:not(.hidden)");
+  if (!(await page.locator("#aiQuestion").inputValue()).includes("compare as quatro dimensões")) {
+    throw new Error("Dashboard AI analysis did not prepare a contextual prompt.");
+  }
+  await tab("dashboard");
   await tab("word");
   await capture("01-jornada-diaria", "word");
   await tab("areas");
@@ -158,6 +164,7 @@ try {
   if (!(await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Exercícios" }).innerText()).includes("100%")) {
     throw new Error("Thirty-day dashboard period did not include the persisted check-in.");
   }
+  await capture("dashboard-metricas-homologacao", "dashboard");
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("#dashboard:not(.hidden)").waitFor();
   if (!(await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Alimentação" }).innerText()).includes("100%")) {
