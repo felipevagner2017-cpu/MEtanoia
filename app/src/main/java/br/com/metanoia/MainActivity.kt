@@ -624,12 +624,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    }
   }
   if(displayedItems.isEmpty()) {
-   Box(Modifier.fillMaxWidth().weight(1f),contentAlignment=Alignment.Center) {
+   Box(Modifier.fillMaxWidth().padding(vertical=24.dp),contentAlignment=Alignment.Center) {
     Text(if(calendarMode=="SEMANA") "Nenhum compromisso nesta semana." else "Nenhum registro para este dia.\nEscolha outra data ou adicione um compromisso.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodyMedium)
    }
   } else {
-   LazyColumn(Modifier.weight(1f).padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-    items(displayedItems,key={it.id}) { item->
+   Column(Modifier.fillMaxWidth().padding(top=8.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+    displayedItems.forEach { item->
      Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
       Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
        Checkbox(checked=item.completed,onCheckedChange={vm.toggle(item)})
