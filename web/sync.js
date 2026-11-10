@@ -159,7 +159,7 @@ async function syncOnce(){
   const localDirty=!!localRecord&&(!!queued||!!shadow&&localRecord.plain!==shadow.plain);
   if(localDirty){
    let candidateRecord=localRecord;
-   if(queued&&Number(row.revision||0)>Number(queued.operation.baseRevision||0)){
+   if((queued||shadow)&&Number(row.revision||0)>Number(queued?.operation.baseRevision??shadow?.revision??0)){
     const merged={...(decoded?.entity||{}),...localRecord.entity};
     applyLocal(kind,localRecord.id,merged);
     candidateRecord=collectLocal().get(row.record_id);
