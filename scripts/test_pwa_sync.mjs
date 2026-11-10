@@ -46,13 +46,13 @@ function createIndexedDB() {
                 const req = { onsuccess: null, onerror: null };
                 pending++;
                 setTimeout(() => { req.result = [...map.values()].map(x => structuredClone(x)); req.onsuccess?.(); pending--; scheduleComplete(); }, 0);
-                return req;,
+                return req;
+              },
               delete(key) {
                 const req = { onsuccess: null, onerror: null };
                 pending++;
                 setTimeout(() => { map.delete(key); req.onsuccess?.(); pending--; scheduleComplete(); }, 0);
                 return req;
-              }
               }
             });
             return tx;
