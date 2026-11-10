@@ -68,7 +68,63 @@ try {
     ["alertas", "alerts"],
   ]) await openCotidianoTool(name, section);
 
+  // Functional UI smoke tests in a disposable browser profile.
+  await openCotidianoTool("habitos", "habits");
+  const habitTitle = "CI smoke habit " + Date.now();
+  await page.locator("#newHabit").click();
+  await page.locator("#eventTitle").fill(habitTitle);
+  await page.locator("#eventDescription").fill("Registro automatizado sem dados pessoais.");
+  if (await page.locator("#scheduleMode").inputValue() !== "daily") {
+    throw new Error("New habits are not defaulting to daily recurrence.");
+  }
+  await page.locator("#edit button.btn.gold").click();
+  await page.locator("#habitsList").getByText(habitTitle).waitFor();
+  await page.locator('#habitsList [data-answer]').first().click();
+  await page.locator("#done").click();
+  if (!(await page.locator("#habitsList").innerText()).includes("100%")) {
+    throw new Error("Habit completion did not update its seven-day consistency.");
+  }
+  await page.reload({ waitUntil: "networkidle" });
+  await openCotidianoTool("habitos", "habits");
+  const persistedHabit = page.locator("#habitsList").getByText(habitTitle);
+  await persistedHabit.waitFor();
+  if (!(await page.locator("#habitsList").innerText()).includes("100%")) {
+    throw new Error("Habit completion history did not persist after reload.");
+  }
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator('#habitsList [data-del]').first().click();
+  await persistedHabit.waitFor({ state: "detached" });
+
   await tab("agenda");
+  const eventTitle = "CI smoke event " + Date.now();
+  await page.locator("#addCommitment").click();
+  await page.locator("#eventTitle").fill(eventTitle);
+  await page.locator("#eventDescription").fill("Descrição automatizada do compromisso.");
+  await page.locator("#eventLocation").fill("Local de homologação");
+  await page.locator('input[name="time"]').fill("10:00");
+  await page.locator('input[name="endTime"]').fill("11:00");
+  await page.locator("#edit button.btn.gold").click();
+  let eventCard = page.locator("#agendaList .agenda-event").filter({ hasText: eventTitle });
+  await eventCard.waitFor();
+  await page.reload({ waitUntil: "networkidle" });
+  await tab("agenda");
+  eventCard = page.locator("#agendaList .agenda-event").filter({ hasText: eventTitle });
+  await eventCard.waitFor();
+  const eventText = await eventCard.innerText();
+  for (const expected of ["10:00 – 11:00", "Descrição automatizada do compromisso.", "Local: Local de homologação"]) {
+    if (!eventText.includes(expected)) throw new Error("Agenda field did not persist: " + expected);
+  }
+  await eventCard.locator("[data-edit]").click();
+  await page.locator("#eventTitle").fill(eventTitle + " editado");
+  await page.locator("#edit button.btn.gold").click();
+  await page.locator("#agendaList").getByText(eventTitle + " editado").waitFor();
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator("#agendaList .agenda-event").filter({ hasText: eventTitle + " editado" }).locator("[data-del]").click();
+  await page.reload({ waitUntil: "networkidle" });
+  await tab("agenda");
+  if ((await page.locator("#agendaList").innerText()).includes(eventTitle)) {
+    throw new Error("Agenda deletion did not persist after reload.");
+  }
   await capture("agenda", "agenda");
   await page.waitForFunction(async () => "serviceWorker" in navigator && Boolean(await navigator.serviceWorker.getRegistration()), null, { timeout: 15000 }).catch(() => {});
   const pwa = await page.evaluate(async () => ({
