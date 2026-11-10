@@ -134,6 +134,27 @@ class ReminderFlowInstrumentedTest {
     }
 
     @Test
+    fun receiverHonorsOnlyTheReminderOffsetsSelectedForEachEvent() {
+        val item = insertFutureEvent().copy(reminderOffsets = "60")
+        kotlinx.coroutines.runBlocking { dao.update(item) }
+        listOf(120, 60, 30).forEach { lead ->
+            context.sendBroadcast(
+                Intent(context, ReminderReceiver::class.java)
+                    .putExtra(ReminderReceiver.EXTRA_ID, item.id)
+                    .putExtra(ReminderReceiver.EXTRA_LEAD_MINUTES, lead)
+            )
+        }
+        val disabledIds = listOf((item.id * 10L).toInt(), (item.id * 10L + 2L).toInt())
+        assertTrue(
+            "Somente o lembrete de 60 minutos foi selecionado; os demais não devem ser publicados.",
+            await {
+                notifications.activeNotifications.any { it.id == (item.id * 10L + 1L).toInt() } &&
+                    notifications.activeNotifications.none { it.id in disabledIds }
+            }
+        )
+    }
+
+    @Test
     fun receiverDoesNotPublishWhenAndroidNotificationPermissionIsRevoked() {
         val item = insertFutureEvent()
         try {
