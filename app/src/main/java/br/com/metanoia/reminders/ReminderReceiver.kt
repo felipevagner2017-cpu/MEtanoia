@@ -60,6 +60,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
                 showNotification(context, category, notificationId, title, message, sound)
                 if (daily) ReminderScheduler(context).scheduleNextDailyReminder(hour)
+                br.com.metanoia.wallpaper.LockScreenAgendaNotification.refresh(context, MetanoiaDatabase.get(context))
             } finally { pending.finish() }
         }
     }
