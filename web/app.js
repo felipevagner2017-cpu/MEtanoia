@@ -479,5 +479,5 @@ $("jd").onchange=renderJournalPrompts;$("confessionRun").onclick=runConfession;$
 $("saveR").onclick=()=>{const body=$("rb").value.trim();if(!body)return alert("Escreva sua revisão.");db.reviews.push({id:uid(),body,at:Date.now()});save();$("rb").value="";renderEvolution()};$("enableReminders").onclick=enableReminders;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("install").hidden=false});$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
 if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});await registration.update();}catch(error){console.warn("Não foi possível verificar atualização do MEtanoia",error);}});
-$("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});renderDailyJourney();renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();
+$("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});renderDailyJourney();renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();show("word");
 })();
