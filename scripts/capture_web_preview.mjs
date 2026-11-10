@@ -33,8 +33,8 @@ try {
   });
   console.log("PREVIEW_INITIAL_DIAGNOSTICS=" + JSON.stringify(initialDiagnostics));
   await page.screenshot({ path: path.join(outDir, "00-initial-diagnostics.png"), fullPage: true });
-  if (!initialDiagnostics.bodyText.includes("MEtonoia")) {
-    throw new Error("MEtonoia brand text is missing from the live Preview: " + JSON.stringify(initialDiagnostics));
+  if (!initialDiagnostics.bodyText.includes("MEtanoia")) {
+    throw new Error("MEtanoia brand text is missing from the live Preview: " + JSON.stringify(initialDiagnostics));
   }
   if (initialDiagnostics.wordDisplay === "none" || initialDiagnostics.wordVisibility === "hidden") {
     throw new Error("Jornada diária is hidden on the live Preview: " + JSON.stringify(initialDiagnostics));
