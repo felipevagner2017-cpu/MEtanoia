@@ -96,6 +96,12 @@ try {
   await persistedHabit.waitFor({ state: "detached" });
 
   await tab("agenda");
+  await page.locator('[data-agenda-view="week"]').click();
+  if (await page.locator("#calendarGrid .calendar-day").count() !== 7) throw new Error("Week view did not render exactly seven days.");
+  await page.locator('[data-agenda-view="day"]').click();
+  if (await page.locator("#calendarGrid").isVisible()) throw new Error("Day view did not hide the month/week grid.");
+  await page.locator('[data-agenda-view="month"]').click();
+  if (await page.locator("#calendarGrid .calendar-day").count() < 28) throw new Error("Month view did not render a full calendar grid.");
   const eventTitle = "CI smoke event " + Date.now();
   await page.locator("#addCommitment").click();
   await page.locator("#eventTitle").fill(eventTitle);
