@@ -5,8 +5,8 @@ import path from "node:path";
 
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "69cf119d00a74c4fe5cd6960d2d9e5f9";
 const token = process.env.CLOUDFLARE_API_TOKEN || "";
-const databaseId = "1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0";
-const databaseName = "metanoia";
+const databaseId = process.env.METANOIA_D1_DATABASE_ID || "08740f17-371b-43b9-aa7f-518337a91b22";
+const databaseName = process.env.METANOIA_D1_DATABASE_NAME || "metanoia-preview";
 const migrationFiles = fs.readdirSync(path.join(process.cwd(), "migrations"))
   .filter((name) => /^\d+_.+\.sql$/.test(name)).sort();
 const checks = [];
