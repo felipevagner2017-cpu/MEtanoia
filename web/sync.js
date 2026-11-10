@@ -150,15 +150,23 @@ async function syncOnce(){
  for(const row of remoteRows){
   const kind=kindFromRecord(row);if(!kind)continue;
   const decoded=await decryptRemote(row);
-  const localRecord=local.get(row.record_id),shadow=shadows.get(row.record_id);
+  const localRecord=local.get(row.record_id),shadow=shadows.get(row.record_id),queued=outboxByRecord.get(row.record_id);
   if(deletionIds.has(row.record_id)){
    const queued=deletionQueue.find(x=>x.recordId===row.record_id);
    if(!row.deleted_at)pending.push({kind:queued.kind,id:queued.id,deleted:true,baseRevision:Number(row.revision||0),dimension:queued.dimension});
    continue;
   }
-  const localDirty=!!localRecord&&(outboxByRecord.has(row.record_id)||!!shadow&&localRecord.plain!==shadow.plain);
+  const localDirty=!!localRecord&&(!!queued||!!shadow&&localRecord.plain!==shadow.plain);
   if(localDirty){
-   pending.push({kind,id:localRecord.id,record:localRecord,baseRevision:Number(row.revision||0)});
+   let candidateRecord=localRecord;
+   if(queued&&Number(row.revision||0)>Number(queued.operation.baseRevision||0)){
+    const merged={...(decoded?.entity||{}),...localRecord.entity};
+    applyLocal(kind,localRecord.id,merged);
+    candidateRecord=collectLocal().get(row.record_id);
+    const rebased=await encryptLocal({...candidateRecord,baseRevision:Number(row.revision||0)});
+    await putOutbox({key:queued.key,operation:rebased,plain:candidateRecord.plain,createdAt:Date.now(),rebasedFrom:queued.operation.operationId});
+   }
+   pending.push({kind,id:candidateRecord.id,record:candidateRecord,baseRevision:Number(row.revision||0)});
    continue;
   }
   if(row.deleted_at){
