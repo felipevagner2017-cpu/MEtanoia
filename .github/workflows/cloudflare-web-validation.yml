@@ -60,6 +60,8 @@ jobs:
           NODE
       - name: Test encrypted PWA synchronization across two devices
         run: node scripts/test_pwa_sync.mjs
+      - name: Test PWA agenda and habit recurrence
+        run: node scripts/test_pwa_agenda.mjs
       - name: Validate D1 migration SQL
         run: python3 scripts/validate_d1_migrations.py
       - name: Install Wrangler
