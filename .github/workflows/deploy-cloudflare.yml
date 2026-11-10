@@ -1,13 +1,15 @@
-name: Deploy MEtanoia PWA and downloads to Cloudflare Workers
+name: Deploy MEtanoia PWA and Worker to Cloudflare (manual production gate)
 on:
-  push:
-    branches: [main]
-    paths: ["web/**", "wrangler.jsonc", ".github/workflows/deploy-cloudflare.yml"]
-  workflow_run:
-    workflows: ["Android build"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Exact commit SHA already reviewed and validated"
+        required: true
+        type: string
+      confirm_production:
+        description: "Type PUBLICAR to authorize production deployment"
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -15,33 +17,68 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    environment: production
     steps:
+      - name: Require explicit production confirmation
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          CONFIRM: ${{ inputs.confirm_production }}
+        run: |
+          [[ "$CONFIRM" == "PUBLICAR" ]] || { echo "Production confirmation missing."; exit 1; }
+          [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character commit SHA is required."; exit 1; }
       - uses: actions/checkout@v4
         with:
-          ref: main
-      - name: Download latest verified Android release files
+          ref: ${{ inputs.target_sha }}
+      - name: Validate production bindings and secrets before any mutation
         env:
-          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          METANOIA_REGISTRATION_KEY: ${{ secrets.METANOIA_REGISTRATION_KEY }}
         run: |
-          mkdir -p web/downloads
-          if gh release download android-latest --repo "${GITHUB_REPOSITORY}" --pattern "MEtonoia-Android.apk" --pattern "MEtanoia-codigo-fonte.zip" --dir web/downloads; then
-            if [ -s web/downloads/MEtonoia-Android.apk ]; then
-              mv web/downloads/MEtonoia-Android.apk web/downloads/MEtonoia.apk
-            fi
-            echo "Artefatos Android encontrados e preparados."
-          else
-            echo "Release Android ainda indisponível; seguindo com a publicação da PWA."
-          fi
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN."; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID."; exit 1; }
+          node - <<'NODE'
+          const fs = require('fs');
+          const text = fs.readFileSync('wrangler.jsonc','utf8').replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/.*$/gm,'');
+          const cfg = JSON.parse(text);
+          if (cfg.name !== 'metanoia') throw new Error('Unexpected production Worker name.');
+          if (cfg.ai?.binding !== 'AI') throw new Error('Workers AI binding AI is missing.');
+          const db = (cfg.d1_databases || []).filter(x => x.binding === 'DB' && x.database_id && x.database_name);
+          if (db.length !== 1) throw new Error('A real D1 binding DB with database_name and database_id must be configured before production.');
+          if (!db[0].migrations_dir) throw new Error('d1_databases[DB].migrations_dir is required for read-only migration status checks.');
+          NODE
       - name: Install Wrangler
         run: npm install --global wrangler
-      - name: Validate Worker configuration
+      - name: Check remote D1 migration status without applying migrations
+        run: |
+          DB_NAME="$(node -e "const c=JSON.parse(require('fs').readFileSync('wrangler.jsonc','utf8'));process.stdout.write(c.d1_databases.find(x=>x.binding==='DB').database_name)")"
+          wrangler d1 migrations list "$DB_NAME" --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Block deployment if any reviewed D1 migration is pending
+        run: node scripts/require_remote_migrations.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Validate Worker bundle
         run: wrangler deploy --dry-run
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Deploy PWA and downloadable files
+      - name: Configure invitation secret when new-account registration is enabled
+        run: |
+          if [[ -n "$METANOIA_REGISTRATION_KEY" ]]; then
+            printf '%s' "$METANOIA_REGISTRATION_KEY" | wrangler secret put METANOIA_REGISTRATION_KEY
+          else
+            echo "Invitation secret absent: existing-account login remains available; new registrations remain disabled."
+          fi
+        env:
+          METANOIA_REGISTRATION_KEY: ${{ secrets.METANOIA_REGISTRATION_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy exact reviewed commit
         run: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

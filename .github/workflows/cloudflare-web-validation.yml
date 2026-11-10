@@ -1,0 +1,76 @@
+name: Validate MEtanoia web and Worker
+on:
+  push:
+    branches: ["deploy/cloudflare-metanoia-web"]
+    paths:
+      - "web/**"
+      - "worker/**"
+      - "migrations/**"
+      - "scripts/**"
+      - "wrangler*.jsonc"
+      - ".github/workflows/cloudflare-web-validation.yml"
+      - ".github/workflows/deploy-cloudflare.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - "worker/**"
+      - "migrations/**"
+      - "scripts/**"
+      - "wrangler*.jsonc"
+      - ".github/workflows/cloudflare-web-validation.yml"
+      - ".github/workflows/deploy-cloudflare.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-worker-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate browser JavaScript syntax
+        run: |
+          node --check web/app.js
+          node --check web/crypto.js
+          node --check web/sync.js
+          node --check web/sw.js
+          node --check scripts/require_remote_migrations.mjs
+          node --check scripts/deploy_cloudflare_preview.mjs
+          node --check scripts/capture_web_preview.mjs
+          node --check scripts/test_pastoral_study.mjs
+      - name: Validate PWA manifest and referenced local assets
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('web/manifest.webmanifest','utf8'));
+          if (m.name?.split(' ')[0] !== 'MEtanoia') throw new Error('Unexpected PWA name.');
+          if (m.start_url !== '/?source=home-screen' || m.scope !== '/' || m.display !== 'standalone') throw new Error('PWA install metadata mismatch.');
+          for (const icon of m.icons || []) if (!fs.existsSync('web' + icon.src)) throw new Error('Missing PWA icon: ' + icon.src);
+          const html = fs.readFileSync('web/index.html','utf8');
+          for (const asset of ['/crypto.js','/sync.js','/app.js','/manifest.webmanifest','/icons/metonoia-symbol.webp']) if (!html.includes(asset)) throw new Error('Missing HTML asset reference: ' + asset);
+          if (!html.includes('data-tab="agenda"')) throw new Error('Independent Agenda navigation is missing.');
+          for (const section of ['pastoralStudy','professional','cotidiano','habits','alerts']) if (!html.includes('id="'+section+'"')) throw new Error('Missing section: '+section);
+          const app = fs.readFileSync('web/app.js','utf8');
+          if (!app.includes('/icons/ingrid_avatar.webp') || !app.includes('pastoralStudy') || !app.includes('renderProfessional') || !app.includes('renderHabits') || !app.includes('schedule==="daily"') || !app.includes('name="description"') || !app.includes('name="location"') || !app.includes('name="endTime"') || !app.includes('name="reminders"') || !app.includes('a==="Cotidiano"?"cotidiano"')) throw new Error('Devotional study or separate Cotidiano route is missing.');
+          const sw = fs.readFileSync('web/sw.js','utf8');
+          if (!sw.includes('/icons/metonoia-symbol.webp') || !sw.includes('/icons/ingrid_avatar.webp')) throw new Error('Official brand/avatar assets are not cached by the Service Worker.');
+          NODE
+      - name: Test encrypted PWA synchronization across two devices
+        run: node scripts/test_pwa_sync.mjs
+      - name: Test PWA agenda and habit recurrence
+        run: node scripts/test_pwa_agenda.mjs
+      - name: Verify Scripture-first pastoral studies and source integrity
+        run: node scripts/test_pastoral_study.mjs
+      - name: Validate D1 migration SQL
+        run: python3 scripts/validate_d1_migrations.py
+      - name: Install Wrangler
+        run: npm install --global wrangler
+      - name: Run local D1 and Worker integration tests
+        run: node scripts/test_d1_api.mjs
+      - name: Validate Cloudflare Worker bundle (no deployment)
+        run: wrangler deploy --dry-run --outdir .wrangler/dry-run

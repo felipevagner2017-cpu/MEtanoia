@@ -1,0 +1,68 @@
+name: Deploy isolated MEtanoia Preview
+on:
+  push:
+    branches: [deploy/cloudflare-metanoia-web]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: metanoia-cloudflare-preview
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy/cloudflare-metanoia-web
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Wrangler
+        run: npm install --global wrangler
+      - name: Create or reuse isolated Preview D1, deploy Worker, and run remote sync/AI checks
+        run: node scripts/deploy_cloudflare_preview.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Install Playwright and Chromium for real browser inspection
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Inspect the deployed Preview in mobile and desktop browsers
+        run: node scripts/capture_web_preview.mjs
+        env:
+          METANOIA_PREVIEW_URL: https://metanoia-preview.restaura-lar.workers.dev
+      - name: Upload real Preview screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-web-preview-screenshots
+          path: artifacts/web-preview/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Build a source bundle for both isolated platform branches
+        run: |
+          mkdir -p artifacts/source/web artifacts/source/android
+          git fetch origin +refs/heads/deploy/cloudflare-metanoia-web:refs/remotes/origin/deploy/cloudflare-metanoia-web +refs/heads/work/phase1-integrated-main:refs/remotes/origin/work/phase1-integrated-main
+          git archive origin/deploy/cloudflare-metanoia-web | tar -x -C artifacts/source/web
+          git archive origin/work/phase1-integrated-main | tar -x -C artifacts/source/android
+          WEB_SHA="$(git rev-parse origin/deploy/cloudflare-metanoia-web)"
+          ANDROID_SHA="$(git rev-parse origin/work/phase1-integrated-main)"
+          cat > artifacts/source/README.txt <<EOF
+          MEtanoia source snapshot
+          Web/PWA branch: deploy/cloudflare-metanoia-web
+          Web/PWA commit: $WEB_SHA
+          Android branch: work/phase1-integrated-main
+          Android commit: $ANDROID_SHA
+          Each folder is a complete source snapshot of its isolated branch.
+          No production branch, production database, signing key or secrets are included.
+          EOF
+          cd artifacts && zip -qr MEtanoia-complete-source.zip source
+      - name: Upload complete source bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: metonoia-complete-source
+          path: artifacts/MEtanoia-complete-source.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1B092B"><meta name="description" content="MEtanoia — Palavra, consciência e prática diária.">
-<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/metonoia.svg"><link rel="apple-touch-icon" href="/icons/metonoia.svg">
+<meta name="theme-color" content="#35105F"><meta name="description" content="MEtanoia — Palavra, consciência e prática diária.">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icons/metonoia-symbol.webp"><link rel="apple-touch-icon" href="/icons/metonoia-symbol.webp">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MEtanoia</title>
 <style>
@@ -33,47 +33,47 @@ html{scroll-behavior:smooth}body{font-family:Inter,system-ui,-apple-system,"Sego
 header{padding:16px 18px 17px}.brand img{width:46px;height:46px}h1{font-family:Inter,system-ui,sans-serif;font-size:20px;letter-spacing:.12em;font-weight:750}.tag{font-size:10px;letter-spacing:.075em}
 main{width:100%;max-width:720px;margin:0 auto;padding:14px 16px 22px}.panel{padding:17px;border-radius:18px;margin-bottom:14px}h2{font-family:Inter,system-ui,sans-serif;font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.3}h3{font-size:15px;font-weight:700;line-height:1.35}.muted{font-size:12.5px;line-height:1.55}.eyebrow{font-size:10px;letter-spacing:.13em}.btn{font-size:13px;font-weight:700;min-height:40px;padding:10px 14px}.field{font-size:14px;min-height:43px;padding:11px 12px}label{font-size:12px;line-height:1.45}.item{gap:10px;padding:12px}.item-action{line-height:1.45}.tabs{justify-content:space-around;overflow-x:auto;padding:7px 8px calc(7px + env(safe-area-inset-bottom));scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{flex:1 1 0;min-width:0;max-width:112px;text-align:center;font-size:10.5px;white-space:nowrap;padding:7px 3px}.tab b{font-size:18px;line-height:1.1;margin-bottom:4px}.tab.active{border-radius:11px}.calendar-panel{padding:17px 15px}.calendar-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;text-align:center;margin:13px 0 9px}.calendar-head strong{font-size:15px;font-weight:750;color:#f0d89f;text-transform:capitalize}.calendar-nav{width:36px;height:36px;border:1px solid #c5a15a66;border-radius:10px;background:#0a1c34;color:#f0d89f;font-size:25px;line-height:1;cursor:pointer}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.calendar-weekday{text-align:center;color:#aebdd0;font-size:10px;font-weight:700;padding:7px 0}.calendar-day{position:relative;min-width:0;min-height:42px;border:1px solid transparent;border-radius:11px;background:#091c34;color:#f4f6fa;font:600 13px Inter,system-ui,sans-serif;cursor:pointer}.calendar-day.outside{opacity:.35}.calendar-day.selected{background:linear-gradient(135deg,#e2c47e,#b58a3d);color:#102542;font-weight:800}.calendar-day.today:not(.selected){border-color:#e2c47e}.calendar-day .event-dot{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#e2c47e}.calendar-day.selected .event-dot{background:#102542}.calendar-legend{display:flex;gap:16px;justify-content:center;margin:10px 0 15px;color:#b9c7d8;font-size:10px}.calendar-legend span{display:flex;align-items:center;gap:6px}.calendar-legend i{width:6px;height:6px;border-radius:50%;background:#e2c47e}.calendar-legend i.today-dot{width:9px;height:9px;background:transparent;border:1px solid #e2c47e}.calendar-selected{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #ffffff18;padding-top:14px;margin-top:4px}.calendar-selected h3{margin:0;font-size:15px;text-transform:capitalize}.calendar-tools{padding:13px 15px}.calendar-tools .row{gap:12px}.calendar-tools .muted{margin:2px 0 0}.empty{padding:20px 10px;text-align:center}.modal{font-family:Inter,system-ui,sans-serif}.book-page strong{font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:700}
 @media(max-width:380px){main{padding:10px 11px 18px}.panel{padding:14px}.calendar-day{min-height:38px;font-size:12px}.tab{font-size:9px}}
- .category-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 13px;margin:0 0 14px;color:#b9c7d8;font-size:10px}.category-legend span{display:flex;align-items:center;gap:5px}.category-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}.calendar-color-preview{display:flex;align-items:center;gap:8px;margin:-2px 0 12px;color:#b9c7d8;font-size:11px}.calendar-color-preview span{width:11px;height:11px;border-radius:50%;background:#C5A15A;display:inline-block} .event-dots{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px;align-items:center}.event-dots .event-dot{position:static;display:block;width:4px;height:4px;border-radius:50%}.calendar-day.selected .event-dots .event-dot{border:1px solid #102542}/* Identidade visual oficial: preto, dourado e branco */
-:root{--navy:#111111;--deep:#050505;--gold:#C5A15A;--white:#FFFFFF;--muted:#BDBDBD;--line:#C5A15A66;--panel:#121212;--green:#C5A15A}
-body{background:radial-gradient(ellipse at 50% -15%,#29231a 0%,#050505 58%);color:#fff}
-header{background:linear-gradient(145deg,#050505,#111 72%,#1b1710);border-bottom:1px solid #C5A15A;box-shadow:0 10px 30px #000}
-.tag{color:#D8C08E}.date,.muted{color:#BDBDBD}
-.panel{background:linear-gradient(155deg,#181818,#0c0c0c);border-color:#C5A15A55;box-shadow:0 8px 24px #0008}
+ .category-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:9px 13px;margin:0 0 14px;color:#b9c7d8;font-size:10px}.category-legend span{display:flex;align-items:center;gap:5px}.category-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}.calendar-color-preview{display:flex;align-items:center;gap:8px;margin:-2px 0 12px;color:#b9c7d8;font-size:11px}.calendar-color-preview span{width:11px;height:11px;border-radius:50%;background:#C5A15A;display:inline-block} .event-dots{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;gap:2px;align-items:center}.event-dots .event-dot{position:static;display:block;width:4px;height:4px;border-radius:50%}.calendar-day.selected .event-dots .event-dot{border:1px solid #102542}/* Identidade visual oficial: azul-marinho, branco e dourado */
+:root{--navy:#102542;--deep:#07172f;--gold:#C5A15A;--white:#FFFFFF;--muted:#b9c7d8;--line:#C5A15A66;--panel:#112b49;--green:#C5A15A}
+body{background:radial-gradient(ellipse at 50% -15%,#24466b 0%,#07172f 58%);color:#fff}
+header{background:linear-gradient(145deg,#07172f,#111 72%,#1b1710);border-bottom:1px solid #C5A15A;box-shadow:0 10px 30px #000}
+.tag{color:#D8C08E}.date,.muted{color:#b9c7d8}
+.panel{background:linear-gradient(155deg,#163454,#0d2039);border-color:#C5A15A55;box-shadow:0 8px 24px #0008}
 .eyebrow,.link,.pill,.calendar-head strong{color:#D7B873}
-.btn{background:#1b1b1b;border-color:#C5A15A88;color:#fff}
-.gold,.btn.gold{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#090909;border:0}
-.field{background:#080808;border-color:#C5A15A66;color:#fff}
+.btn{background:#17385c;border-color:#C5A15A88;color:#fff}
+.gold,.btn.gold{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#102542;border:0}
+.field{background:#081a32;border-color:#C5A15A66;color:#fff}
 label{color:#E5D4AC}
-.intel,.area,.reading-page,.book-page,.calendar-day,.calendar-nav,.item{background:#0b0b0b;border-color:#C5A15A55}
+.intel,.area,.reading-page,.book-page,.calendar-day,.calendar-nav,.item{background:#091c34;border-color:#C5A15A55}
 .book-page,.book-page strong,.reading-page h2,.reading-page h3,.area h3{color:#E2C47E}
 .book-page span:not(.book-number),.book-page em,.area p,.reading-page p{color:#E5E5E5}
-.hero{background:linear-gradient(120deg,#1c1a16,#090909 78%);border-color:#C5A15A88}
+.hero{background:linear-gradient(120deg,#1c1a16,#102542 78%);border-color:#C5A15A88}
 .hero p,.book-intro{color:#ddd}
-.tabs{background:#050505f5;border-top-color:#C5A15A88}
-.tab{color:#BDBDBD}.tab.active{background:#211b10;color:#E8CD8F}
-.calendar-day.selected{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#080808}
+.tabs{background:#07172ff5;border-top-color:#C5A15A88}
+.tab{color:#b9c7d8}.tab.active{background:#1b3858;color:#E8CD8F}
+.calendar-day.selected{background:linear-gradient(135deg,#E2C47E,#B58A3D);color:#081a32}
 .calendar-day.today:not(.selected){border-color:#C5A15A}
-.calendar-legend,.category-legend{color:#BDBDBD}
+.calendar-legend,.category-legend{color:#b9c7d8}
 .calendar-legend i,.category-legend i{background:#C5A15A}
 .calendar-day .event-dot{background:#C5A15A}
-.calendar-day.selected .event-dot{background:#080808}
+.calendar-day.selected .event-dot{background:#081a32}
 .modal{background:#111;border-color:#C5A15A;color:#fff}
 .modalbg{background:#000e}
 .item.done{background:#17140e;border-color:#C5A15A}
 .item.done .statusline{color:#E2C47E}
-.event-emoji{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;margin-right:5px;border:1px solid #C5A15A55;border-radius:8px;background:#1a1711;font-size:17px;vertical-align:middle}
+.event-emoji{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;margin-right:5px;border:1px solid #C5A15A55;border-radius:8px;background:#0a1c34;font-size:17px;vertical-align:middle}
 .event-emoji-picker{margin:4px 0 10px;padding:9px 10px;border:1px solid #C5A15A44;border-radius:10px;background:#0a0a0a}
 .event-emoji-picker small{display:block;color:#aaa;font-size:10px;margin-top:-5px}
-\n/* Palavra por seleção sequencial e confissão temporária */\n.word-select-list{display:grid;gap:9px;margin:14px 0}.word-choice{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #C5A15A66;border-radius:13px;background:#0b0b0b;cursor:pointer}.word-choice input{appearance:none;-webkit-appearance:none;width:19px;height:19px;flex:0 0 19px;margin:0;border:1.5px solid #8f784d;border-radius:50%;background:#080808;display:grid;place-items:center;cursor:pointer;transition:all .18s ease}.word-choice input:checked{border:1px solid #E2C47E;background:radial-gradient(circle,#E2C47E 0 3px,#21190d 3.5px 100%);box-shadow:0 0 0 3px #C5A15A22}.word-choice:has(input:checked){border-color:#C5A15A;background:linear-gradient(100deg,#211b10,#0b0b0b);box-shadow:inset 0 0 0 1px #C5A15A22}.word-choice>span:nth-of-type(2){display:flex;flex-direction:column;gap:3px}.word-choice strong{color:#E2C47E;font-size:14px}.word-choice small{color:#BDBDBD;font-size:11px;font-weight:400}.confession-panel{border-color:#C5A15A99}.confession-panel .reading-page{margin-top:14px}.confession-panel .row{flex-wrap:wrap}\n
+\n/* Palavra por seleção sequencial e confissão temporária */\n.word-select-list{display:grid;gap:9px;margin:14px 0}.word-choice{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #C5A15A66;border-radius:13px;background:#091c34;cursor:pointer}.word-choice input{appearance:none;-webkit-appearance:none;width:19px;height:19px;flex:0 0 19px;margin:0;border:1.5px solid #8f784d;border-radius:50%;background:#081a32;display:grid;place-items:center;cursor:pointer;transition:all .18s ease}.word-choice input:checked{border:1px solid #E2C47E;background:radial-gradient(circle,#E2C47E 0 3px,#102542 3.5px 100%);box-shadow:0 0 0 3px #C5A15A22}.word-choice:has(input:checked){border-color:#C5A15A;background:linear-gradient(100deg,#1b3858,#091c34);box-shadow:inset 0 0 0 1px #C5A15A22}.word-choice>span:nth-of-type(2){display:flex;flex-direction:column;gap:3px}.word-choice strong{color:#E2C47E;font-size:14px}.word-choice small{color:#b9c7d8;font-size:11px;font-weight:400}.confession-panel{border-color:#C5A15A99}.confession-panel .reading-page{margin-top:14px}.confession-panel .row{flex-wrap:wrap}\n
 /* Ingrid: perfil, cuidado e privacidade */
-.ingrid-profile{display:flex;align-items:center;gap:16px;padding:14px;border:1px solid #C5A15A88;border-radius:16px;background:linear-gradient(145deg,#17130d,#080808);margin:12px 0}
+.ingrid-profile{display:flex;align-items:center;gap:16px;padding:14px;border:1px solid #C5A15A88;border-radius:16px;background:linear-gradient(145deg,#142e4b,#081a32);margin:12px 0}
 .ingrid-profile img{width:116px;height:170px;object-fit:contain;object-position:center bottom;flex:0 0 auto;filter:drop-shadow(0 8px 15px #c5a15a22)}
 .ingrid-profile h2{color:#E2C47E;margin:0}.ingrid-profile p{font-size:12px;color:#ddd;margin:5px 0}
-.ingrid-lock{padding:14px;border:1px solid #C5A15A88;border-radius:14px;background:#090909}.ingrid-lock p{color:#ddd;font-size:12px}
+.ingrid-lock{padding:14px;border:1px solid #C5A15A88;border-radius:14px;background:#102542}.ingrid-lock p{color:#ddd;font-size:12px}
 .consent-line{display:flex;align-items:flex-start;gap:9px;margin:14px 0;padding:12px;border:1px solid #C5A15A55;border-radius:10px;color:#E2C47E}.consent-line input{width:18px;height:18px;accent-color:#C5A15A;flex:0 0 auto}
-.daily-challenge{padding:16px;border:1px solid #C5A15A;background:linear-gradient(135deg,#211a0d,#0b0b0b);border-radius:14px;margin:12px 0}.daily-challenge p{color:#f3e8d0;margin:5px 0}
+.daily-challenge{padding:16px;border:1px solid #C5A15A;background:linear-gradient(135deg,#18395a,#091c34);border-radius:14px;margin:12px 0}.daily-challenge p{color:#f3e8d0;margin:5px 0}
 .danger{border:1px solid #a54b4b;color:#ffb8b8;background:#210e0e;margin-top:12px}
-@media(max-width:520px){.ingrid-profile{align-items:flex-start}.ingrid-profile img{width:92px;height:145px}.tabs{grid-template-columns:repeat(6,minmax(0,1fr))}.tab{font-size:10px;padding:8px 2px}.tab b{font-size:16px}}
+@media(max-width:520px){.ingrid-profile{align-items:flex-start}.ingrid-profile img{width:92px;height:145px}.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tab{font-size:10px;padding:8px 2px}.tab b{font-size:16px}}
 
 /* Palavra — experiência premium em quatro páginas horizontais */
 .word-welcome{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 19px;border:1px solid #c5a15a77;border-radius:20px;background:linear-gradient(125deg,#1c3b5d 0%,#102542 52%,#09172a 100%);box-shadow:0 14px 32px #0004}
@@ -174,27 +174,267 @@ label{color:#E8D7B4}
 @media(max-width:380px){.word-slide{min-height:430px;padding:17px}.word-welcome{padding:17px}}
 
 .word-slide-actions{display:flex;justify-content:flex-end;margin-top:12px}.word-slide-actions .btn{min-width:145px;border-radius:12px}.word-slide-foot{margin-top:auto}
+
+.ai-assistant-panel{border-color:#D9BC83aa;background:linear-gradient(155deg,#18395a,#091c34)}.ai-consent{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #C5A15A66;border-radius:11px;color:#E5D4AC;font-size:11px;line-height:1.5}.ai-consent input{width:18px;height:18px;flex:0 0 18px;accent-color:#C5A15A}.ai-conversation{display:flex;flex-direction:column;gap:9px;max-height:360px;overflow:auto;padding:10px;border:1px solid #C5A15A44;border-radius:12px;background:#07172f}.ai-message{padding:11px;border:1px solid #C5A15A44;border-radius:11px;background:#15120d}.ai-message.ai-user{background:#1b3858;border-color:#C5A15A88}.ai-message b{font-size:10px;letter-spacing:.12em;color:#E2C47E}.ai-message p{margin:6px 0 0;color:#F3F0E7;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.6}.ai-assistant-panel .row{flex-wrap:wrap}
+
+/* Jornada premium — quatro dimensões em um único espaço horizontal */
+body{background:radial-gradient(ellipse at 50% -12%,#45245f 0%,#241333 38%,#0b0710 82%);color:#F3F0E7}
+header{background:linear-gradient(145deg,#100817 0%,#1B092B 62%,#2c1740 100%);border-bottom:1px solid #D9BC83;box-shadow:0 12px 34px #08030e99}
+main{max-width:790px;padding:16px 16px 26px}
+#word{display:flex;flex-direction:column;gap:15px}
+.word-welcome{min-height:145px;padding:22px 21px;border:1px solid #D9BC83aa;border-radius:22px;background:radial-gradient(circle at 92% 15%,#68417a66 0%,transparent 34%),linear-gradient(125deg,#42205E 0%,#28133E 58%,#160b22 100%);box-shadow:0 16px 34px #08030e88}
+.word-welcome h2{font-size:clamp(22px,5vw,27px);letter-spacing:-.035em;color:#F3F0E7;margin:5px 0 8px}
+.word-welcome p{font-size:12.5px;line-height:1.65;color:#E5DCEB}
+.word-progress{border-color:#D9BC83aa;background:#1B092B88;box-shadow:inset 0 0 0 5px #D9BC8310}
+.word-progress span{color:#F0D9A1}
+.word-topic-rail{gap:9px;padding:14px 1px 11px;scroll-padding-inline:8px}
+.word-topic{flex:1 0 0;min-width:0;min-height:76px;padding:11px 9px;border-radius:15px;background:linear-gradient(150deg,#2b193b,#160d20);border:1px solid #D9BC8355;box-shadow:0 5px 16px #08030e55;transition:transform .18s ease,border-color .18s ease}
+.word-topic b{font-size:11px;color:#F3F0E7}
+.word-topic small{color:#BDB0C6}
+.word-topic>span{color:#F0D9A1}
+.word-topic.active{background:linear-gradient(145deg,#F0D9A1,#C9A96D);border-color:#fff0bd;box-shadow:0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b{color:#211033}
+.word-swipe-hint{padding:5px 3px 10px;color:#BDB0C6;font-size:9px;letter-spacing:.16em}
+.word-hint-arrows{color:#F0D9A1;font-size:17px}
+.word-carousel{gap:12px;padding:0 0 5px;scroll-padding-inline:0;overscroll-behavior-x:contain}
+.word-slide{flex:0 0 100%;min-height:440px;padding:21px 19px;border-radius:22px;border:1px solid #D9BC83aa;background:radial-gradient(circle at 100% 0%,#54336a55 0%,transparent 35%),linear-gradient(155deg,#29183a 0%,#1b1027 60%,#100817 100%);box-shadow:0 15px 35px #08030e88}
+.word-slide-head{gap:14px;border-bottom:1px solid #D9BC8355}
+.word-slide-head h2{font-size:22px;color:#F0D9A1}
+.word-slide-head p{color:#CFC2D8}
+.word-icon,.word-dimension-avatar{width:52px;height:52px;flex:0 0 52px;border:1px solid #D9BC83aa;border-radius:16px;background:#160b21;display:grid;place-items:center;object-fit:contain;padding:5px;color:#F0D9A1;box-shadow:0 5px 15px #08030e66}
+.daily-word-source{padding:20px 2px 14px}
+.word-kicker,.challenge-mark{color:#F0D9A1}
+.word-challenge{padding:15px 16px;background:linear-gradient(120deg,#4a2860,#2a173b);border:1px solid #D9BC8388}
+.word-challenge p{color:#F3F0E7;line-height:1.6}
+.word-slide-actions .btn{min-height:44px;border-radius:13px;padding-inline:18px}
+.word-pagination{padding:8px 0 2px}
+.word-disclaimer{font-size:10px;line-height:1.55;margin:10px 2px 0;color:#BDB0C6}
+.home-reminder{margin:0}
+.home-reminder-card{background:linear-gradient(125deg,#28163a,#160b21);border-color:#D9BC8388}
+.tabs{background:#100817f5;border-top:1px solid #D9BC8388;box-shadow:0 -8px 24px #08030e55}
+.tab{color:#BDB0C6}
+.tab.active{background:linear-gradient(145deg,#42205E,#28133E);color:#F0D9A1;outline:1px solid #D9BC8355}
+@media(max-width:520px){
+ main{padding:12px 12px 22px}
+ .word-welcome{padding:18px 16px;min-height:136px}
+ .word-topic-rail{gap:7px;padding-top:12px}
+ .word-topic{min-height:72px;padding:9px 6px;grid-template-columns:20px 1fr;gap:0 5px}
+ .word-topic>span{font-size:18px}
+ .word-topic b{font-size:10px}
+ .word-topic small{font-size:8px}
+ .word-slide{min-height:440px;padding:18px 15px}
+ .word-slide-head h2{font-size:20px}
+}
+@media(max-width:360px){.word-topic{flex-basis:108px}.word-progress{flex-basis:58px;height:58px}}
+
+
+/* Estado inicial neutro: nenhuma dimensão marcada automaticamente */
+.word-topic.active{position:relative;background:linear-gradient(145deg,#322043,#1b1027);border-color:#F0D9A1;color:#F0D9A1;box-shadow:inset 0 0 0 1px #F0D9A155,0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b,.word-topic.active small,.word-topic.active>span{color:#F0D9A1}
+.word-topic.active::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:1px;background:#F0D9A1;transform:rotate(45deg);opacity:.78;box-shadow:0 0 9px #F0D9A1aa}
+
+
+/* Sistema visual refinado — superfícies, tipografia e controles consistentes */
+:root{
+ --ink:#F5F0F7;--ink-soft:#D8CCDF;--muted:#B7A9C2;
+ --canvas:#100817;--surface:#1A1024;--surface-raised:#241631;
+ --surface-soft:#2D1C3C;--gold:#D9BC83;--gold-bright:#F0D9A1;
+ --stroke:rgba(217,188,131,.25);--stroke-strong:rgba(217,188,131,.52);
+ --shadow-soft:0 8px 24px rgba(0,0,0,.22);--shadow-deep:0 18px 42px rgba(0,0,0,.34);
+ --radius-card:20px;
+}
+html{background:var(--canvas);scroll-behavior:smooth}
+body{background:radial-gradient(ellipse at 50% -16%,#402451 0%,#21132e 36%,var(--canvas) 78%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:20;padding:13px max(16px,calc((100vw - 790px)/2)) 14px;background:rgba(16,8,23,.91);border-bottom:1px solid var(--stroke-strong);box-shadow:0 8px 26px rgba(0,0,0,.22);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.brand{gap:13px}.brand img{width:44px;height:44px;filter:drop-shadow(0 3px 10px rgba(217,188,131,.18))}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:21px;letter-spacing:.13em;color:#FBF7F0}
+.tag{font-size:9px;letter-spacing:.13em;color:#D8C7A4}
+main{max-width:790px;padding:18px 16px 112px}
+.panel,.word-welcome,.word-slide,.home-reminder-card{border-radius:var(--radius-card);box-shadow:var(--shadow-soft)}
+.panel{padding:19px;background:linear-gradient(150deg,rgba(43,27,57,.96),rgba(24,14,34,.98));border:1px solid var(--stroke)}
+.panel h2,.panel h3{color:var(--ink);letter-spacing:-.025em}
+.eyebrow,.word-kicker,.challenge-mark{font-size:9px;font-weight:750;letter-spacing:.17em;color:var(--gold);text-transform:uppercase}
+p,.muted{color:var(--ink-soft)}
+.muted{font-size:12px;line-height:1.65}
+.btn{min-height:43px;padding:10px 16px;border:1px solid var(--stroke-strong);border-radius:13px;background:linear-gradient(145deg,#342342,#241631);color:var(--ink);font-family:inherit;font-size:12px;line-height:1.2;font-weight:650;letter-spacing:.015em;box-shadow:0 4px 12px rgba(0,0,0,.16);transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.btn:active{transform:scale(.98)}
+.btn.gold{background:linear-gradient(135deg,#F0D9A1,#D1B477);border-color:#F6E6BE;color:#21152A;box-shadow:0 6px 17px rgba(217,188,131,.18)}
+.field,select.field,textarea.field,input.field{width:100%;min-height:45px;padding:12px 13px;border:1px solid rgba(217,188,131,.32);border-radius:13px;background:#120B1B;color:var(--ink);font-family:inherit;font-size:13px;line-height:1.5;font-weight:500;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);transition:border-color .18s ease,box-shadow .18s ease}
+.field::placeholder{color:#8F809B}
+.field:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,188,131,.12)}
+label{display:block;margin:12px 0 6px;color:#E5D8E9;font-size:11px;font-weight:650}
+.word-welcome{position:relative;overflow:hidden;background:radial-gradient(circle at 90% 10%,rgba(217,188,131,.15),transparent 32%),linear-gradient(125deg,#42265A,#281638 60%,#170D22);border:1px solid var(--stroke-strong)}
+.word-welcome:after{content:"";position:absolute;inset:auto -35px -72px auto;width:190px;height:190px;border:1px solid rgba(217,188,131,.13);border-radius:50%;box-shadow:0 0 0 18px rgba(217,188,131,.025),0 0 0 38px rgba(217,188,131,.018);pointer-events:none}
+.word-topic-rail{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.word-topic-rail::-webkit-scrollbar,.word-carousel::-webkit-scrollbar{display:none}
+.word-topic{min-width:0;min-height:78px;border-radius:15px}
+.word-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.word-slide{scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.word-slide-head{display:flex;align-items:center}
+.word-slide-head p{font-size:11px;line-height:1.5}
+.daily-word-source{padding:19px 2px 13px}
+.daily-word-source .goldtext{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:1.5;color:var(--gold-bright);margin:9px 0}
+.daily-word-source p{font-size:12px;line-height:1.7}
+.word-challenge{border-radius:15px}
+.word-challenge p{font-size:12px;line-height:1.65}
+.word-slide-foot{padding-top:12px;border-top:1px solid rgba(217,188,131,.17);font-size:9px;letter-spacing:.1em;color:#AFA1B9}
+.word-pagination button{width:7px;height:7px;border:0;border-radius:99px;background:#75647F;transition:width .2s ease}
+.word-pagination button.active{width:23px;border-radius:8px;background:var(--gold-bright)}
+.calendar-panel,.calendar-tools,.confession-panel,.ai-assistant-panel{background:linear-gradient(150deg,#2B1B39,#1A1024);border-color:var(--stroke)}
+.calendar-head,.calendar-selected{padding:12px 0}
+.calendar-nav{width:38px;height:38px;border:1px solid var(--stroke);border-radius:12px;background:#251631;color:var(--gold-bright)}
+.calendar-day{border-radius:11px}
+.item{border:1px solid var(--stroke);border-radius:14px;background:rgba(18,11,27,.78);padding:12px;margin:8px 0}
+.tabs{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;padding:8px max(7px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));background:rgba(16,8,23,.94);border-top:1px solid var(--stroke-strong);box-shadow:0 -8px 28px rgba(0,0,0,.28);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.tab{flex:1;max-width:116px;min-width:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid transparent;border-radius:13px;background:transparent;color:#B7A9C2;font-size:9px;font-weight:650;letter-spacing:.015em}
+.tab b{font-size:17px;line-height:1.1;font-weight:500;color:inherit}
+.tab.active{background:linear-gradient(145deg,rgba(76,46,96,.8),rgba(42,25,58,.92));border-color:rgba(217,188,131,.24);color:var(--gold-bright)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-bright);outline-offset:3px}
+@media(min-width:700px){main{padding-top:22px}.word-slide{min-height:460px;padding:25px}.panel{padding:23px}}
+@media(max-width:520px){header{padding:11px 13px 12px}.brand img{width:39px;height:39px}h1{font-size:19px}.tag{font-size:8px;letter-spacing:.09em}.headerline{gap:8px}.headerline>.row{gap:6px}.headerline .btn{min-height:38px;padding:8px 10px;font-size:10px}main{padding:13px 12px 108px}.panel{padding:16px;border-radius:17px}.tabs{gap:2px;padding-left:5px;padding-right:5px}.tab{font-size:8px;min-height:49px;border-radius:11px}.tab b{font-size:16px}.word-slide{min-height:455px}.word-welcome{border-radius:18px}}
+@media(max-width:360px){.tag{max-width:170px}.tab{font-size:7px}.headerline .btn{padding:7px 8px}.word-slide{min-height:470px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+.reminder-options{border:1px solid var(--stroke-strong);border-radius:12px;padding:10px 12px;margin:8px 0 12px;display:flex;gap:14px;flex-wrap:wrap}.reminder-options legend{color:var(--gold);font-size:12px;font-weight:700;padding:0 5px}.reminder-options label{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:12px}.reminder-options input{accent-color:var(--gold)}
+
+/* MEtonoia approved palette — shared surfaces */
+.ingrid-profile{background:linear-gradient(145deg,#351A50,#211033);border-color:var(--stroke-strong);box-shadow:var(--shadow-soft)}
+.ingrid-lock{background:linear-gradient(150deg,#2B1B39,#1A1024);border-color:var(--stroke-strong)}
+.daily-challenge{background:linear-gradient(120deg,#42265A,#241333);border-color:var(--stroke-strong)}
+.ai-conversation{background:#120B1B;border-color:var(--stroke)}
+.ai-message{background:#1A1024;border-color:var(--stroke)}
+.ai-message.ai-user{background:linear-gradient(145deg,#3A2250,#241631);border-color:var(--stroke-strong)}
+.event-emoji-picker{background:#1A1024;border-color:var(--stroke)}
+.modalbg{background:rgba(16,8,23,.84)}
+
+/* Dashboard de evolução — roxo profundo e dourado */
+.dash-hero{background:radial-gradient(circle at 92% 8%,#67457a55,transparent 34%),linear-gradient(145deg,#3b2052,#1a1025 78%);border-color:var(--stroke-strong)}
+.dash-hero h2{font:600 clamp(25px,5vw,32px) Georgia,serif;color:var(--gold-bright);margin:4px 0 7px}
+.dash-period{display:flex;gap:7px;margin:17px 0 12px}.dash-period .btn{flex:1;min-height:36px;padding:8px}.dash-period .btn.active{background:linear-gradient(135deg,#F0D9A1,#C9A96D);color:#211033;border-color:#F0D9A1}
+.dash-summary{display:flex;align-items:center;gap:10px;padding-top:11px;border-top:1px solid var(--stroke)}
+.dash-summary strong{font:600 17px Georgia,serif;color:var(--gold-bright)}.dash-summary span{font-size:11px;color:var(--ink-soft)}
+.dash-section-head{display:flex;justify-content:space-between;align-items:end;gap:8px;margin:22px 3px 12px}.dash-section-head h2{margin:0;font-size:19px}.dash-period-label{font-size:10px;color:var(--muted)}
+.dashboard-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dash-metric{min-width:0;padding:14px 11px;border:1px solid var(--stroke);border-radius:17px;background:linear-gradient(150deg,#2d1b3d,#1a1024);box-shadow:var(--shadow-soft)}
+.dash-metric-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.dash-metric h3{font-size:12px;line-height:1.35;margin:0;color:var(--ink)}
+.dash-ring{--progress:0deg;width:76px;height:76px;flex:0 0 76px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from -90deg,var(--gold-bright) var(--progress),#ffffff17 0);position:relative;box-shadow:0 0 20px #d9bc8310}
+.dash-ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#21132e;border:1px solid #d9bc8328}
+.dash-ring strong{position:relative;font:700 17px Georgia,serif;color:var(--gold-bright)}
+.dash-metric .dash-evidence{font-size:10px;line-height:1.5;color:var(--muted);margin:10px 0 0;min-height:30px}
+.dash-trend{display:flex;align-items:center;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid #ffffff12;font-size:10px;color:var(--ink-soft)}
+.dash-trend b{color:var(--gold-bright)}.dash-metric button{border:0;background:none;padding:7px 0 0;color:var(--gold);font-size:10px;font-weight:700}
+.dash-insights h2{font-size:18px}.dash-insight{padding:10px 0;border-bottom:1px solid #ffffff13}.dash-insight:last-child{border:0}.dash-insight b{color:var(--gold-bright);font-size:12px}.dash-insight p{font-size:11px;line-height:1.55;margin:4px 0 0}
+.dash-method{background:linear-gradient(150deg,#241631,#160d20)}.dash-method h3{color:var(--gold-bright)}.dash-method p{font-size:10px;line-height:1.6;margin:8px 0}
+@media(max-width:360px){.dashboard-metrics{gap:7px}.dash-metric{padding:11px 8px}.dash-ring{width:66px;height:66px;flex-basis:66px}.dash-metric h3{font-size:11px}}
+@media(min-width:650px){.dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.dash-metric{padding:15px}.dash-ring{width:82px;height:82px;flex-basis:82px}}
+
+/* Ajuste mobile: anel acima do título, sem colisão em cartões estreitos */
+.dash-summary{display:block}.dash-summary strong{display:block}.dash-summary span{display:block;margin-top:5px}
+.dash-metric-top{flex-direction:column-reverse;align-items:center;justify-content:center;gap:9px;text-align:center}
+.dash-metric h3{width:100%;min-height:30px;display:flex;align-items:center;justify-content:center;text-align:center}
+.dash-ring{width:72px;height:72px;flex-basis:72px}
+.dash-metric .dash-evidence{min-height:0}
+
+.dash-ai-cta{margin-top:14px;padding-top:12px;border-top:1px solid var(--stroke)}.dash-ai-cta .btn{width:100%}
+/* MEtonoia premium dimension overviews */
+.dimension-overview{margin:0 0 16px;padding:20px;border:1px solid var(--stroke-strong);border-radius:22px;background:linear-gradient(145deg,#241431,#160D20);box-shadow:var(--shadow-soft)}
+.dimension-overview-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:16px}.dimension-overview-head h2{margin:4px 0 6px;font-size:clamp(1.25rem,4vw,1.7rem)}.dimension-overview-head p{margin:0;color:var(--muted);line-height:1.5}
+.dimension-overview-main{display:grid;grid-template-columns:116px 1fr;gap:16px;align-items:center}.dimension-overview-ring{width:116px;height:116px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--gold) var(--progress),rgba(255,255,255,.10) 0);position:relative}.dimension-overview-ring:before{content:"";position:absolute;inset:9px;border-radius:50%;background:#1B1026;border:1px solid rgba(214,177,100,.18)}.dimension-overview-ring strong,.dimension-overview-ring span{position:relative;z-index:1;text-align:center}.dimension-overview-ring strong{font-size:1.5rem;color:var(--gold)}.dimension-overview-ring span{display:block;font-size:.62rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.dimension-overview-copy b{display:block;color:var(--gold);margin-bottom:5px}.dimension-overview-copy p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.5}
+.dimension-overview-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:16px 0}.dimension-overview-stat{padding:12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid var(--stroke)}.dimension-overview-stat strong{display:block;color:var(--gold);font-size:1.1rem}.dimension-overview-stat span{display:block;color:var(--muted);font-size:.72rem;line-height:1.35;margin-top:4px}
+.dimension-overview-notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dimension-overview-note{padding:12px;border:1px solid var(--stroke);border-radius:14px;background:rgba(255,255,255,.025)}.dimension-overview-note h3{font-size:.85rem;margin:0 0 6px}.dimension-overview-note p{font-size:.82rem;line-height:1.45;margin:0;color:var(--muted)}
+.dimension-history{margin:14px 0 16px;padding:13px;border:1px solid var(--stroke);border-radius:14px;background:rgba(255,255,255,.025)}.dimension-history h3{font-size:.88rem;margin:0 0 10px}.dimension-history-row{display:grid;grid-template-columns:48px minmax(50px,1fr) 48px;gap:8px;align-items:center;margin:8px 0}.dimension-history-row span,.dimension-history-row b{font-size:.74rem}.dimension-history-row b{text-align:right;color:var(--gold)}.dimension-history-row small{grid-column:2/4;color:var(--muted);font-size:.68rem;margin-top:-6px}.dimension-history-track{height:7px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden}.dimension-history-track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#9D7840,#E8C778)}
+.dimension-overview-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.dimension-overview-actions .btn{flex:1;min-width:140px}
+@media(max-width:430px){.dimension-overview{padding:15px}.dimension-overview-main{grid-template-columns:92px 1fr;gap:12px}.dimension-overview-ring{width:92px;height:92px}.dimension-overview-ring strong{font-size:1.3rem}.dimension-overview-stats{gap:6px}.dimension-overview-stat{padding:9px 7px}.dimension-overview-stat span{font-size:.67rem}.dimension-overview-notes{grid-template-columns:1fr}}
+
+/* Dimensões: evidência legível e layout responsivo */
+.areas-intro{padding:4px 2px 12px}.areas-intro h2{font:600 1.35rem Georgia,serif;color:var(--gold-bright);margin:5px 0}.areas-intro p{font-size:.84rem;color:var(--muted);margin:0;line-height:1.5}
+.dimension-overview-stats{grid-template-columns:repeat(auto-fit,minmax(105px,1fr))}
+.dimension-evidence{margin-top:10px}.dimension-evidence ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}.dimension-evidence li{padding:10px 0;border-top:1px solid var(--stroke)}.dimension-evidence li:first-child{border-top:0}.dimension-evidence li b{font-size:.78rem;color:var(--gold-bright)}.dimension-evidence li p{margin:5px 0 0;font-size:.8rem;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.dimension-next{background:linear-gradient(145deg,#2b1b39,#1a1024)}.dimension-overview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.dimension-overview-actions .btn{width:100%;white-space:normal;min-height:44px}
+@media(max-width:420px){.dimension-overview{padding:15px}.dimension-overview-main{grid-template-columns:88px minmax(0,1fr);gap:12px}.dimension-overview-ring{width:88px;height:88px}.dimension-overview-copy p{font-size:.8rem}.dimension-overview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dimension-overview-actions{grid-template-columns:1fr}}
 </style></head>
 <body>
-<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
+<header><div class="headerline"><div class="brand"><img src="/icons/metonoia-symbol.webp" alt="Emblema oficial MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
 <main>
 
-<section id="word"><div class="panel"><div class="eyebrow">Jornada pessoal · MEtanoia</div><h2>Mensagens e desafios</h2><p class="muted">Uma única jornada com quatro dimensões. Deslize horizontalmente para acessar Devocional, Matrimônio, Profissional e Cotidiano.</p><div id="homeReminderCard" class="home-reminder"></div><div id="wordAreas"></div></div></section>
+<section id="dashboard" aria-label="Dashboard de evolução pessoal">
+ <div class="dash-hero panel"><div class="eyebrow">MEtonoia · transformação contínua</div><h2>Sua evolução</h2><p class="muted">Um retrato honesto do que você registrou — sem transformar dias sem registro em fracasso.</p><div class="dash-period" role="group" aria-label="Período de análise"><button class="btn active" data-dash-period="7">7 dias</button><button class="btn" data-dash-period="30">30 dias</button><button class="btn" data-dash-period="90">90 dias</button></div><div id="dashSummary" class="dash-summary"></div></div>
+ <div class="dash-section-head"><div><div class="eyebrow">Indicadores fundamentados</div><h2>Dimensões e hábitos</h2></div><span class="dash-period-label" id="dashPeriodLabel">Últimos 7 dias</span></div>
+ <div id="dashboardMetrics" class="dashboard-metrics"></div>
+ <div class="panel dash-insights"><div class="eyebrow">Leitura do período</div><h2>O que seus registros mostram</h2><div id="dashInsights"></div><div class="dash-ai-cta"><p class="muted">Quer uma leitura mais profunda? A inteligência pode relacionar seus registros, sempre respeitando a autorização de compartilhamento.</p><button class="btn gold" id="dashOpenAi" type="button">Analisar meu histórico com IA</button></div></div>
+ <div class="panel dash-method"><div class="eyebrow">Transparência</div><h3>Como os indicadores são calculados</h3><p><b>Compromissos e dimensões:</b> conclusões registradas ÷ ocorrências programadas no período. Só há percentual quando existe ao menos uma ocorrência prevista.</p><p><b>Exercícios, alimentação e bem-estar:</b> respostas válidas ÷ respostas efetivamente registradas; opções “Não registrei” são excluídas. Bem-estar é autoavaliação, não diagnóstico.</p><p><b>Sem dados suficientes:</b> o painel mostra “Sem base” em vez de inventar um número. A comparação usa o período imediatamente anterior, com a mesma duração. Nas dimensões, ≥75% sinaliza maior constância observada e <50% sugere revisar o planejamento; são faixas de leitura, não notas de valor pessoal.</p></div>
+</section>
+<section id="word" aria-label="Jornada diária"><div id="dailyJourney"></div></section>
+<section id="areas" class="hidden" aria-label="Áreas da vida"><div id="wordAreas"></div><div class="panel area-tools"><div class="eyebrow">Acompanhamento pessoal</div><h2>Continue sua jornada</h2><p class="muted">Seus registros e revisões permanecem organizados e protegidos neste espaço.</p><div class="row area-tools-actions"><button class="btn" data-open-section="diary">Diário e confissão</button><button class="btn" data-open-section="evolution">Evolução semanal</button><button class="btn" data-open-section="intel">Inteligência bíblica</button></div></div></section>
 <section id="agenda" class="hidden">
 <div class="panel calendar-panel">
  <div class="eyebrow">Planejamento pessoal</div><h2>Minha agenda</h2>
+ <div class="view-switch" id="agendaViewSwitch"><button class="btn" data-agenda-view="day">Dia</button><button class="btn" data-agenda-view="week">Semana</button><button class="btn active" data-agenda-view="month">Mês</button></div>
  <div class="calendar-head"><button class="calendar-nav" id="prevMonth" aria-label="Mês anterior">‹</button><strong id="calendarTitle"></strong><button class="calendar-nav" id="nextMonth" aria-label="Próximo mês">›</button></div>
  <div class="calendar-grid" id="calendarGrid"></div>
- <div class="calendar-legend"><span><i></i> Compromissos únicos e fixos</span><span><i class="today-dot"></i> Hoje</span></div><div class="category-legend"><span><i style="background:#7986CB"></i>Espiritual</span><span><i style="background:#E67C73"></i>Matrimonial</span><span><i style="background:#039BE5"></i>Profissional</span><span><i style="background:#33B679"></i>Cotidiano</span></div>
+ <div class="calendar-legend"><span><i></i> Compromissos únicos, diários e semanais</span><span><i class="today-dot"></i> Hoje</span></div><div class="category-legend"><span><i style="background:#7986CB"></i>Espiritual</span><span><i style="background:#E67C73"></i>Matrimonial</span><span><i style="background:#039BE5"></i>Profissional</span><span><i style="background:#33B679"></i>Cotidiano</span></div>
  <div class="calendar-selected"><div><div class="eyebrow">Dia selecionado</div><h3 id="selectedDateLabel"></h3></div><button class="btn gold" id="addCommitment">+ Compromisso</button></div>
  <div id="agendaList"></div>
 </div>
-<div class="panel calendar-tools"><div class="row between"><div><b>Ir para uma data</b><p class="muted">Consulte qualquer dia e seus compromissos eventuais.</p></div><input id="agendaDate" class="field" type="date" style="max-width:155px;margin:0"></div></div>
+<div class="panel calendar-tools"><div class="row between"><div><b>Ir para uma data</b><p class="muted">Consulte qualquer dia e todos os compromissos programados.</p></div><input id="agendaDate" class="field" type="date" style="max-width:155px;margin:0"></div></div>
 </section>
-<section id="ingrid" class="hidden"><div class="panel"><div class="eyebrow">Aliança · presença · cuidado</div><h2>Ingrid</h2><p class="muted">Um espaço para cultivar atenção, parceria e cuidado respeitoso. O ciclo não define o humor, as vontades ou as necessidades dela.</p><div id="ingridContent"></div></div></section>
+<section id="professional" class="hidden"><div id="dimensionOverviewProfissional"></div><div class="panel"><div class="eyebrow">DIMENSÃO 03 · PROFISSIONAL</div><h2>Desenvolvimento profissional</h2><p class="muted">Organize metas, projetos, decisões e competências. Registre resultados, prazos, obstáculos e a próxima ação verificável.</p><form id="professionalForm"><label for="professionalTitle">Meta, projeto ou desafio</label><input id="professionalTitle" class="field" required maxlength="120" placeholder="Ex.: concluir projeto, desenvolver competência"><label for="professionalBody">Plano, contexto e próximo passo</label><textarea id="professionalBody" class="field" rows="5" required placeholder="Resultado esperado, prazo, recursos, obstáculos e próxima ação..."></textarea><button id="professionalSave" class="btn gold">Salvar registro profissional</button></form><h3>Histórico profissional</h3><div id="professionalList"></div></div></section>
+<section id="pastoralStudy" class="hidden"><div id="dimensionOverviewEspiritual"></div><article class="reading-page">
+<div class="eyebrow">FORMAÇÃO PASTORAL · ESTUDO 01</div>
+<h2>Avivamento bíblico: arrependimento, Espírito e missão</h2>
+<p class="book-intro"><strong>Texto principal:</strong> Atos 2:37–47. Leia também Atos 1:8; Joel 2:12–13; Atos 4:31 e Romanos 12:1–2.</p>
+<div class="reading-topic"><h3>1 · Contexto histórico e literário</h3><p>O capítulo se situa após a ressurreição e a ascensão de Jesus, quando a promessa do Espírito é cumprida em Jerusalém durante Pentecostes. Pedro interpreta o acontecimento à luz das Escrituras e anuncia Jesus crucificado, ressuscitado e exaltado. A resposta do povo nasce da proclamação do evangelho. Pentecostes é um marco singular na história da redenção; não deve ser reduzido a uma fórmula repetível para produzir experiências.</p></div>
+<div class="reading-topic"><h3>2 · Exegese e movimento do texto</h3><p>Em Atos 2:37–38, a mensagem acerca de Jesus alcança a consciência dos ouvintes. O arrependimento pedido por Pedro é uma mudança real de direção diante de Deus, não apenas emoção ou remorso. O batismo identifica publicamente os que recebem a palavra com Jesus Cristo. Em Atos 2:42, Lucas apresenta quatro marcas da comunidade: ensino apostólico, comunhão, partir do pão e orações. Atos 2:43–47 descreve reverência, generosidade, vida comunitária, adoração e testemunho. O fruto do derramamento do Espírito não é espetáculo isolado: é uma comunidade formada pela Palavra e enviada em testemunho.</p></div>
+<div class="reading-topic"><h3>3 · Desenvolvimento teológico</h3><p>O Espírito Santo é Deus presente e atuante, não uma força manipulável nem um recurso para autopromoção. Ele capacita o testemunho de Cristo (Atos 1:8), conduz ao arrependimento, forma santidade e produz amor concreto. A graça não dispensa a obediência: ela a torna possível. A igreja persevera em doutrina, oração, mesa, comunhão e serviço. A missão nasce da adoração e se expressa no anúncio de Cristo e no cuidado do próximo.</p></div>
+<div class="reading-topic"><h3>4 · Perspectiva espiritual e avivalista</h3><p>Um despertamento coerente com Atos 2 aprofunda a centralidade de Cristo, a convicção de pecado, o arrependimento, a vida de oração, a santidade, a unidade, a generosidade e a evangelização. Intensidade emocional não é, por si só, evidência de avivamento. O critério pastoral é o fruto submetido à Escritura: Cristo é anunciado, pecadores são chamados à reconciliação, discípulos amadurecem e a comunidade serve com amor.</p></div>
+<div class="reading-topic"><h3>5 · Contribuições de referências avivalistas</h3><p><strong>John Wesley:</strong> em <em>The Scripture Way of Salvation</em> (Sermão 43), relaciona a salvação recebida pela fé ao arrependimento e aos frutos de piedade e misericórdia no caminho da santificação. Síntese interpretativa: a graça não é mérito humano, mas também não deixa a vida intocada.</p><p><strong>Billy Graham:</strong> em <em>The Holy Spirit: Activating God's Power in Your Life</em>, trata da pessoa e da obra do Espírito na vida cristã. Síntese interpretativa: a dependência do Espírito deve permanecer submetida ao ensino bíblico e conduzir à transformação, não à busca de poder como fim em si mesmo.</p><p><strong>John Piper:</strong> em <em>Let the Nations Be Glad!</em>, apresenta a supremacia de Deus e a adoração como fundamento da missão. Síntese interpretativa: uma igreja despertada não guarda a alegria em Cristo para si; ela anuncia o evangelho entre os povos.</p><p class="reading-note">As contribuições acima são paráfrases e sínteses interpretativas, não citações literais. A Bíblia permanece a autoridade central.</p></div>
+<div class="reading-topic"><h3>6 · Aplicação ministerial</h3><p>Pregue Cristo crucificado e ressuscitado, explicando o texto em seu contexto. Convide ao arrependimento sem manipular culpa ou emoções. Fortaleça oração, ensino bíblico, comunhão e cuidado mútuo. Trate santidade como fruto da graça e formação diária do caráter. Organize a evangelização como expressão da missão da igreja, com compaixão e clareza do evangelho. Avalie o fruto ao longo do tempo, sem confundir números, manifestações ou entusiasmo com maturidade.</p></div>
+<div class="reading-topic"><h3>7 · Perguntas para aprofundamento</h3><p>1. O que, na proclamação de Pedro, confronta a igreja hoje?<br>2. Que diferença existe entre remorso passageiro e arrependimento bíblico?<br>3. Como ensino apostólico, comunhão, mesa e oração moldam a comunidade local?<br>4. Que práticas de piedade e misericórdia precisam ser fortalecidas no ministério?<br>5. Como a igreja pode anunciar Cristo com coragem e servir a cidade com amor?<br>6. Que frutos observáveis, sustentados pela Escritura, devem ser acompanhados nas próximas semanas?</p></div>
+<div class="reading-topic"><h3>8 · Honestidade teológica</h3><p>Cristãos fiéis às Escrituras divergem sobre aspectos da experiência do batismo no Espírito, os dons e a continuidade de determinadas manifestações. Este estudo não transforma uma tradição denominacional em regra universal. As posições devem ser avaliadas pela exegese, pelo conjunto do testemunho bíblico e pelo fruto cristão, mantendo Cristo e as Escrituras no centro.</p></div>
+<div class="reading-topic"><h3>9 · Referências bibliográficas e fontes</h3><ul><li><a href="https://wesley.nnu.edu/john-wesley/the-sermons-of-john-wesley-1872-edition/sermon-43-the-scripture-way-of-salvation/" target="_blank" rel="noopener noreferrer">John Wesley — The Scripture Way of Salvation (Sermão 43)</a></li><li><a href="https://search.worldcat.org/title/The-Holy-Spirit-%3A-activating-God%27s-power-in-your-life/oclc/4393147" target="_blank" rel="noopener noreferrer">Billy Graham — The Holy Spirit: Activating God's Power in Your Life (1978)</a></li><li><a href="https://www.desiringgod.org/books/let-the-nations-be-glad" target="_blank" rel="noopener noreferrer">John Piper — Let the Nations Be Glad! The Supremacy of God in Missions</a></li></ul></div>
+</article></section>
+<section id="cotidiano" class="hidden"><div id="dimensionOverviewCotidiano"></div><div class="panel"><div class="eyebrow">Dimensão 04 · Cotidiano</div><h2>Vida cotidiana</h2><p class="muted">Cuide da rotina, registre o que viveu, reveja seu caminho e acompanhe os lembretes sem misturar esta área com a Agenda.</p><div class="grid"><button class="btn" data-open-section="diary">Diário e confissão</button><button class="btn" data-open-section="habits">Hábitos</button><button class="btn" data-open-section="evolution">Revisões e evolução</button><button class="btn" data-open-section="alerts">Alertas e lembretes</button></div></div></section>
+<section id="habits" class="hidden"><div class="panel"><div class="eyebrow">Cotidiano · constância</div><h2>Hábitos</h2><p class="muted">Cadastre hábitos diários ou semanais, associe-os a uma dimensão e registre cada conclusão. A consistência considera apenas os dias previstos e registrados.</p><button id="newHabit" class="btn gold">+ Novo hábito</button><div id="habitsList"></div></div></section>
+<section id="alerts" class="hidden"><div class="panel"><div class="eyebrow">Cotidiano · alertas</div><h2>Alertas e lembretes</h2><p class="muted">Os lembretes da PWA são verificados enquanto o aplicativo está aberto ou ativo neste navegador. Para alarmes do sistema após fechar o aplicativo ou reiniciar o aparelho, utilize a implementação Android nativa.</p><p id="reminderStatus" class="muted" role="status">Verificando permissão de notificações…</p><button id="enableReminders" class="btn gold">Ativar notificações</button></div></section>
+<section id="ingrid" class="hidden"><div id="dimensionOverviewMatrimonial"></div><div class="panel"><div class="eyebrow">Aliança · presença · cuidado</div><h2>Ingrid</h2><p class="muted">Um espaço para cultivar atenção, parceria e cuidado respeitoso. O ciclo não define o humor, as vontades ou as necessidades dela.</p><div id="ingridContent"></div></div></section>
 <section id="diary" class="hidden"><div class="panel"><div class="eyebrow">Exame da realidade</div><h2>Diário</h2><p class="muted">Relate o que aconteceu e classifique a área. A inteligência usará esses relatos para oferecer direção bíblica.</p><label>Área da vida</label><select id="jd" class="field"><option>Espiritual</option><option>Matrimonial</option><option>Profissional</option><option>Cotidiano</option></select><label>Título do relato</label><input id="jt" class="field" placeholder="Ex.: Uma conversa difícil"><label>O que aconteceu? O que pensei, senti ou fiz?</label><textarea id="jb" class="field" rows="5" placeholder="Escreva com sinceridade..."></textarea><div id="journalPrompts"></div><button id="saveJ" class="btn gold">Salvar no diário</button></div><div class="panel confession-panel"><div class="eyebrow">Espaço reservado · não permanente</div><h2>Confissão</h2><p class="muted">Relate algo que você reconhece como erro, pecado ou atitude que precisa ser corrigida. A orientação será apresentada à luz das Escrituras. Este relato não será salvo no diário nem no histórico.</p><label>O que aconteceu? O que você fez e quem foi afetado?</label><textarea id="confessionText" class="field" rows="5" placeholder="Escreva com sinceridade. Este campo é temporário..."></textarea><div class="row"><button id="confessionRun" class="btn gold">Receber orientação bíblica</button><button id="confessionClear" class="btn">Limpar</button></div><div id="confessionResult"></div></div><div class="panel"><h2>Meus relatos</h2><div id="journalList"></div></div></section>
-<section id="intel" class="hidden"><div class="panel"><div class="eyebrow">Inteligência bíblica</div><h2>Direção a partir do seu diário</h2><p class="muted">Passagens, princípios, reflexões e passos práticos associados aos relatos de cada área. Sem presumir intenções ou emitir diagnóstico espiritual.</p><div id="intelligenceAreas"></div></div></section>
+<section id="intel" class="hidden"><div class="panel"><div class="eyebrow">Inteligência bíblica</div><h2>Direção a partir do seu diário</h2><p class="muted">Passagens, princípios, reflexões e passos práticos associados aos relatos de cada área. Sem presumir intenções ou emitir diagnóstico espiritual.</p><div id="intelligenceAreas"></div></div>
+<div class="panel ai-assistant-panel">
+ <div class="eyebrow">METANOIA AI · INTELIGÊNCIA INTEGRADA</div>
+ <h2>Converse com a inteligência do MEtanoia</h2>
+ <p class="muted">A IA pode relacionar Devoção, Matrimônio, Profissional e Cotidiano. A análise local continua funcionando sem internet.</p>
+ <label for="aiDimension">Foco da conversa</label>
+ <select id="aiDimension" class="field"><option>Visão integrada</option><option>Devoção</option><option>Matrimônio</option><option>Profissional</option><option>Cotidiano</option></select>
+ <div class="area">
+  <div class="eyebrow">Conta MEtanoia</div>
+  <label for="accountEmail">E-mail da conta</label>
+  <input id="accountEmail" class="field" type="email" autocomplete="username" placeholder="seu@email.com">
+  <label for="accountEncryptionPassphrase">Frase de criptografia (independente da senha da conta)</label>
+  <input id="accountEncryptionPassphrase" class="field" type="password" autocomplete="off" minlength="12" maxlength="256" placeholder="Use uma frase exclusiva com pelo menos 12 caracteres">
+  <p class="muted">A frase nunca é enviada ao servidor. Sem ela ou uma chave de recuperação futura, os dados cifrados não poderão ser recuperados.</p>
+  <label for="accountPassword">Senha da conta</label>
+  <input id="accountPassword" class="field" type="password" autocomplete="current-password" placeholder="Senha com pelo menos 12 caracteres">
+  <label for="registrationKey">Código de convite (somente no primeiro cadastro)</label>
+  <input id="registrationKey" class="field" type="password" autocomplete="off" placeholder="Código de convite fornecido pelo administrador">
+  <div class="row" style="flex-wrap:wrap">
+   <button id="accountLogin" class="btn">Entrar</button>
+   <button id="accountUnlock" class="btn">Inicializar / desbloquear criptografia</button>
+   <button id="accountRegister" class="btn">Criar conta</button>
+   <button id="accountLogout" class="btn" hidden>Sair</button>
+  </div>
+  <div id="accountStatus" class="muted" role="status">Entre com sua conta para usar a IA autenticada.</div>
+ </div>
+ <p class="muted">A credencial fica apenas nesta sessão do navegador. Não a compartilhe. O uso do modelo na nuvem pode gerar cobrança conforme o volume de tokens.</p>
+ <label class="ai-consent"><input id="aiConsent" type="checkbox"> <span>Autorizo o envio dos registros recentes relacionados ao foco escolhido e da pergunta digitada ao serviço de IA do MEtanoia, hospedado na Cloudflare. Os dados serão usados para gerar esta resposta e não serão gravados pelo endpoint do aplicativo.</span></label>
+ <div id="aiConversation" class="ai-conversation" aria-live="polite"><div class="empty">Sua conversa aparecerá aqui. Nenhum registro será enviado até você autorizar e enviar uma pergunta.</div></div>
+ <label for="aiQuestion">O que você deseja compreender ou planejar?</label>
+ <textarea id="aiQuestion" class="field" rows="3" placeholder="Escreva sua pergunta..."></textarea>
+ <div class="row"><button id="aiSend" class="btn gold">Enviar à IA</button><button id="aiClear" class="btn">Limpar conversa</button></div>
+ <div id="aiStatus" class="muted" role="status">Entre com sua conta MEtanoia para autorizar a sessão.</div>
+</div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
-<nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="ingrid"><b>♡</b>Ingrid</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
-<div id="modal"></div><script src="/app.js?v=20261104-31"></script></body></html>
+<nav class="tabs" aria-label="Navegação principal"><button class="tab active" data-tab="dashboard"><b>◉</b>Evolução</button><button class="tab" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="areas"><b>◈</b>Áreas</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button></nav>
+<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/sync.js?v=20261110-1"></script><script src="/app.js?v=20261110-18"></script></body></html>

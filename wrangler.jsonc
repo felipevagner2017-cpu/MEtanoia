@@ -1,1 +1,29 @@
-{"$schema":"node_modules/wrangler/config-schema.json","name":"metonoia","compatibility_date":"2026-11-03","workers_dev":true,"assets":{"directory":"./web","not_found_handling":"single-page-application"},"observability":{"logs":{"enabled":true,"invocation_logs":true}}}
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "metanoia",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-11-03",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./web",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "metanoia",
+      "database_id": "1af20f6e-bb1c-4f8f-b9e4-d71ca09279c0",
+      "migrations_dir": "./migrations"
+    }
+  ]
+}

@@ -29,9 +29,12 @@ jobs:
         run: gradle assembleDebug
       - name: Run unit tests
         run: gradle testDebugUnitTest
+      - name: Generate Gradle Wrapper for portable source
+        run: gradle wrapper --gradle-version 8.9 --distribution-type bin
       - name: Package complete source
         run: |
           git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
+          zip -u MEtanoia-codigo-fonte.zip gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
           cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtanoia-Android.apk
       - name: Upload source code
         uses: actions/upload-artifact@v4
@@ -61,7 +64,7 @@ jobs:
 
   room-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,10 +77,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
       - name: Run Room integration tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
+          emulator-boot-timeout: 900
           target: google_apis
           arch: x86_64
-          script: gradle connectedDebugAndroidTest
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: gradle connectedDebugAndroidTest --stacktrace

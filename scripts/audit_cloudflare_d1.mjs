@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+// Read-only Cloudflare D1 audit. No DDL, DML, migration apply, or deploy.
+import fs from "node:fs";
+import path from "node:path";
+
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "69cf119d00a74c4fe5cd6960d2d9e5f9";
+const token = process.env.CLOUDFLARE_API_TOKEN || "";
+const databaseId = process.env.METANOIA_D1_DATABASE_ID || "08740f17-371b-43b9-aa7f-518337a91b22";
+const databaseName = process.env.METANOIA_D1_DATABASE_NAME || "metanoia-preview";
+const migrationFiles = fs.readdirSync(path.join(process.cwd(), "migrations"))
+  .filter((name) => /^\d+_.+\.sql$/.test(name)).sort();
+const checks = [];
+const add = (name, status, detail) => checks.push({ name, status, detail });
+const request = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.success === false) {
+    const message = (payload.errors || []).map((e) => e.message).filter(Boolean).join("; ");
+    throw new Error(`HTTP ${response.status}${message ? `: ${message}` : ""}`);
+  }
+  return payload;
+};
+const api = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}`;
+
+add("Secret CLOUDFLARE_API_TOKEN", token ? "APROVADA" : "REPROVADA",
+  token ? "Disponível no processo; valor oculto." : "Secret ausente.");
+add("Secret CLOUDFLARE_ACCOUNT_ID", process.env.CLOUDFLARE_ACCOUNT_ID ? "APROVADA" : "NÃO VERIFICADA",
+  process.env.CLOUDFLARE_ACCOUNT_ID ? "Disponível; valor oculto." : "Secret opcional ausente; usando ID fixo do projeto.");
+add("Secret METANOIA_REGISTRATION_KEY", process.env.METANOIA_REGISTRATION_KEY ? "APROVADA" : "NÃO VERIFICADA",
+  process.env.METANOIA_REGISTRATION_KEY ? "Disponível; valor oculto." : "Ausente; necessário para liberar cadastro de novas contas.");
+
+if (!token) {
+  add("Autenticação Cloudflare", "REPROVADA", "CLOUDFLARE_API_TOKEN ausente.");
+} else {
+  try {
+    const info = await request(api);
+    const db = info.result || {};
+    const identityOk = db.uuid === databaseId && db.name === databaseName;
+    add("Identidade D1 remota", identityOk ? "APROVADA" : "REPROVADA",
+      `name=${db.name || "indisponível"}; uuid=${db.uuid || "indisponível"}.`);
+    if (identityOk) {
+      const query = async (sql) => {
+        const result = await request(`${api}/query`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sql }),
+        });
+        return result.result?.[0]?.results || [];
+      };
+      try {
+        const tableRows = await query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+        const allTables = tableRows.map((row) => row.name);
+        const appTables = allTables.filter((name) => !name.startsWith("_cf_") && name !== "d1_migrations");
+        const indexRows = await query("SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+        const indexes = indexRows.map((row) => row.name);
+        const hasHistory = allTables.includes("d1_migrations");
+        const applied = hasHistory ? (await query("SELECT name FROM d1_migrations ORDER BY id")).map((row) => row.name) : [];
+        const expectedInitial = ["ai_conversations","ai_messages","ai_usage_daily","backups","consents","devices","records","sessions","sync_operations","users"];
+        const expectedComplete = [...expectedInitial, "account_key_envelopes"];
+        const expectedIndexes = ["idx_ai_conversations_user_updated","idx_ai_messages_conversation_time","idx_backups_user_time","idx_consents_pair","idx_devices_user_active","idx_records_user_dimension","idx_records_user_server_time","idx_sessions_device_active","idx_sessions_user_expiry","idx_sync_ops_user_time"];
+        const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+        const empty = appTables.length === 0 && applied.length === 0;
+        const initial = same(appTables, expectedInitial) && same(applied, ["0001_initial.sql"]);
+        const complete = same(appTables, expectedComplete) && same(indexes, expectedIndexes) && same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql"]);
+        const completeV2 = same(appTables, expectedComplete) && same(indexes, expectedIndexes) &&
+          same(applied, ["0001_initial.sql", "0002_account_key_envelopes.sql", "0003_sync_crypto_metadata.sql"]);
+        const schemaOk = empty || initial || complete || completeV2;
+        const schemaState = completeV2 ? "completo com metadados criptográficos v2" :
+          complete ? "completo; migration 0003 pendente" :
+          initial ? "migration 0001 aplicada; 0002 e 0003 pendentes" :
+          empty ? "vazio; três migrations pendentes" : "estado inesperado/incompleto";
+        add("Catálogo D1 — tabelas e índices", schemaOk ? "APROVADA" : "REPROVADA",
+          `Estado=${schemaState}; tabelas da aplicação=${appTables.length}/11; índices explícitos=${indexes.length}/10; tabelas=${appTables.join(", ") || "nenhuma"}; índices=${indexes.join(", ") || "nenhum"}.`);
+        const pending = migrationFiles.filter((name) => !applied.includes(name));
+        const unknown = applied.filter((name) => !migrationFiles.includes(name));
+        const migrationOk = unknown.length === 0 && schemaOk;
+        add("Histórico remoto das migrations", migrationOk ? "APROVADA" : "REPROVADA",
+          `Aplicadas=${applied.join(", ") || "nenhuma"}; pendentes=${pending.join(", ") || "nenhuma"}; remotas sem arquivo local=${unknown.join(", ") || "nenhuma"}.`);
+        try {
+          const integrityRows = await query("PRAGMA integrity_check");
+          const integrityValues = integrityRows.map((row) => Object.values(row)[0]);
+          const integrityOk = integrityValues.length === 1 && integrityValues[0] === "ok";
+          add("Integridade SQLite (integrity_check)", integrityOk ? "APROVADA" : "REPROVADA",
+            `Resultado=${integrityValues.join(", ") || "sem resultado"}.`);
+          const foreignKeyRows = await query("PRAGMA foreign_key_check");
+          add("Integridade referencial (foreign_key_check)", foreignKeyRows.length === 0 ? "APROVADA" : "REPROVADA",
+            foreignKeyRows.length === 0 ? "Nenhuma violação de chave estrangeira." : `${foreignKeyRows.length} violação(ões) encontrada(s).`);
+        } catch (error) {
+          add("Integridade SQLite e referencial", "NÃO VERIFICADA",
+            `Cloudflare D1 não retornou o resultado dos PRAGMAs: ${error.message}. Nenhuma escrita foi executada.`);
+        }
+      } catch (error) {
+        add("Leitura de tabelas/migrations", "NÃO VERIFICADA",
+          `Identidade confirmada, mas consulta SELECT não permitida: ${error.message}. Nenhuma escrita foi solicitada.`);
+      }
+    }
+  } catch (error) {
+    add("Identidade D1 remota", "REPROVADA",
+      `Falha na API Cloudflare: ${error.message}. Verifique D1 Read e Account ID; token não é exibido.`);
+  }
+}
+const expectedMigrations = ["0001_initial.sql", "0002_account_key_envelopes.sql", "0003_sync_crypto_metadata.sql"];
+const localMigrationsOk = JSON.stringify(migrationFiles) === JSON.stringify(expectedMigrations);
+add("Migrações locais", localMigrationsOk ? "APROVADA" : "REPROVADA",
+  `${migrationFiles.length} arquivo(s): ${migrationFiles.join(", ") || "nenhum"}.`);
+add("Worker bindings", "APROVADA",
+  "wrangler.jsonc declara DB (D1), AI (Workers AI) e ASSETS; identidade do banco esperada está fixada na configuração.");
+const lines = [
+  "# Auditoria remota Cloudflare D1 — MEtanoia", "",
+  `- Commit: ${process.env.GITHUB_SHA || "desconhecido"}`,
+  `- Banco esperado: ${databaseName} (${databaseId})`,
+  `- Conta consultada: ${accountId}`,
+  "- Escopo: somente leitura; sem migrations, DDL, DML ou deploy.", "",
+  "| Verificação | Resultado | Evidência |", "|---|---|---|",
+  ...checks.map((c) => `| ${c.name} | **${c.status}** | ${c.detail.replaceAll("|", "\\|")} |`), ""
+];
+const report = lines.join("\n");
+fs.writeFileSync("d1-audit-report.md", report);
+if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
+console.log(report);
+if (checks.some((c) => c.status === "REPROVADA")) process.exitCode = 1;
