@@ -1,7 +1,7 @@
 /* Encrypted, revision-aware PWA synchronization. Plaintext never leaves the browser. */
 (()=> {
 "use strict";
-const DB_NAME="metonoia-sync-v1",DB_VERSION=1,PURPOSE="record";
+const DB_NAME="metonoia-sync-v1",DB_VERSION=2,PURPOSE="record";
 const DIMENSION={Espiritual:"DEVOTION",Matrimonial:"MATRIMONIAL",Profissional:"PROFESSIONAL",Cotidiano:"DAILY"};
 const TYPES={items:"pwa-agenda-item",journal:"pwa-journal-entry",reviews:"pwa-review-entry",words:"pwa-word-entry"};
 const PREFIX={items:"pwa-item-",journal:"pwa-journal-",reviews:"pwa-review-",words:"pwa-word-"};
@@ -13,13 +13,17 @@ const parse=value=>JSON.parse(value);
 function openDb(){
  return new Promise((resolve,reject)=>{
   const request=indexedDB.open(DB_NAME,DB_VERSION);
-  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("meta"))db.createObjectStore("meta",{keyPath:"key"});if(!db.objectStoreNames.contains("counters"))db.createObjectStore("counters",{keyPath:"key"});};
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains("meta"))db.createObjectStore("meta",{keyPath:"key"});if(!db.objectStoreNames.contains("counters"))db.createObjectStore("counters",{keyPath:"key"});if(!db.objectStoreNames.contains("outbox"))db.createObjectStore("outbox",{keyPath:"key"});};
   request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error("Não foi possível abrir o armazenamento seguro de sincronização."));
  });
 }
 async function getMeta(key){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readonly"),r=tx.objectStore("meta").get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});}finally{db.close();}}
 async function putMeta(value){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readwrite");tx.objectStore("meta").put(value);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error("Falha ao persistir metadados de sincronização."));});}finally{db.close();}}
 async function allMeta(prefix){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("meta","readonly"),r=tx.objectStore("meta").getAll();r.onsuccess=()=>resolve((r.result||[]).filter(x=>x.key.startsWith(prefix)));r.onerror=()=>reject(r.error);});}finally{db.close();}}
+async function getOutbox(key){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("outbox","readonly"),r=tx.objectStore("outbox").get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});}finally{db.close();}}
+async function putOutbox(value){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction("outbox","readwrite");tx.objectStore("outbox").put(value);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error("Falha ao persistir operação pendente."));});}finally{db.close();}}
+async function deleteOutbox(key){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction("outbox","readwrite");tx.objectStore("outbox").delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error("Falha ao confirmar operação pendente."));});}finally{db.close();}}
+async function allOutbox(prefix){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction("outbox","readonly"),r=tx.objectStore("outbox").getAll();r.onsuccess=()=>resolve((r.result||[]).filter(x=>x.key.startsWith(prefix)));r.onerror=()=>reject(r.error);});}finally{db.close();}}
 async function nextCounter(accountId,deviceId){
  const db=await openDb(),key=accountId+":"+deviceId+":"+PURPOSE;
  try{return await new Promise((resolve,reject)=>{
@@ -108,16 +112,17 @@ async function encryptLocal(record){
 }
 async function pushOperations(operations){
  const applied=[];
- for(let i=0;i<operations.length;i++){
-  const op=operations[i];
-  if(op.operation==="upsert"&&op.payloadCiphertext.length>49000)throw Error("Um registro excede o limite seguro de sincronização (49 KB). Ele permanece salvo neste aparelho.");
+ for(const candidate of operations){
+  if(candidate.operation==="upsert"&&candidate.payloadCiphertext.length>49000)throw Error("Um registro excede o limite seguro de sincronização (49 KB). Ele permanece salvo neste aparelho.");
+  const key=configuration.accountId+":"+candidate.recordId;
+  let queued=await getOutbox(key);
+  if(!queued){const localRecord=collectLocal().get(candidate.recordId);queued={key,operation:candidate,plain:localRecord?.plain||"",createdAt:Date.now()};await putOutbox(queued);}
+  const op=queued.operation;
   const data=await api("/api/sync/push",{method:"POST",headers:{"Content-Type":"application/json"},body:json({operations:[op]})});
   const result=data.results?.[0];
-  if(result?.status==="applied"||result?.duplicate){
-   applied.push({operation:op,result});continue;
-  }
-  if(result?.status==="conflict")throw Object.assign(Error("Conflito de edição em "+op.recordId+"; os dados locais foram preservados. Sincronize novamente para reconciliar."),{conflict:true});
-  throw Error("O servidor rejeitou "+op.recordId+": "+(result?.reason||result?.status||"resposta inválida"));
+  if(result?.status==="applied"||result?.duplicate){applied.push({operation:op,result,plain:queued.plain});await deleteOutbox(key);continue;}
+  if(result?.status==="conflict")throw Object.assign(Error("Conflito de edição em "+op.recordId+"; a operação criptografada permanece na fila local e nenhum dado local será substituído."),{conflict:true});
+  throw Error("O servidor rejeitou "+op.recordId+": "+(result?.reason||result?.status||"resposta inválida")+"; a operação permanece na fila local.");
  }
  return applied;
 }
@@ -137,6 +142,8 @@ async function syncOnce(){
  const remoteRows=await pullAll(),remoteById=new Map(remoteRows.map(r=>[r.record_id,r]));
  const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
  const shadows=new Map(shadowRows.map(x=>[x.key.slice(("shadow:"+configuration.accountId+":").length),x]));
+ const outboxRows=await allOutbox(configuration.accountId+":");
+ const outboxByRecord=new Map(outboxRows.map(x=>[x.operation.recordId,x]));
  const deletionQueue=readDeletionQueue(),deletionIds=new Set(deletionQueue.map(x=>x.recordId));
  const pending=[];
  let changed=false;
@@ -149,7 +156,7 @@ async function syncOnce(){
    if(!row.deleted_at)pending.push({kind:queued.kind,id:queued.id,deleted:true,baseRevision:Number(row.revision||0),dimension:queued.dimension});
    continue;
   }
-  const localDirty=!!shadow&&!!localRecord&&localRecord.plain!==shadow.plain;
+  const localDirty=!!localRecord&&(outboxByRecord.has(row.record_id)||!!shadow&&localRecord.plain!==shadow.plain);
   if(localDirty){
    pending.push({kind,id:localRecord.id,record:localRecord,baseRevision:Number(row.revision||0)});
    continue;
@@ -178,16 +185,16 @@ async function syncOnce(){
  }
  const results=await pushOperations(operations);
  const completedDeletes=new Set();
- for(const {operation,result} of results){
+ for(const {operation,result,plain} of results){
   const kind=kindFromRecord({record_id:operation.recordId});
   const localRecord=collectLocal().get(operation.recordId);
-  await putMeta({key:"shadow:"+configuration.accountId+":"+operation.recordId,plain:operation.operation==="delete"?"":localRecord?.plain||"",revision:Number(result.revision||operation.baseRevision+1),deleted:operation.operation==="delete"});
+  await putMeta({key:"shadow:"+configuration.accountId+":"+operation.recordId,plain:operation.operation==="delete"?"":(plain??localRecord?.plain??""),revision:Number(result.revision||operation.baseRevision+1),deleted:operation.operation==="delete"});
   if(operation.operation==="delete")completedDeletes.add(operation.recordId);
  }
  if(completedDeletes.size)writeDeletionQueue(deletionQueue.filter(x=>!completedDeletes.has(x.recordId)));
  if(operations.length){
   const verify=await pullAll(),map=new Map(verify.map(r=>[r.record_id,r]));
-  for(const op of operations){
+  for(const {operation:op} of results){
    const row=map.get(op.recordId);
    if(!row||Number(row.revision)<Number(op.baseRevision)+1)throw Error("Persistência remota não confirmada para "+op.recordId+".");
   }
