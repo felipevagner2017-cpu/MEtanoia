@@ -371,7 +371,7 @@ async function sendAiQuestion(){
  }
 }
 
-$("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
+const aiOpenButton=$("aiOpen");if(aiOpenButton)aiOpenButton.onclick=()=>{show("intel");$("aiQuestion").focus()};
 const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
 function persistentDeviceId(email){
  const storageKey="metonoia-device:"+String(email||"").trim().toLowerCase();
