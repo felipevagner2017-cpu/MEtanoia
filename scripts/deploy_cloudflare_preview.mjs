@@ -70,13 +70,15 @@ const dek=await accountCrypto.openEnvelope(session.userId,passphrase,envelope);
 const recordUuid=webcrypto.randomUUID(),recordId="pwa-journal-"+recordUuid,recordType="pwa-journal-entry";
 const firstEntity={id:recordUuid,title:"Preview smoke test",body:"encrypted-persisted-record",dimension:"Cotidiano",at:Date.now(),checkin:{}};
 const firstCipher=await accountCrypto.encryptRecordV2(session.userId,deviceId,"record",recordId,"DAILY",recordType,dek,1,JSON.stringify(firstEntity));
-const push=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({operations:[{
- operationId:webcrypto.randomUUID(),recordId,operation:"upsert",dimension:"DAILY",recordType,
+const firstOperation={operationId:webcrypto.randomUUID(),recordId,operation:"upsert",dimension:"DAILY",recordType,
  payloadCiphertext:firstCipher,encryptionVersion:2,sourceDeviceId:deviceId,purpose:"record",
- baseRevision:0,deviceId,clientUpdatedAt:Date.now()
-}]})});
+ baseRevision:0,deviceId,clientUpdatedAt:Date.now()};
+const push=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({operations:[firstOperation]})});
 const pushed=await push.json().catch(()=>({}));
 if(push.status!==200||pushed.results?.[0]?.status!=="applied")throw new Error("Preview encrypted sync push failed (HTTP "+push.status+").");
+const duplicatePush=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({operations:[firstOperation]})});
+const duplicateData=await duplicatePush.json().catch(()=>({}));
+if(duplicatePush.status!==200||duplicateData.results?.[0]?.duplicate!==true)throw new Error("Preview operationId retry was not idempotent.");
 const secondDevice=webcrypto.randomUUID();
 const secondLogin=await fetch(url+"/api/auth/login",{method:"POST",headers:apiHeaders,body:JSON.stringify({email,password,platform:"pwa",deviceLabel:"CI second device",deviceId:secondDevice})});
 const secondSession=await secondLogin.json().catch(()=>({}));
@@ -92,6 +94,49 @@ const remoteRecord=pulled.records?.find(x=>x.record_id===recordId);
 if(pull.status!==200||!remoteRecord||remoteRecord.source_device_id!==deviceId||remoteRecord.purpose!=="record")throw new Error("Preview sync pull or v2 metadata recovery failed.");
 const plaintext=await accountCrypto.decryptRecordV2(session.userId,remoteRecord.source_device_id,remoteRecord.purpose,remoteRecord.record_id,remoteRecord.dimension,remoteRecord.record_type,secondDek,remoteRecord.payload_ciphertext);
 if(JSON.parse(new TextDecoder().decode(plaintext)).body!=="encrypted-persisted-record")throw new Error("Preview second-device decryption returned different plaintext.");
+const concurrentEntity={...firstEntity,body:"second-device-concurrent-edit",at:Date.now()};
+const concurrentCipher=await accountCrypto.encryptRecordV2(session.userId,secondDevice,"record",recordId,"DAILY",recordType,secondDek,2,JSON.stringify(concurrentEntity));
+const concurrentOperation={operationId:webcrypto.randomUUID(),recordId,operation:"upsert",dimension:"DAILY",recordType,
+ payloadCiphertext:concurrentCipher,encryptionVersion:2,sourceDeviceId:secondDevice,purpose:"record",
+ baseRevision:0,deviceId:secondDevice,clientUpdatedAt:Date.now()};
+const conflictResponse=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...secondAuth},body:JSON.stringify({operations:[concurrentOperation]})});
+const conflictData=await conflictResponse.json().catch(()=>({}));
+if(conflictResponse.status!==200||conflictData.results?.[0]?.status!=="conflict"||conflictData.results[0].currentRevision!==1)throw new Error("Preview concurrent stale edit did not return a revision conflict.");
+const rebasedOperation={...concurrentOperation,operationId:webcrypto.randomUUID(),baseRevision:1,clientUpdatedAt:Date.now()};
+const rebaseResponse=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...secondAuth},body:JSON.stringify({operations:[rebasedOperation]})});
+const rebaseData=await rebaseResponse.json().catch(()=>({}));
+if(rebaseResponse.status!==200||rebaseData.results?.[0]?.status!=="applied"||rebaseData.results[0].revision!==2)throw new Error("Preview conflict rebase did not apply at revision 2.");
+const rebasedPull=await fetch(url+"/api/sync/pull?since=0",{headers:auth});
+const rebasedData=await rebasedPull.json().catch(()=>({}));
+const rebasedRecord=rebasedData.records?.find(x=>x.record_id===recordId);
+if(rebasedPull.status!==200||!rebasedRecord||rebasedRecord.revision!==2||rebasedRecord.source_device_id!==secondDevice)throw new Error("Preview rebased record metadata was not persisted.");
+const rebasedPlain=await accountCrypto.decryptRecordV2(session.userId,rebasedRecord.source_device_id,rebasedRecord.purpose,rebasedRecord.record_id,rebasedRecord.dimension,rebasedRecord.record_type,secondDek,rebasedRecord.payload_ciphertext);
+if(JSON.parse(new TextDecoder().decode(rebasedPlain)).body!=="second-device-concurrent-edit")throw new Error("Preview rebased record did not decrypt to the second-device update.");
+const backupResponse=await fetch(url+"/api/backups",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({deviceId,payloadCiphertext:firstCipher,recordCount:1,formatVersion:1})});
+const backupData=await backupResponse.json().catch(()=>({}));
+if(backupResponse.status!==201||!backupData.id)throw new Error("Preview encrypted backup creation failed.");
+const backupRestore=await fetch(url+"/api/backups/"+backupData.id,{headers:auth});
+const restored=await backupRestore.json().catch(()=>({}));
+if(backupRestore.status!==200||restored.backup?.payload_ciphertext!==firstCipher)throw new Error("Preview encrypted backup restore did not preserve ciphertext.");
+const deleteOperation={operationId:webcrypto.randomUUID(),recordId,operation:"delete",dimension:"DAILY",recordType:"tombstone",encryptionVersion:1,baseRevision:2,deviceId};
+const deleteResponse=await fetch(url+"/api/sync/push",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({operations:[deleteOperation]})});
+const deleteData=await deleteResponse.json().catch(()=>({}));
+if(deleteResponse.status!==200||deleteData.results?.[0]?.status!=="applied"||deleteData.results[0].revision!==3)throw new Error("Preview tombstone deletion failed.");
+const tombstonePull=await fetch(url+"/api/sync/pull?since=0",{headers:secondAuth});
+const tombstones=await tombstonePull.json().catch(()=>({}));
+const tombstone=tombstones.records?.find(x=>x.record_id===recordId);
+if(tombstonePull.status!==200||!tombstone||!tombstone.deleted_at||tombstone.record_type!=="tombstone")throw new Error("Preview second-device tombstone recovery failed.");
+const isolatedDevice=webcrypto.randomUUID(),isolatedEmail="isolated-"+webcrypto.randomUUID()+"@example.invalid";
+const isolatedRegistration=await fetch(url+"/api/auth/register",{method:"POST",headers:apiHeaders,body:JSON.stringify({email:isolatedEmail,password:"MEtanoia-isolated-"+webcrypto.randomUUID(),platform:"pwa",deviceLabel:"CI isolation test",deviceId:isolatedDevice})});
+const isolatedSession=await isolatedRegistration.json().catch(()=>({}));
+if(isolatedRegistration.status!==201||!isolatedSession.token)throw new Error("Preview isolated-account registration failed.");
+const isolatedPull=await fetch(url+"/api/sync/pull?since=0",{headers:{"Authorization":"Bearer "+isolatedSession.token}});
+const isolatedData=await isolatedPull.json().catch(()=>({}));
+if(isolatedPull.status!==200||isolatedData.records?.some(x=>x.record_id===recordId))throw new Error("Preview record leaked across accounts.");
+const revokeResponse=await fetch(url+"/api/devices/"+secondDevice,{method:"DELETE",headers:auth});
+if(revokeResponse.status!==200)throw new Error("Preview second-device revocation failed.");
+const revokedPull=await fetch(url+"/api/sync/pull?since=0",{headers:secondAuth});
+if(revokedPull.status!==401)throw new Error("Preview revoked device retained API access.");
 const summary=[
  "### MEtanoia isolated Cloudflare Preview",
  "URL: "+url,
@@ -101,7 +146,9 @@ const summary=[
  "New-account registration: HTTP "+registration.status,
  "Login: HTTP "+login.status,
  "Encrypted key-envelope persistence and second-device recovery: passed",
- "Encrypted v2 push, D1 persistence, pull and cross-device decryption: passed",
+ "Encrypted v2 push/pull, second-device decryption and metadata recovery: passed",
+  "OperationId retry idempotency, stale-write conflict and rebase: passed",
+  "Encrypted backup create/restore, tombstone pull, account isolation and device revocation: passed",
  "Preview registration is open only on this isolated Preview Worker and database.",
  "Production Worker and production D1 were not modified."
 ].join("\n");
