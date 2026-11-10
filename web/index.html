@@ -328,6 +328,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 .dash-method{background:linear-gradient(150deg,#241631,#160d20)}.dash-method h3{color:var(--gold-bright)}.dash-method p{font-size:10px;line-height:1.6;margin:8px 0}
 @media(max-width:360px){.dashboard-metrics{gap:7px}.dash-metric{padding:11px 8px}.dash-ring{width:66px;height:66px;flex-basis:66px}.dash-metric h3{font-size:11px}}
 @media(min-width:650px){.dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.dash-metric{padding:15px}.dash-ring{width:82px;height:82px;flex-basis:82px}}
+
+/* Ajuste mobile: anel acima do título, sem colisão em cartões estreitos */
+.dash-summary{display:block}.dash-summary strong{display:block}.dash-summary span{display:block;margin-top:5px}
+.dash-metric-top{flex-direction:column-reverse;align-items:center;justify-content:center;gap:9px;text-align:center}
+.dash-metric h3{width:100%;min-height:30px;display:flex;align-items:center;justify-content:center;text-align:center}
+.dash-ring{width:72px;height:72px;flex-basis:72px}
+.dash-metric .dash-evidence{min-height:0}
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia-symbol.webp" alt="Emblema oficial MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
