@@ -52,9 +52,9 @@ jobs:
           const html = fs.readFileSync('web/index.html','utf8');
           for (const asset of ['/crypto.js','/sync.js','/app.js','/manifest.webmanifest','/icons/metonoia-symbol.webp','/icons/ingrid_avatar.webp']) if (!html.includes(asset)) throw new Error('Missing HTML asset reference: ' + asset);
           if (!html.includes('data-tab="agenda"')) throw new Error('Independent Agenda navigation is missing.');
-          for (const section of ['pastoralStudy','cotidiano','alerts']) if (!html.includes('id="'+section+'"')) throw new Error('Missing section: '+section);
+          for (const section of ['pastoralStudy','cotidiano','habits','alerts']) if (!html.includes('id="'+section+'"')) throw new Error('Missing section: '+section);
           const app = fs.readFileSync('web/app.js','utf8');
-          if (!app.includes('pastoralStudy') || !app.includes('a==="Cotidiano"?"cotidiano"')) throw new Error('Devotional study or separate Cotidiano route is missing.');
+          if (!app.includes('pastoralStudy') || !app.includes('renderHabits') || !app.includes('schedule==="daily"') || !app.includes('a==="Cotidiano"?"cotidiano"')) throw new Error('Devotional study or separate Cotidiano route is missing.');
           const sw = fs.readFileSync('web/sw.js','utf8');
           if (!sw.includes('/icons/metonoia-symbol.webp') || !sw.includes('/icons/ingrid_avatar.webp')) throw new Error('Official brand/avatar assets are not cached by the Service Worker.');
           NODE
