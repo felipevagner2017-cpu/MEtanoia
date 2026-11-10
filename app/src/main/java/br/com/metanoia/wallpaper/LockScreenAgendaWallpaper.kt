@@ -33,7 +33,7 @@ object LockScreenAgendaWallpaper {
     private const val HEIGHT = 2400
     private const val LEFT = 76f
     private const val RIGHT = 1004f
-    private val gold = Color.rgb(205, 169, 99)
+    private val gold = Color.rgb(197, 161, 90)
     private val white = Color.WHITE
 
     fun refresh(context: Context, db: MetanoiaDatabase) {
@@ -71,7 +71,7 @@ object LockScreenAgendaWallpaper {
         val background = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, 0f, WIDTH.toFloat(), HEIGHT.toFloat(),
-                intArrayOf(Color.rgb(24, 12, 49), Color.rgb(47, 24, 83), Color.rgb(15, 9, 34)),
+                intArrayOf(Color.rgb(7, 21, 37), Color.rgb(16, 37, 66), Color.rgb(8, 25, 43)),
                 null, Shader.TileMode.CLAMP
             )
         }
