@@ -21,10 +21,15 @@ try {
   if (!response || !response.ok()) throw new Error("Preview root returned HTTP " + (response?.status() ?? "no response"));
   await page.waitForTimeout(1500);
   const initialDiagnostics = await page.evaluate(() => {
+    const dashboard = document.querySelector("#dashboard");
     const word = document.querySelector("#word");
     return {
       title: document.title,
-      bodyText: document.body.innerText.slice(0, 1000),
+      bodyText: document.body.innerText.slice(0, 1400),
+      dashboardExists: Boolean(dashboard),
+      dashboardClass: dashboard?.className ?? null,
+      dashboardDisplay: dashboard ? getComputedStyle(dashboard).display : null,
+      dashboardVisibility: dashboard ? getComputedStyle(dashboard).visibility : null,
       wordExists: Boolean(word),
       wordClass: word?.className ?? null,
       wordDisplay: word ? getComputedStyle(word).display : null,
@@ -37,8 +42,11 @@ try {
   if (!initialDiagnostics.bodyText.includes("MEtanoia")) {
     throw new Error("MEtanoia brand text is missing from the live Preview: " + JSON.stringify(initialDiagnostics));
   }
-  if (initialDiagnostics.wordDisplay === "none" || initialDiagnostics.wordVisibility === "hidden") {
-    throw new Error("Jornada diária is hidden on the live Preview: " + JSON.stringify(initialDiagnostics));
+  if (!initialDiagnostics.dashboardExists || initialDiagnostics.dashboardDisplay === "none" || initialDiagnostics.dashboardVisibility === "hidden") {
+    throw new Error("The evolution dashboard is not visible on the live Preview: " + JSON.stringify(initialDiagnostics));
+  }
+  if (!initialDiagnostics.bodyText.includes("Sua evolução") || !initialDiagnostics.bodyText.includes("Desenvolvimento pessoal")) {
+    throw new Error("The premium evolution dashboard content is missing: " + JSON.stringify(initialDiagnostics));
   }
 
   async function capture(name, section) {
@@ -65,6 +73,8 @@ try {
     await card.locator('[data-open-section="' + target + '"]').click();
     await capture(area.toLowerCase(), target);
   }
+  await tab("dashboard");
+  await capture("00-dashboard-evolucao", "dashboard");
   await tab("word");
   await capture("01-jornada-diaria", "word");
   await tab("areas");
@@ -110,6 +120,9 @@ try {
   if (!(await page.locator("#habitsList").innerText()).includes("100%")) {
     throw new Error("Habit completion did not update its seven-day consistency.");
   }
+  await tab("dashboard");
+  const cotidianoMetric = page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Cotidiano" }).last();
+  if (!(await cotidianoMetric.innerText()).includes("100%")) throw new Error("Dashboard did not recalculate the completed habit.");
   await page.reload({ waitUntil: "networkidle" });
   await openCotidianoTool("habitos", "habits");
   const persistedHabit = page.locator("#habitsList").getByText(habitTitle);
@@ -120,6 +133,31 @@ try {
   page.once("dialog", dialog => dialog.accept());
   await page.locator('#habitsList [data-del]').first().click();
   await persistedHabit.waitFor({ state: "detached" });
+
+  // A real diary check-in must feed the wellbeing, exercise and food indicators.
+  await openCotidianoTool("diario", "diary");
+  await page.locator("#jd").selectOption("Cotidiano");
+  await page.locator('[data-jprompt="wellbeing"]').selectOption("Bem");
+  await page.locator('[data-jprompt="exercise"]').selectOption("Pratiquei");
+  await page.locator('[data-jprompt="food"]').selectOption("Equilibrada");
+  await page.locator("#jt").fill("CI smoke check-in");
+  await page.locator("#jb").fill("Registro automatizado de homologação, sem dado pessoal.");
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator("#saveJ").click();
+  await tab("dashboard");
+  for (const label of ["Bem-estar emocional", "Exercícios", "Alimentação"]) {
+    const metric = page.locator("#dashboardMetrics .dash-metric").filter({ hasText: label });
+    if (!(await metric.innerText()).includes("100%")) throw new Error("Dashboard did not calculate " + label + " from the saved check-in.");
+  }
+  await page.locator('[data-dash-period="30"]').click();
+  if (!(await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Exercícios" }).innerText()).includes("100%")) {
+    throw new Error("Thirty-day dashboard period did not include the persisted check-in.");
+  }
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#dashboard:not(.hidden)").waitFor();
+  if (!(await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Alimentação" }).innerText()).includes("100%")) {
+    throw new Error("Dashboard indicators did not persist after reload.");
+  }
 
   await tab("agenda");
   await page.locator('[data-agenda-view="week"]').click();
@@ -183,6 +221,9 @@ try {
   const desktop = await browser.newPage({ viewport: { width: 1365, height: 900 } });
   desktop.on("pageerror", error => errors.push(error.message));
   await desktop.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
+  await desktop.screenshot({ path: path.join(outDir, "desktop-dashboard.png"), fullPage: false });
+  await desktop.locator('[data-tab="word"]').click();
+  await desktop.waitForSelector("#word:not(.hidden)");
   await desktop.screenshot({ path: path.join(outDir, "desktop-jornada.png"), fullPage: false });
   if (errors.length) throw new Error("Browser runtime errors: " + errors.join(" | "));
   fs.writeFileSync(path.join(outDir, "inspection.json"), JSON.stringify({
