@@ -47,7 +47,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     if (eventId <= 0 || lead !in listOf(120, 60, 30)) return@launch
                     val item = MetanoiaDatabase.get(context).agendaDao().findById(eventId) ?: return@launch
                     if (item.completed || item.scheduledAt <= System.currentTimeMillis()) return@launch
-                    if (item.reminderAt == null || !NotificationPreferences(context).leadEnabled(lead)) return@launch
+                    if (item.reminderAt == null || lead !in item.reminderOffsets.split(",").mapNotNull { it.trim().toIntOrNull() } || !NotificationPreferences(context).leadEnabled(lead)) return@launch
                     val whenText = when (lead) { 120 -> "Faltam 2 horas"; 60 -> "Falta 1 hora"; else -> "Faltam 30 minutos" }
                     title = item.title
                     val eventTime = java.time.Instant.ofEpochMilli(item.scheduledAt).atZone(java.time.ZoneId.systemDefault())
