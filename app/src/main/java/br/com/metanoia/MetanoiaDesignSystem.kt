@@ -9,17 +9,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Design tokens oficiais do MEtanoia. */
-internal val DeepViolet = Color(0xFF1B092B)
-internal val VioletPrimary = Color(0xFF35105F)
-internal val VioletSurface = Color(0xFF2A1243)
-internal val VioletSecondary = Color(0xFF54218A)
-internal val CardSurface = Color(0xFF32194B)
-internal val GoldChampagne = Color(0xFFD9BC83)
-internal val GoldBright = Color(0xFFF0D9A1)
-internal val Ivory = Color(0xFFF3F0E7)
+/** Design tokens oficiais do MEtanoia — azul-marinho, branco e dourado. */
+internal val DeepViolet = Color(0xFF102542)
+internal val VioletPrimary = Color(0xFF173653)
+internal val VioletSurface = Color(0xFF1C3B59)
+internal val VioletSecondary = Color(0xFF244967)
+internal val CardSurface = Color(0xFF172F49)
+internal val GoldChampagne = Color(0xFFC5A15A)
+internal val GoldBright = Color(0xFFE4C77E)
+internal val Ivory = Color(0xFFFFFFFF)
 
-/** Escala tipográfica única: títulos dourados, conteúdo em marfim. */
+/** Escala tipográfica única: títulos dourados, conteúdo branco. */
 internal val MetanoiaTypography = Typography(
     headlineLarge = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, lineHeight = 38.sp),
     headlineMedium = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp),
@@ -34,7 +34,6 @@ internal val MetanoiaTypography = Typography(
     labelMedium = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp),
     labelSmall = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, lineHeight = 15.sp)
 )
-
 
 /** Formas compartilhadas para cartões, campos e superfícies premium. */
 internal val MetanoiaShapes = Shapes(
