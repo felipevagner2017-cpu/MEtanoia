@@ -33,12 +33,13 @@ jobs:
         run: node scripts/capture_web_preview.mjs
         env:
           METANOIA_PREVIEW_URL: https://metanoia-preview.restaura-lar.workers.dev
-      - name: Upload real Preview screenshots
+      - name: Upload real Preview screenshots and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: metonoia-web-preview-screenshots
           path: artifacts/web-preview/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
       - name: Build a source bundle for both isolated platform branches
         run: |
