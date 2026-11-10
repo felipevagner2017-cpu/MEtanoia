@@ -224,7 +224,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var cotidianoTab by remember { mutableStateOf("Diário") }
  var showAiAssistant by remember { mutableStateOf(false) }
  var aiInitialDimension by remember { mutableStateOf("Visão integrada") }
- val sectionLabels = listOf("Painel","Devoção","Matrimônio","Profissional","Cotidiano","Agenda")
+ val sectionLabels = listOf("Jornada diária","Devocional","Matrimônio","Profissional","Cotidiano","Agenda")
  val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 0, pageCount = { sectionLabels.size })
  val pagerScope = rememberCoroutineScope()
  val ringtoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -261,7 +261,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
       style=MaterialTheme.typography.headlineMedium,
       fontWeight=FontWeight.Bold,
       modifier=Modifier.clickable {
-       aiInitialDimension=when(pagerState.currentPage){0->"Visão integrada";1->"Devoção";2->"Matrimônio";3->"Profissional";4->"Cotidiano";else->"Agenda"}
+       aiInitialDimension=when(pagerState.currentPage){0->"Jornada diária";1->"Devocional";2->"Matrimônio";3->"Profissional";4->"Cotidiano";else->"Agenda"}
        showAiAssistant=true
       }
      )
@@ -303,10 +303,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    modifier = Modifier.fillMaxSize().weight(1f)
   ) { page ->
    when(page) {
-    0 -> DashboardPage(agenda, journal, analyses) { destination ->
-     val target = when(destination) { "Devocional" -> 1; "Matrimônio" -> 2; "Profissional" -> 3; "Agenda" -> 5; else -> 4 }
-     pagerScope.launch { pagerState.animateScrollToPage(target) }
-    }
+    0 -> DailyJourneyPage(journal, analyses)
     1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
     2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
     3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
