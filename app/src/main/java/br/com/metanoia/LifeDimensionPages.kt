@@ -82,7 +82,6 @@ private val dailyWords = listOf(
 
 @Composable
 internal fun DailyJourneyPage(
-    journal: List<JournalEntry>,
     analyses: List<DailyAnalysisEntry>
 ) {
     val today = LocalDate.now()
@@ -206,7 +205,7 @@ private fun DimensionAccessCard(modifier: Modifier, number: String, title: Strin
 internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
     DimensionRecordPage(
         eyebrow = "DIMENSÃO 01",
-        title = "Devocional / Espiritual",
+        title = "Devocional",
         description = "Devocional pastoral com estudo bíblico profundo, exegese responsável, contexto histórico-teológico e formação do caráter à luz das Escrituras.",
         promptTitle = "Texto bíblico ou tema pastoral",
         promptBody = "Registre a passagem, contexto histórico, observações do texto, palavras-chave, perguntas teológicas, interpretação e aplicação ao pastoreio.",
