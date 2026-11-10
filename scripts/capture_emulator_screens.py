@@ -91,6 +91,8 @@ for name in [
     "04-profissional",
     "05-cotidiano",
     "06-agenda",
+    "06b-agenda-semana",
+    "06c-agenda-dia",
     "07-diario",
     "08-revisoes",
     "09-alertas",
