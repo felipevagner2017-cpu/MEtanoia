@@ -2,6 +2,10 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const source = fs.readFileSync("web/app.js", "utf8");
+const html = fs.readFileSync("web/index.html", "utf8");
+if (!html.includes('data-agenda-view="day"') || !html.includes('data-agenda-view="week"') || !html.includes('data-agenda-view="month"') || !source.includes('agendaViewMode="month"')) {
+  throw new Error("Day, week and month agenda views are not wired into the PWA.");
+}
 for (const field of ['name="description"', 'name="location"', 'name="endTime"', 'name="reminders"']) {
   if (!source.includes(field)) throw new Error("Agenda form is missing " + field + ".");
 }
