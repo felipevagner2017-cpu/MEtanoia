@@ -58,7 +58,7 @@ class MainActivityNavigationTest {
         try {
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
-                    composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
+                    composeRule.onNodeWithText(expected, substring = false).performScrollTo().assertIsDisplayed()
                     true
                 }.getOrDefault(false)
             }
