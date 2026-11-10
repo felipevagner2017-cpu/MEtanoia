@@ -303,7 +303,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    modifier = Modifier.fillMaxSize().weight(1f)
   ) { page ->
    when(page) {
-    0 -> DailyJourneyPage(journal, analyses)
+    0 -> DailyJourneyPage(analyses)
     1 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
     2 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
     3 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
