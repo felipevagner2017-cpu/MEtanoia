@@ -32,7 +32,7 @@ android {
 
     buildTypes {
         getByName("debug") {
-            applicationIdSuffix = ".preview"
+            applicationIdSuffix = ".preview.lockscreen"
             versionNameSuffix = "-preview"
         }
         getByName("release") {
