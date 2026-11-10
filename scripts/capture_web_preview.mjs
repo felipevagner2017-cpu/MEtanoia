@@ -103,6 +103,7 @@ try {
   await page.locator("#eventLocation").fill("Local de homologação");
   await page.locator('input[name="time"]').fill("10:00");
   await page.locator('input[name="endTime"]').fill("11:00");
+  await page.locator('#edit input[name="reminders"][value="120"]').uncheck();
   await page.locator("#edit button.btn.gold").click();
   let eventCard = page.locator("#agendaList .agenda-event").filter({ hasText: eventTitle });
   await eventCard.waitFor();
@@ -115,6 +116,9 @@ try {
     if (!eventText.includes(expected)) throw new Error("Agenda field did not persist: " + expected);
   }
   await eventCard.locator("[data-edit]").click();
+  if (await page.locator('#edit input[name="reminders"]:checked').count() !== 2) {
+    throw new Error("Per-event reminder preferences did not persist after reload.");
+  }
   await page.locator("#eventTitle").fill(eventTitle + " editado");
   await page.locator("#edit button.btn.gold").click();
   await page.locator("#agendaList").getByText(eventTitle + " editado").waitFor();
