@@ -295,12 +295,24 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 @media(max-width:360px){.tag{max-width:170px}.tab{font-size:7px}.headerline .btn{padding:7px 8px}.word-slide{min-height:470px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+
+/* MEtonoia Premium — identidade oficial azul-marinho, branco e dourado */
+:root{color-scheme:dark;--navy:#102542;--deep:#07172f;--gold:#C5A15A;--gold-bright:#E2C47E;--white:#FFFFFF;--muted:#B9C7D8;--line:#C5A15A66;--panel:#112B49;--ink:#FFFFFF;--ink-soft:#B9C7D8;--stroke:#C5A15A55;--stroke-strong:#C5A15A99}
+html,body{background:#07172F!important;color:#FFFFFF!important}body{background:radial-gradient(ellipse at 50% -15%,#24466B 0%,#07172F 58%)!important;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:linear-gradient(145deg,#07172F,#102542 72%,#17385A)!important;border-bottom:1px solid #C5A15A!important;box-shadow:0 10px 30px #0006!important}.tag{color:#E2C47E!important}.date,.muted{color:#B9C7D8!important}
+.panel,.calendar-panel,.calendar-tools,.confession-panel,.ai-assistant-panel,.reading-page{background:linear-gradient(155deg,#163454,#0D2039)!important;border:1px solid #C5A15A66!important;color:#FFFFFF!important}.panel h2,.panel h3,.reading-page h2,.reading-page h3{color:#F0D89F!important}
+.word-welcome{background:radial-gradient(circle at 90% 10%,#C5A15A22,transparent 32%),linear-gradient(125deg,#18395A,#102542 65%,#07172F)!important;border:1px solid #C5A15A99!important;border-radius:18px}.word-topic{background:linear-gradient(145deg,#17385A,#091C34)!important;border:1px solid #C5A15A66!important;color:#FFFFFF!important}.word-topic.active{background:linear-gradient(135deg,#E2C47E,#B58A3D)!important;color:#102542!important}.word-topic.active b,.word-topic.active small{color:#102542!important}
+.word-slide{background:linear-gradient(155deg,#163454,#091C34)!important;border:1px solid #C5A15A77!important;border-radius:18px!important;color:#FFFFFF!important}.word-slide h2,.word-slide h3,.word-slide .goldtext,.word-slide .challenge-mark{color:#E2C47E!important}.word-slide p,.word-slide-foot,.word-disclaimer{color:#DCE5EF!important}.word-challenge{background:#0A1C34!important;border:1px solid #C5A15A77!important}.word-carousel{scrollbar-width:none}
+.btn{background:#17385C!important;border:1px solid #C5A15A88!important;color:#FFFFFF!important}.btn.gold,.gold.btn{background:linear-gradient(135deg,#E2C47E,#B58A3D)!important;color:#102542!important;border:0!important}.field,select.field,textarea.field,input.field{background:#081A32!important;border:1px solid #C5A15A66!important;color:#FFFFFF!important}label{color:#E5D4AC!important}
+.tabs{background:#07172FF5!important;border-top:1px solid #C5A15A88!important}.tab{color:#B9C7D8!important}.tab.active{background:#1B3858!important;border-color:#C5A15A66!important;color:#E8CD8F!important}.tab b{color:inherit!important}
+.calendar-nav,.calendar-day,.item,.area,.intel{background:#091C34!important;border-color:#C5A15A55!important;color:#FFFFFF!important}.calendar-day.selected{background:linear-gradient(135deg,#E2C47E,#B58A3D)!important;color:#102542!important}.calendar-head strong,.eyebrow,.link,.pill{color:#E2C47E!important}.modal{background:#102542!important;border-color:#C5A15A88!important}.modalbg{background:#07172FCC!important}.area-tools-actions{display:flex;flex-wrap:wrap;gap:8px}.area-tools-actions .btn{flex:1 1 140px}
 </style></head>
 <body>
-<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="aiOpen" class="btn gold">Assistente IA</button><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
+<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
 <main>
 
-<section id="word" aria-label="Jornada pessoal"><div id="wordAreas"></div><div id="homeReminderCard" class="home-reminder"></div></section>
+<section id="word" aria-label="Jornada diária"><div id="dailyJourney"></div></section>
+<section id="areas" class="hidden" aria-label="Áreas da vida"><div id="wordAreas"></div><div class="panel area-tools"><div class="eyebrow">Acompanhamento pessoal</div><h2>Continue sua jornada</h2><p class="muted">Seus registros e revisões permanecem organizados e protegidos neste espaço.</p><div class="row area-tools-actions"><button class="btn" data-open-section="diary">Diário e confissão</button><button class="btn" data-open-section="evolution">Evolução semanal</button><button class="btn" data-open-section="intel">Inteligência bíblica</button></div></div></section>
 <section id="agenda" class="hidden">
 <div class="panel calendar-panel">
  <div class="eyebrow">Planejamento pessoal</div><h2>Minha agenda</h2>
@@ -350,5 +362,5 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 </div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
-<nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
+<nav class="tabs" aria-label="Navegação principal"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="areas"><b>◈</b>Áreas</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button></nav>
 <div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/sync.js?v=20261109-1"></script><script src="/app.js?v=20261109-1"></script></body></html>
