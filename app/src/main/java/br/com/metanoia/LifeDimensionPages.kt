@@ -258,7 +258,7 @@ internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String
 private fun PastoralStudyPage() {
     val context = LocalContext.current
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp).testTag("pastoral-study-list"),
         contentPadding = PaddingValues(top = 15.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(11.dp)
     ) {
