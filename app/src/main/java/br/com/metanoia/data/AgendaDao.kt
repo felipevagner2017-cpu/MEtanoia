@@ -22,6 +22,15 @@ interface AgendaDao {
     @Update
     suspend fun update(item: AgendaItem)
 
+    @Update
+    suspend fun updateAll(items: List<AgendaItem>)
+
+    @Query("SELECT * FROM agenda_items WHERE seriesId = :seriesId ORDER BY scheduledAt ASC")
+    suspend fun findSeries(seriesId: String): List<AgendaItem>
+
+    @Query("DELETE FROM agenda_items WHERE seriesId = :seriesId")
+    suspend fun deleteSeries(seriesId: String): Int
+
     @Delete
     suspend fun delete(item: AgendaItem)
 
