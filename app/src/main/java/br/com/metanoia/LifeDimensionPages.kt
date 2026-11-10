@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -96,7 +97,7 @@ internal fun DailyJourneyPage(
         .replaceFirstChar { it.uppercase(Locale("pt", "BR")) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 18.dp),
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 18.dp).testTag("daily-journey-list"),
         contentPadding = PaddingValues(top = 18.dp, bottom = 30.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
