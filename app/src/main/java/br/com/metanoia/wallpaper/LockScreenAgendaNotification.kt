@@ -38,8 +38,15 @@ object LockScreenAgendaNotification {
         Build.VERSION.SDK_INT < 33 ||
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    fun canPost(context: Context): Boolean =
-        hasRuntimePermission(context) && NotificationManagerCompat.from(context).areNotificationsEnabled()
+    fun canPost(context: Context): Boolean {
+        if (!hasRuntimePermission(context) || !NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = manager.getNotificationChannel(CHANNEL_ID)
+            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+        }
+        return true
+    }
 
     fun refresh(context: Context, db: MetanoiaDatabase) {
         val app = context.applicationContext
