@@ -84,7 +84,7 @@ try {
     await page.screenshot({ path: path.join(outDir, "dimension-" + area.toLowerCase() + ".png"), fullPage: true });
     await overview.locator("[data-dimension-ai]").click();
     const aiPrompt = await page.locator("#aiQuestion").inputValue();
-    const requiredPrompt = {Espiritual:"texto bíblico",Matrimonial:"perspectiva",Profissional:"metas",Cotidiano:"bem-estar"}[area];
+    const requiredPrompt = {Espiritual:"bíblica",Matrimonial:"perspectiva",Profissional:"metas",Cotidiano:"bem-estar"}[area];
     if (!aiPrompt.toLowerCase().includes(requiredPrompt)) throw new Error("AI prompt is not specialized for " + area);
     await tab("areas");
   }
