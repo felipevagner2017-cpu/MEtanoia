@@ -18,7 +18,7 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
   if (!response || !response.ok()) throw new Error("Preview root returned HTTP " + (response?.status() ?? "no response"));
-  await page.waitForSelector("#word", { timeout: 20000 });
+  await page.waitForTimeout(1500);
   const initialDiagnostics = await page.evaluate(() => {
     const word = document.querySelector("#word");
     return {
