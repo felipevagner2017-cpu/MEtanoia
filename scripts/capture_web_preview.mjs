@@ -75,7 +75,7 @@ try {
     const overviewId = {Espiritual:"#dimensionOverviewEspiritual",Matrimonial:"#dimensionOverviewMatrimonial",Profissional:"#dimensionOverviewProfissional",Cotidiano:"#dimensionOverviewCotidiano"}[area];
     const overview = page.locator(overviewId);
     await overview.locator(".dimension-overview-ring").waitFor();
-    if (!(await overview.innerText()).includes("Painel de desenvolvimento")) throw new Error("Missing specialized development panel for " + area);
+    if (!(await overview.innerText()).toLowerCase().includes("painel de desenvolvimento")) throw new Error("Missing specialized development panel for " + area);
     if (!(await overview.locator("[data-dimension-ai]").count())) throw new Error("Missing contextual AI action for " + area);
     const box = await overview.locator(".dimension-overview-ring").boundingBox();
     if (!box || box.width < 80 || box.height < 80) throw new Error("Progress ring is not rendered correctly for " + area);
