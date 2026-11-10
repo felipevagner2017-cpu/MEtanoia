@@ -64,17 +64,18 @@ class MainActivityNavigationTest {
                     val target = hasText(expected, substring = false)
                     if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
                         composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
-                    }
-                    val scrollContainers = composeRule.onAllNodes(hasScrollAction())
-                    var reached = false
-                    for (index in 0 until scrollContainers.fetchSemanticsNodes().size) {
-                        runCatching {
-                            scrollContainers[index].performScrollToNode(target)
-                            reached = true
+                    } else {
+                        val scrollContainers = composeRule.onAllNodes(hasScrollAction())
+                        var reached = false
+                        for (index in 0 until scrollContainers.fetchSemanticsNodes().size) {
+                            runCatching {
+                                scrollContainers[index].performScrollToNode(target)
+                                reached = true
+                            }
+                            if (reached) break
                         }
-                        if (reached) break
+                        if (!reached) composeRule.onNodeWithText(expected, substring = false).performScrollTo()
                     }
-                    if (!reached) composeRule.onNodeWithText(expected, substring = false).performScrollTo()
                     composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
                     true
                 }.getOrDefault(false)
