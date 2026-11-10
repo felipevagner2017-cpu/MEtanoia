@@ -13,6 +13,7 @@ class MemoryStorage {
 function createIndexedDB() {
   const stores = { meta: new Map(), counters: new Map(), outbox: new Map() };
   return {
+    stores,
     open() {
       const request = {};
       queueMicrotask(() => {
@@ -136,7 +137,7 @@ function makeDevice(deviceId, initialDb) {
     token:"test-session",accountId,deviceId,dataKey,
     getDb:()=>db,onApply:()=>localStorage.setItem("metonoia-pwa-v1",JSON.stringify(db))
   });
-  return {db,engine,stores};
+  return {db,engine,stores:indexedDB.stores};
 }
 
 const first = makeDevice("11111111-1111-4111-8111-111111111111",{
