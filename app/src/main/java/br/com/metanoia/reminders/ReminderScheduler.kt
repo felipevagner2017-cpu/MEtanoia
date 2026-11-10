@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import br.com.metanoia.data.AgendaItem
 import java.time.ZonedDateTime
 
@@ -49,12 +50,14 @@ class ReminderScheduler(private val context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         offsets.forEachIndexed { index, minutes ->
             alarmManager.cancel(eventPendingIntent(item.id, index, minutes))
+            NotificationManagerCompat.from(context).cancel((item.id * 10L + index).toInt())
         }
     }
 
     fun cancelDaily(hour: Int) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(dailyPendingIntent(hour))
+        NotificationManagerCompat.from(context).cancel(70000 + hour)
     }
 
     private fun setAlarm(manager: AlarmManager, triggerAt: Long, pending: PendingIntent) {
