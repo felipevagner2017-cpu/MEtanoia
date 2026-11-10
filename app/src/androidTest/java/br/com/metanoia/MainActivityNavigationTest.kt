@@ -64,6 +64,8 @@ class MainActivityNavigationTest {
                     val target = hasText(expected, substring = false)
                     if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
                         composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
+                    } else if (tab == "Devocional" && expected == "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES") {
+                        composeRule.onNodeWithTag("pastoral-study-list").performScrollToNode(target)
                     } else {
                         val scrollContainers = composeRule.onAllNodes(hasScrollAction())
                         var reached = false
@@ -95,8 +97,9 @@ class MainActivityNavigationTest {
         clickNavigationControl("Áreas")
         clickNavigationControl("Devocional")
         assertPageVisible("Devocional", "Avivamento bíblico")
-        assertPageVisible("Devocional", "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES")
         captureScreen("02-devocao")
+        assertPageVisible("Devocional", "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES")
+        captureScreen("02b-fontes")
         clickNavigationControl("Meus registros")
         assertPageVisible("Devocional", "DIMENSÃO 01")
 
