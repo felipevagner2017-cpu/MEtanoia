@@ -1,5 +1,15 @@
 name: Validate MEtanoia web and Worker
 on:
+  push:
+    branches: ["deploy/cloudflare-metanoia-web"]
+    paths:
+      - "web/**"
+      - "worker/**"
+      - "migrations/**"
+      - "scripts/**"
+      - "wrangler*.jsonc"
+      - ".github/workflows/cloudflare-web-validation.yml"
+      - ".github/workflows/deploy-cloudflare.yml"
   pull_request:
     paths:
       - "web/**"
