@@ -71,11 +71,12 @@ class MainActivityNavigationTest {
 
     @Test
     fun fourDimensionsAndDailyAreasAreReachable() {
-        assertPageVisible("Jornada diária", "Jornada diária")
         assertPageVisible("Jornada diária", "PALAVRA DO DIA")
+        assertPageVisible("Jornada diária", "DESAFIO DE HOJE")
         captureScreen("01-jornada-diaria")
+        clickNavigationControl("Áreas")
         clickNavigationControl("Devocional")
-        assertPageVisible("Devocional", "Devocional")
+        assertPageVisible("Devocional", "DIMENSÃO 01")
         captureScreen("02-devocao")
 
         clickNavigationControl("Matrimônio")
