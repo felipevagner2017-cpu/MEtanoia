@@ -227,8 +227,8 @@ try {
   await capture("offline-jornada-online-check", "word");
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForSelector("#word:not(.hidden)", { timeout: 15000 });
-  await page.screenshot({ path: path.join(outDir, "offline-jornada.png"), fullPage: false });
+  await page.waitForSelector("#dashboard:not(.hidden)", { timeout: 15000 });
+  await page.screenshot({ path: path.join(outDir, "offline-dashboard.png"), fullPage: false });
   await context.setOffline(false);
   const desktop = await browser.newPage({ viewport: { width: 1365, height: 900 } });
   desktop.on("pageerror", error => errors.push(error.message));
