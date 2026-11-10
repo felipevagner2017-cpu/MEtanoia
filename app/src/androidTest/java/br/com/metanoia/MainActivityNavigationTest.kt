@@ -118,11 +118,30 @@ class MainActivityNavigationTest {
         clickNavigationControl("Agenda")
         assertPageVisible("Agenda", "Minha agenda")
         captureScreen("06-agenda")
+        val today = LocalDate.now()
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val otherDay = monday.plusDays(if (today.dayOfWeek.value == 5) 0 else 4)
+        val weekEventTitle = "Compromisso de outro dia da semana"
+        val weekEventId = runBlocking {
+            MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
+                .agendaDao().insert(
+                    AgendaItem(
+                        title = weekEventTitle,
+                        scheduledAt = otherDay.atTime(10, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    )
+                )
+        }
         clickNavigationControl("Semana")
+        assertPageVisible("Agenda", "Compromissos da semana")
+        assertPageVisible("Agenda", weekEventTitle)
         captureScreen("06b-agenda-semana")
         clickNavigationControl("Dia")
         captureScreen("06c-agenda-dia")
         clickNavigationControl("Mês")
+        runBlocking {
+            MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
+                .agendaDao().findById(weekEventId)?.let { MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext).agendaDao().delete(it) }
+        }
 
         clickNavigationControl("Áreas")
         clickNavigationControl("Cotidiano")
