@@ -16,6 +16,7 @@ try {
   });
   const page = await context.newPage();
   page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
   if (!response || !response.ok()) throw new Error("Preview root returned HTTP " + (response?.status() ?? "no response"));
   await page.waitForTimeout(1500);
@@ -49,6 +50,12 @@ try {
   async function tab(name) {
     await page.locator('[data-tab="' + name + '"]').first().click();
     await page.waitForTimeout(200);
+    console.log("TAB_DIAGNOSTICS=" + JSON.stringify(await page.evaluate(name => ({
+      requested: name,
+      wordClass: document.querySelector("#word")?.className,
+      activeTabs: [...document.querySelectorAll("[data-tab].active")].map(x => x.dataset.tab),
+      pageText: document.body.innerText.slice(0, 500),
+    }), name)) + " errors=" + JSON.stringify(errors));
   }
   async function openArea(area, target) {
     await tab("areas");
