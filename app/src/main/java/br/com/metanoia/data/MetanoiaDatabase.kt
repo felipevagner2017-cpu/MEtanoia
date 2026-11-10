@@ -24,7 +24,7 @@ class AgendaConverters {
         ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
         SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -224,6 +224,16 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE agenda_items ADD COLUMN location TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE agenda_items ADD COLUMN endAt INTEGER")
+                db.execSQL("ALTER TABLE agenda_items ADD COLUMN reminderOffsets TEXT NOT NULL DEFAULT '120,60,30'")
+                db.execSQL("ALTER TABLE agenda_items ADD COLUMN seriesId TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_agenda_items_seriesId ON agenda_items(seriesId)")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
@@ -231,7 +241,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     MetanoiaDatabase::class.java,
                     "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .build().also { INSTANCE = it }
             }
     }
