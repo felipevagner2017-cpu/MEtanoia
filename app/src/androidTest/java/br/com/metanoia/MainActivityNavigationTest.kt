@@ -1,17 +1,16 @@
 package br.com.metanoia
 
 import android.Manifest
-import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.MetanoiaDatabase
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
-import java.time.ZoneId
 import android.os.ParcelFileDescriptor
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.ByteArrayOutputStream
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -20,6 +19,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.printToLog
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
@@ -127,15 +127,14 @@ class MainActivityNavigationTest {
         val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
         val otherDay = monday.plusDays(if (today.dayOfWeek.value == 5) 0 else 4)
         val weekEventTitle = "Compromisso de outro dia da semana"
-        val weekEventId = runBlocking {
-            MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
-                .agendaDao().insert(
-                    AgendaItem(
-                        title = weekEventTitle,
-                        scheduledAt = otherDay.atTime(10, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    )
-                )
-        }
+        // Create the fixture through the real Agenda form so the test exercises
+        // the same ViewModel -> Room -> Flow path used by the installed app.
+        composeRule.onNodeWithText(otherDay.dayOfMonth.toString(), substring = false).performClick()
+        composeRule.onNode(hasText("Título", substring = false) and hasSetTextAction())
+            .performTextInput(weekEventTitle)
+        composeRule.onNodeWithText("Adicionar em " + otherDay.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM")), substring = false)
+            .performClick()
+        composeRule.waitForIdle()
         clickNavigationControl("Semana")
         assertPageVisible("Agenda", "Compromissos da semana")
         assertPageVisible("Agenda", weekEventTitle)
@@ -143,10 +142,6 @@ class MainActivityNavigationTest {
         clickNavigationControl("Dia")
         captureScreen("06c-agenda-dia")
         clickNavigationControl("Mês")
-        runBlocking {
-            MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
-                .agendaDao().findById(weekEventId)?.let { MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext).agendaDao().delete(it) }
-        }
 
         clickNavigationControl("Áreas")
         clickNavigationControl("Cotidiano")
