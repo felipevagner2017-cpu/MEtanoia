@@ -11,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import br.com.metanoia.data.AgendaItem
 import br.com.metanoia.data.MetanoiaDatabase
+import br.com.metanoia.wallpaper.LockScreenAgendaNotification
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import org.junit.After
@@ -199,4 +200,84 @@ class ReminderFlowInstrumentedTest {
             await { Regex("ReminderReceiver").findAll(alarmDump()).count() >= 3 }
         )
     }
+    @Test
+    fun persistentAgendaNotificationShowsUpcomingCommitmentsOnLockScreenChannel() {
+        val item = insertFutureEvent()
+        kotlinx.coroutines.runBlocking {
+            LockScreenAgendaNotification.refreshNow(context, MetanoiaDatabase.get(context))
+        }
+        val posted = notifications.activeNotifications.firstOrNull {
+            it.id == LockScreenAgendaNotification.NOTIFICATION_ID
+        }
+        assertNotNull("O resumo persistente da agenda deve ser publicado.", posted)
+        assertEquals(
+            "O resumo precisa estar marcado como visível na tela bloqueada.",
+            android.app.Notification.VISIBILITY_PUBLIC,
+            posted!!.notification.visibility
+        )
+        assertTrue(
+            "A notificação da agenda deve permanecer até ser atualizada ou desativada.",
+            posted.notification.flags and android.app.Notification.FLAG_ONGOING_EVENT != 0
+        )
+        val expanded = posted.notification.extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
+        val lines = posted.notification.extras.getCharSequence(android.app.Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
+        assertTrue(
+            "O resumo precisa refletir o compromisso salvo no Room.",
+            expanded.contains(item.title) || lines.contains(item.title)
+        )
+    }
+
+    @Test
+    fun testNotificationIsActuallyPostedToAndroidNotificationManager() {
+        assertTrue("A permissão de notificação deve estar concedida neste teste.", LockScreenAgendaNotification.canPost(context))
+        assertTrue("O método de teste deve publicar uma notificação real.", LockScreenAgendaNotification.showTestNotification(context))
+        assertTrue(
+            "A notificação de teste deve aparecer no NotificationManager do Android.",
+            await { notifications.activeNotifications.any { it.id == 81002 } }
+        )
+    }
+
+    @Test
+    fun alarmManagerDeliversScheduledReminderAtItsTriggerTime() {
+        shell("appops set ${context.packageName} SCHEDULE_EXACT_ALARM allow")
+        val now = System.currentTimeMillis()
+        val item = AgendaItem(
+            title = "Disparo real do alarme MEtonoia",
+            scheduledAt = now + 120L * 60_000L + 4_000L,
+            reminderAt = now + 4_000L,
+            reminderOffsets = "120"
+        )
+        val id = kotlinx.coroutines.runBlocking { dao.insert(item) }
+        insertedIds += id
+        scheduler.schedule(item.copy(id = id))
+        assertTrue(
+            "O AlarmManager deve disparar o lembrete agendado, sem envio manual de broadcast.",
+            await(timeoutMs = 30_000) {
+                notifications.activeNotifications.any { it.id == (id * 10L).toInt() }
+            }
+        )
+    }
+
+    @Test
+    fun changingAndDeletingCommitmentCancelsAndReplacesItsScheduledAlarms() {
+        val original = insertFutureEvent()
+        scheduler.schedule(original)
+        val changed = original.copy(
+            scheduledAt = original.scheduledAt + 60L * 60_000L,
+            reminderAt = original.scheduledAt + 60L * 60_000L - 120L * 60_000L
+        )
+        scheduler.cancel(original)
+        kotlinx.coroutines.runBlocking { dao.update(changed) }
+        scheduler.schedule(changed)
+        val afterUpdate = alarmDump()
+        assertTrue("O compromisso editado deve continuar agendado.", afterUpdate.contains("ReminderReceiver"))
+        scheduler.cancel(changed)
+        val afterDelete = alarmDump()
+        val requestCode = (original.id * 10L).toInt().toString()
+        assertFalse(
+            "Após cancelar/excluir, o alarme do compromisso não deve permanecer registrado.",
+            afterDelete.contains("requestCode=$requestCode")
+        )
+    }
+
 }
