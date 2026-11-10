@@ -71,7 +71,7 @@ object LockScreenAgendaWallpaper {
         val background = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(
                 0f, 0f, WIDTH.toFloat(), HEIGHT.toFloat(),
-                intArrayOf(Color.rgb(7, 21, 37), Color.rgb(16, 37, 66), Color.rgb(8, 25, 43)),
+                intArrayOf(Color.rgb(18, 7, 30), Color.rgb(53, 16, 95), Color.rgb(31, 12, 48)),
                 null, Shader.TileMode.CLAMP
             )
         }
