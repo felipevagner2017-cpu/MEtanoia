@@ -2,6 +2,7 @@ package br.com.metanoia
 import android.os.Bundle
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import br.com.metanoia.wallpaper.LockScreenAgendaWallpaper
+import br.com.metanoia.wallpaper.LockScreenAgendaNotification
 import br.com.metanoia.wallpaper.LockScreenWallpaperWorker
 import android.content.Context
 import android.content.Intent
@@ -86,6 +87,7 @@ class MainActivity : ComponentActivity() {
   lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
   LockScreenWallpaperWorker.schedule(this)
   LockScreenAgendaWallpaper.refresh(this, db)
+  LockScreenAgendaNotification.refresh(this, db)
   // Official MEtanoia navy, gold and white Material 3 system.
   setContent { MaterialTheme(
    colorScheme = darkColorScheme(
@@ -123,6 +125,10 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val confessions = db.confessionDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val analyses = db.dailyAnalysisDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+ private fun refreshLockScreenAgenda() {
+  LockScreenAgendaWallpaper.refresh(appContext, db)
+  LockScreenAgendaNotification.refresh(appContext, db)
+ }
  fun addAgenda(
   title:String,
   description:String,
@@ -158,7 +164,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     val id=db.agendaDao().insert(item)
     if(reminderAt!=null && occurrenceAt>now) scheduler.schedule(item.copy(id=id))
    }
-   LockScreenAgendaWallpaper.refresh(appContext, db)
+   refreshLockScreenAgenda()
   }
  }
  fun updateAgenda(item:AgendaItem, applyToSeries:Boolean=false) {
@@ -195,16 +201,16 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     db.agendaDao().update(updated)
     if(updated.reminderAt!=null && updated.scheduledAt>System.currentTimeMillis() && !updated.completed) scheduler.schedule(updated)
    }
-   LockScreenAgendaWallpaper.refresh(appContext, db)
+   refreshLockScreenAgenda()
   }
  }
  fun toggle(item:AgendaItem) { viewModelScope.launch {
   val completed = !item.completed
   db.agendaDao().setCompleted(item.id,completed)
   if (completed) scheduler.cancel(item) else scheduler.schedule(item.copy(completed = false))
-  LockScreenAgendaWallpaper.refresh(appContext, db)
+  refreshLockScreenAgenda()
  } }
- fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
+ fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); refreshLockScreenAgenda() } }
  fun deleteSeries(item:AgendaItem) { viewModelScope.launch {
   val seriesId=item.seriesId
   if(seriesId==null){scheduler.cancel(item);db.agendaDao().delete(item)}
@@ -212,7 +218,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    db.agendaDao().findSeries(seriesId).forEach { scheduler.cancel(it) }
    db.agendaDao().deleteSeries(seriesId)
   }
-  LockScreenAgendaWallpaper.refresh(appContext, db)
+  refreshLockScreenAgenda()
  } }
  fun saveDailyReflection(diary:String, confession:String) {
   if(diary.isBlank() && confession.isBlank()) return
@@ -273,7 +279,6 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
 @Composable private fun MetanoiaApp(db:MetanoiaDatabase,scheduler:ReminderScheduler) {
  val context=LocalContext.current
  val permissionLauncher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
- LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
  val vm=remember { AppViewModel(context.applicationContext,db,scheduler) }
  val agenda by vm.agenda.collectAsStateWithLifecycle()
  val journal by vm.journal.collectAsStateWithLifecycle()
@@ -759,26 +764,68 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var l30 by remember { mutableStateOf(prefs.leadEnabled(30)) }
  var eventSound by remember { mutableStateOf(prefs.eventSound()) }
  var dailySound by remember { mutableStateOf(prefs.dailySound()) }
+ var permissionRefresh by remember { mutableIntStateOf(0) }
+ val lifecycleOwner = LocalLifecycleOwner.current
+ DisposableEffect(lifecycleOwner) {
+  val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+   if(event == Lifecycle.Event.ON_RESUME) permissionRefresh++
+  }
+  lifecycleOwner.lifecycle.addObserver(observer)
+  onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+ }
+ val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+  permissionRefresh++
+  if(granted) LockScreenAgendaNotification.refresh(context, MetanoiaDatabase.get(context))
+ }
+ val runtimePermissionGranted = permissionRefresh >= 0 && LockScreenAgendaNotification.hasRuntimePermission(context)
+ val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+ val canNotify = runtimePermissionGranted && notificationsEnabled
  val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
+ val power = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+ val batteryOptimizationActive = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !power.isIgnoringBatteryOptimizations(context.packageName)
  Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
   Text("Notificações e alarmes",style=MaterialTheme.typography.headlineSmall,color=GoldBright,fontWeight=FontWeight.Bold)
-  Text("Configure cada lembrete e mantenha sua agenda sob controle.",color = Ivory.copy(alpha = .78f))
-  val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
-   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-    Text(if(notificationsEnabled) "NOTIFICAÇÕES ATIVAS" else "NOTIFICAÇÕES DESATIVADAS",color=if(notificationsEnabled) GoldBright else Color(0xFFFF9A8B),fontWeight=FontWeight.Bold)
+  Text("Autorize os avisos para que o MEtanoia possa lembrar seus compromissos mesmo quando o aplicativo estiver fechado.",color=Ivory.copy(alpha=.78f))
+  Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
+   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+    Text(if(canNotify) "NOTIFICAÇÕES ATIVAS" else "NOTIFICAÇÕES BLOQUEADAS",color=if(canNotify) GoldBright else Color(0xFFFF9A8B),fontWeight=FontWeight.Bold)
     Text(
-     if(notificationsEnabled) "Os lembretes do MEtanoia podem ser exibidos pelo Android. Para vê-los na tela bloqueada, permita notificações e conteúdo na tela de bloqueio nas configurações do aparelho."
-     else "O Android está bloqueando as notificações do aplicativo. Ative-as para receber os lembretes dos seus compromissos.",
-     color=Ivory,style=MaterialTheme.typography.bodySmall
+     when {
+      Build.VERSION.SDK_INT >= 33 && !runtimePermissionGranted ->
+       "O Android 13 ou superior exige sua autorização. Sem POST_NOTIFICATIONS, o aplicativo não pode mostrar lembretes nem a agenda persistente na tela bloqueada."
+      !notificationsEnabled ->
+       "A permissão do aplicativo está bloqueada nas configurações do Android. Habilite as notificações do MEtanoia para receber os lembretes."
+      else ->
+       "Permissão do Android concedida. O MEtanoia pode exibir lembretes e manter o resumo da agenda; a tela bloqueada ainda respeita a privacidade definida no aparelho."
+     },color=Ivory,style=MaterialTheme.typography.bodySmall
     )
-    OutlinedButton(onClick={
-     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName))
-    },modifier=Modifier.fillMaxWidth()) { Text("Configurar notificações e tela de bloqueio") }
+    if(Build.VERSION.SDK_INT >= 33 && !runtimePermissionGranted) {
+     Button(onClick={permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)},modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=VioletPrimary)) {
+      Text("Autorizar notificações")
+     }
+    }
+    if(!canNotify) {
+     OutlinedButton(onClick={
+      context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName))
+     },modifier=Modifier.fillMaxWidth()) { Text("Abrir configurações de notificações") }
+    } else {
+     OutlinedButton(onClick={LockScreenAgendaNotification.showTestNotification(context)},modifier=Modifier.fillMaxWidth()) {
+      Text("Enviar notificação de teste")
+     }
+    }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+  Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
+   Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+    Text("AGENDA NA TELA DE BLOQUEIO",color=Gold,fontWeight=FontWeight.Bold)
+    Text("O MEtanoia mantém um resumo atualizado dos próximos compromissos como notificação persistente e também atualiza o papel de parede da tela bloqueada. O Android e o fabricante podem ocultar detalhes conforme suas configurações de privacidade.",color=Ivory,style=MaterialTheme.typography.bodySmall)
+    OutlinedButton(onClick={
+     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,context.packageName))
+    },modifier=Modifier.fillMaxWidth()) { Text("Configurar exibição na tela bloqueada") }
+   }
+  }
+  Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("LEMBRETES DIÁRIOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("07:00 · Planeje seu dia",d7,7),Triple("12:00 · Confira sua agenda",d12,12),Triple("18:00 · Organize o restante",d18,18)).forEach { row ->
@@ -794,7 +841,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+  Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(14.dp)) {
     Text("ALARMES DE COMPROMISSOS",color=Gold,fontWeight=FontWeight.Bold)
     listOf(Triple("2 horas antes",l120,120),Triple("1 hora antes",l60,60),Triple("30 minutos antes",l30,30)).forEach { row ->
@@ -809,7 +856,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     }
    }
   }
-  Card(colors=CardDefaults.cardColors(containerColor = CardSurface)) {
+  Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
     Text("TOQUES",color=Gold,fontWeight=FontWeight.Bold)
     Text("Som diário: "+when(dailySound){NotificationPreferences.SYSTEM_SOUND->"Padrão do sistema";NotificationPreferences.SILENT_SOUND->"Silencioso";else->"Personalizado"},color=Navy)
@@ -826,21 +873,32 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      OutlinedButton(onClick={prefs.setEventSound(NotificationPreferences.SILENT_SOUND);eventSound=prefs.eventSound()}){Text("Silencioso")}
      OutlinedButton(onClick={ val uri=when(eventSound){NotificationPreferences.SILENT_SOUND->null;NotificationPreferences.SYSTEM_SOUND->RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);else->Uri.parse(eventSound)}; if(uri!=null) RingtoneManager.getRingtone(context,uri)?.play() }){Text("Testar")}
     }
-    Text("O volume é controlado pelos botões e configurações de som do Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
+    Text("O volume é controlado pelos botões e configurações de som do Android.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
    }
   }
   if(!exactAllowed && Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
    Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
     Column(Modifier.padding(12.dp)) {
      Text("Horário exato limitado pelo Android",color=GoldBright,fontWeight=FontWeight.Bold)
-     Text("Sem esta permissão, o sistema pode atrasar alarmes durante a economia de bateria.",color=Ivory,style=MaterialTheme.typography.bodySmall)
+     Text("Sem acesso a alarmes exatos, o Android pode atrasar os avisos, especialmente em economia de bateria. O MEtanoia usa alarmes inexatos como alternativa.",color=Ivory,style=MaterialTheme.typography.bodySmall)
      TextButton(onClick={context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))}){Text("Configurar alarmes exatos",color=Gold)}
     }
    }
   } else {
-   Text("Alarmes exatos permitidos neste aparelho.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
+   Text("Alarmes exatos permitidos neste aparelho.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
   }
-  Text("Os sons escolhidos são aplicados por canais de notificação. Você também pode ajustar o volume no Android.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.bodySmall)
+  if(batteryOptimizationActive) {
+   Card(colors=CardDefaults.cardColors(containerColor=CardSurface)) {
+    Column(Modifier.padding(12.dp)) {
+     Text("Economia de bateria pode atrasar lembretes",color=GoldBright,fontWeight=FontWeight.Bold)
+     Text("O Android ainda pode limitar alarmes em segundo plano. Confira as opções de bateria do MEtanoia no sistema.",color=Ivory,style=MaterialTheme.typography.bodySmall)
+     TextButton(onClick={context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))}){Text("Ver configurações de bateria",color=Gold)}
+    }
+   }
+  } else if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M) {
+   Text("O Android informa que o MEtanoia não está sob otimização de bateria.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
+  }
+  Text("Os canais de notificação permitem ajustar som, vibração e exibição na tela bloqueada nas configurações do Android.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.bodySmall)
  }
 }
 
