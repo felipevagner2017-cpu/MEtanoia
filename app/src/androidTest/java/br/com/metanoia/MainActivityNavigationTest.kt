@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -61,6 +62,9 @@ class MainActivityNavigationTest {
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
                     val target = hasText(expected, substring = false)
+                    if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
+                        composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
+                    }
                     val scrollContainers = composeRule.onAllNodes(hasScrollAction())
                     var reached = false
                     for (index in 0 until scrollContainers.fetchSemanticsNodes().size) {
