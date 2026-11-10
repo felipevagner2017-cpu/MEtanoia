@@ -7,8 +7,8 @@
   "id": "/?app=metonoia",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#07172F",
-  "theme_color": "#102542",
+  "background_color": "#12071E",
+  "theme_color": "#35105F",
   "lang": "pt-BR",
   "icons": [
     {
