@@ -15,12 +15,13 @@ try {
     hasTouch: true,
   });
   const page = await context.newPage();
-  // Isolated test profile: no personal data or leftovers in screenshot baseline.
-  await page.addInitScript(() => { if (window.name !== "__metonoiaFreshTestProfile") { localStorage.clear(); sessionStorage.clear(); window.name = "__metonoiaFreshTestProfile"; } });
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
   if (!response || !response.ok()) throw new Error("Preview root returned HTTP " + (response?.status() ?? "no response"));
+  // Clear only the disposable browser profile after the app origin is available, then reload a clean baseline.
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
   const initialDiagnostics = await page.evaluate(() => {
     const dashboard = document.querySelector("#dashboard");
