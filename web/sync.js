@@ -138,7 +138,30 @@ function markDeleted(kind,id,dimension){
  if(!queue.some(x=>x.recordId===recordId))queue.push({recordId,kind,id:String(id),dimension:dimensionOf(kind,{dimension}),at:Date.now()});
  localStorage.setItem(key,json(queue));
 }
+async function stageLocalChanges(){
+ const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
+ const shadows=new Map(shadowRows.map(x=>[x.key.slice(("shadow:"+configuration.accountId+":").length),x]));
+ const queuedRows=await allOutbox(configuration.accountId+":");
+ const queuedIds=new Set(queuedRows.map(x=>x.operation.recordId));
+ for(const [recordId,record] of local){
+  if(queuedIds.has(recordId))continue;
+  const shadow=shadows.get(recordId);
+  if(!shadow||record.plain!==shadow.plain){
+   const operation=await encryptLocal({...record,baseRevision:Number(shadow?.revision||0)});
+   await putOutbox({key:configuration.accountId+":"+recordId,operation,plain:record.plain,createdAt:Date.now()});
+   queuedIds.add(recordId);
+  }
+ }
+ for(const deletion of readDeletionQueue()){
+  if(queuedIds.has(deletion.recordId))continue;
+  const shadow=shadows.get(deletion.recordId);
+  const operation={operationId:uuid(),recordId:deletion.recordId,operation:"delete",dimension:deletion.dimension||"DAILY",recordType:"tombstone",payloadCiphertext:"",encryptionVersion:1,baseRevision:Number(shadow?.revision||0),deviceId:configuration.deviceId};
+  await putOutbox({key:configuration.accountId+":"+deletion.recordId,operation,plain:"",createdAt:Date.now()});
+  queuedIds.add(deletion.recordId);
+ }
+}
 async function syncOnce(){
+ await stageLocalChanges();
  const remoteRows=await pullAll(),remoteById=new Map(remoteRows.map(r=>[r.record_id,r]));
  const local=collectLocal(),shadowRows=await allMeta("shadow:"+configuration.accountId+":");
  const shadows=new Map(shadowRows.map(x=>[x.key.slice(("shadow:"+configuration.accountId+":").length),x]));
