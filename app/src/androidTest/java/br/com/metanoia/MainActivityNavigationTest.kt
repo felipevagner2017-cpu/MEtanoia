@@ -94,8 +94,11 @@ class MainActivityNavigationTest {
         captureScreen("01-jornada-diaria")
         clickNavigationControl("Áreas")
         clickNavigationControl("Devocional")
-        assertPageVisible("Devocional", "DIMENSÃO 01")
+        assertPageVisible("Devocional", "Avivamento bíblico")
+        assertPageVisible("Devocional", "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES")
         captureScreen("02-devocao")
+        clickNavigationControl("Meus registros")
+        assertPageVisible("Devocional", "DIMENSÃO 01")
 
         clickNavigationControl("Matrimônio")
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
