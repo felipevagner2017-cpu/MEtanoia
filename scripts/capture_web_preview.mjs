@@ -33,7 +33,7 @@ try {
     };
   });
   console.log("PREVIEW_INITIAL_DIAGNOSTICS=" + JSON.stringify(initialDiagnostics));
-  await page.screenshot({ path: path.join(outDir, "00-initial-diagnostics.png"), fullPage: true });
+  await page.screenshot({ path: path.join(outDir, "00-initial-diagnostics.png"), fullPage: false });
   if (!initialDiagnostics.bodyText.includes("MEtanoia")) {
     throw new Error("MEtanoia brand text is missing from the live Preview: " + JSON.stringify(initialDiagnostics));
   }
@@ -45,7 +45,7 @@ try {
     await page.waitForSelector("#" + section + ":not(.hidden)", { timeout: 15000 });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(250);
-    await page.screenshot({ path: path.join(outDir, name + ".png"), fullPage: true });
+    await page.screenshot({ path: path.join(outDir, name + ".png"), fullPage: false });
     console.log("CAPTURED " + name + " -> #" + section);
   }
   async function tab(name) {
@@ -178,12 +178,12 @@ try {
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector("#word:not(.hidden)", { timeout: 15000 });
-  await page.screenshot({ path: path.join(outDir, "offline-jornada.png"), fullPage: true });
+  await page.screenshot({ path: path.join(outDir, "offline-jornada.png"), fullPage: false });
   await context.setOffline(false);
   const desktop = await browser.newPage({ viewport: { width: 1365, height: 900 } });
   desktop.on("pageerror", error => errors.push(error.message));
   await desktop.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
-  await desktop.screenshot({ path: path.join(outDir, "desktop-jornada.png"), fullPage: true });
+  await desktop.screenshot({ path: path.join(outDir, "desktop-jornada.png"), fullPage: false });
   if (errors.length) throw new Error("Browser runtime errors: " + errors.join(" | "));
   fs.writeFileSync(path.join(outDir, "inspection.json"), JSON.stringify({
     url: baseUrl,
