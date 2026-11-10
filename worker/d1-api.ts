@@ -30,7 +30,7 @@ const sha256 = async (value: string) =>
   b64(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
 const passwordHash = async (password: string, salt: Uint8Array) => {
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 310000 }, material, 256);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, material, 256);
   return b64(new Uint8Array(bits));
 };
 const parseBody = async (request: Request, max = 30000) => {
@@ -81,7 +81,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
       const token = randomToken(), now = Date.now(), expires = now + 30 * 86400000;
       try {
         await db.batch([
-          db.prepare("INSERT INTO users(id,email_normalized,password_salt_b64,password_hash_b64,password_kdf,status,created_at,updated_at) VALUES(?,?,?,?,?,'active',?,?)").bind(id,email,b64(salt),hash,"PBKDF2-SHA256-310000",now,now),
+          db.prepare("INSERT INTO users(id,email_normalized,password_salt_b64,password_hash_b64,password_kdf,status,created_at,updated_at) VALUES(?,?,?,?,?,'active',?,?)").bind(id,email,b64(salt),hash,"PBKDF2-SHA256-100000",now,now),
           db.prepare("INSERT INTO devices(id,user_id,platform,label,last_seen_at) VALUES(?,?,?,?,?)").bind(deviceId,id,platform,label,now),
           db.prepare("INSERT INTO sessions(id,user_id,device_id,token_hash,created_at,expires_at) VALUES(?,?,?,?,?,?)").bind(sessionId,id,deviceId,await sha256(token),now,expires),
         ]);
