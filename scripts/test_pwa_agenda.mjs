@@ -2,6 +2,12 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const source = fs.readFileSync("web/app.js", "utf8");
+for (const field of ['name="description"', 'name="location"', 'name="endTime"', 'name="reminders"']) {
+  if (!source.includes(field)) throw new Error("Agenda form is missing " + field + ".");
+}
+if (!source.includes("Array.isArray(item.reminders)?item.reminders:[120,60,30]")) {
+  throw new Error("Per-event reminder preferences are not used by the reminder scheduler.");
+}
 const fixedLine = source.match(/const fixed=x=>[^,;\n]+/)?.[0];
 const occurrenceLine = source.match(/const occurrence=\(x,k\)=>[^;]+;/)?.[0];
 const occursLine = source.match(/function occursOn\(x,d\)\{[^}]+\}/)?.[0];
