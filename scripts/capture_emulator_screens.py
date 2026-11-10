@@ -86,6 +86,7 @@ time.sleep(5)
 for name in [
     "01-jornada-diaria",
     "02-devocao",
+    "02b-fontes",
     "03-matrimonio",
     "04-profissional",
     "05-cotidiano",
