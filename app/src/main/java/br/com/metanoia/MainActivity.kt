@@ -455,12 +455,17 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
  }
  var title by remember { mutableStateOf("") }
+ var description by remember { mutableStateOf("") }
+ var location by remember { mutableStateOf("") }
  var kind by remember { mutableStateOf(AgendaKind.TASK) }
  var recurrenceFrequency by remember { mutableStateOf<RecurrenceFrequency?>(null) }
  var dimension by remember { mutableStateOf(LifeDimension.ROUTINE) }
- var reminder by remember { mutableStateOf(true) }
+ var reminderOffsets by remember { mutableStateOf(setOf(120,60,30)) }
  var hour by remember { mutableIntStateOf(9) }
  var minute by remember { mutableIntStateOf(0) }
+ var endTimeEnabled by remember { mutableStateOf(false) }
+ var endHour by remember { mutableIntStateOf(10) }
+ var endMinute by remember { mutableIntStateOf(0) }
  var dimensionMenu by remember { mutableStateOf(false) }
  val first=displayedMonth.atDay(1)
  val leading=first.dayOfWeek.value-1
@@ -555,25 +560,26 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    TextButton(onClick={selectedDate=selectedDate.plusDays(1);if(YearMonth.from(selectedDate)!=displayedMonth) displayedMonth=YearMonth.from(selectedDate)}) { Text("Próximo dia  ›",color=Navy) }
   }
   Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor = CardSurface)) {
-   Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-    OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text("Nova tarefa, hábito ou compromisso")},singleLine=true)
+   Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+    Text("Novo compromisso ou hábito",color=GoldBright,fontWeight=FontWeight.Bold)
+    OutlinedTextField(value=title,onValueChange={title=it},modifier=Modifier.fillMaxWidth(),label={Text("Título")},singleLine=true)
+    OutlinedTextField(value=description,onValueChange={description=it},modifier=Modifier.fillMaxWidth(),label={Text("Descrição")},minLines=2,maxLines=3)
+    OutlinedTextField(value=location,onValueChange={location=it},modifier=Modifier.fillMaxWidth(),label={Text("Local (opcional)")},singleLine=true)
     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value;if(value!=AgendaKind.HABIT) recurrenceFrequency=null},label={Text(kindLabel(value))}) }
+     AgendaKind.entries.forEach { value->FilterChip(selected=kind==value,onClick={kind=value},label={Text(kindLabel(value))}) }
     }
-    if(kind==AgendaKind.HABIT) {
-     Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
-      Text("Repetição do hábito",color=GoldBright,style=MaterialTheme.typography.labelMedium)
-      Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-       FilterChip(selected=recurrenceFrequency==null,onClick={recurrenceFrequency=null},label={Text("Único")})
-       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.DAILY,onClick={recurrenceFrequency=RecurrenceFrequency.DAILY},label={Text("Diário")})
-       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKDAYS,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKDAYS},label={Text("Dias úteis")})
-      }
-      Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
-       FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
-      }
-      Text("As próximas ocorrências serão organizadas automaticamente.",color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall)
+    Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+     Text("Recorrência",color=GoldBright,style=MaterialTheme.typography.labelMedium)
+     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+      FilterChip(selected=recurrenceFrequency==null,onClick={recurrenceFrequency=null},label={Text("Único")})
+      FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.DAILY,onClick={recurrenceFrequency=RecurrenceFrequency.DAILY},label={Text("Diário")})
+      FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKDAYS,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKDAYS},label={Text("Dias úteis")})
      }
+     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+      FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.WEEKLY,onClick={recurrenceFrequency=RecurrenceFrequency.WEEKLY},label={Text("Semanal")})
+      FilterChip(selected=recurrenceFrequency==RecurrenceFrequency.MONTHLY,onClick={recurrenceFrequency=RecurrenceFrequency.MONTHLY},label={Text("Mensal")})
+     }
+     if(recurrenceFrequency!=null) Text("A série cria ocorrências futuras por até 12 meses. Você poderá editar uma ocorrência ou toda a série.",color=Ivory.copy(alpha=.78f),style=MaterialTheme.typography.labelSmall)
     }
     Box {
      OutlinedButton(onClick={dimensionMenu=true}) { Text(dimensionLabel(dimension),color=Navy) }
@@ -582,19 +588,32 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
      }
     }
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-     TextButton(onClick={TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()}) { Text("Horário: %02d:%02d".format(hour,minute),color=Navy) }
+     TextButton(onClick={TimePickerDialog(context,{_,h,m->hour=h;minute=m},hour,minute,true).show()}) { Text("Início: %02d:%02d".format(hour,minute),color=Navy) }
      Row(verticalAlignment=Alignment.CenterVertically) {
-      Checkbox(checked=reminder,onCheckedChange={reminder=it})
-      Text("Lembretes: 2h, 1h e 30 min antes",style=MaterialTheme.typography.labelSmall,color=Navy)
+      Checkbox(checked=endTimeEnabled,onCheckedChange={endTimeEnabled=it})
+      Text("Definir término",style=MaterialTheme.typography.labelSmall,color=Navy)
+     }
+    }
+    if(endTimeEnabled) {
+     TextButton(onClick={TimePickerDialog(context,{_,h,m->endHour=h;endMinute=m},endHour,endMinute,true).show()}) { Text("Término: %02d:%02d".format(endHour,endMinute),color=Navy) }
+    }
+    val endInvalid=endTimeEnabled && (endHour*60+endMinute<=hour*60+minute)
+    if(endInvalid) Text("O término deve ser posterior ao horário de início.",color=Color(0xFFFF9A8B),style=MaterialTheme.typography.labelSmall)
+    Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+     Text("Lembretes deste compromisso",color=GoldBright,style=MaterialTheme.typography.labelMedium)
+     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+      listOf(120 to "2 horas",60 to "1 hora",30 to "30 min").forEach { (minutes,label)->
+       FilterChip(selected=minutes in reminderOffsets,onClick={reminderOffsets=if(minutes in reminderOffsets) reminderOffsets-minutes else reminderOffsets+minutes},label={Text(label)})
+      }
      }
     }
     Button(onClick={
      val scheduled=selectedDate.atTime(hour,minute).atZone(zone).toInstant().toEpochMilli()
-     vm.addAgenda(title,kind,dimension,scheduled,reminder,recurrenceFrequency?.name)
-     title=""
-     reminder=true
-    },enabled=title.isNotBlank(),modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor = VioletPrimary)) {
-     Text("Adicionar em ${selectedDate.format(DateTimeFormatter.ofPattern("dd/MM"))}")
+     val endAt=if(endTimeEnabled) selectedDate.atTime(endHour,endMinute).atZone(zone).toInstant().toEpochMilli() else null
+     vm.addAgenda(title,description,location,kind,dimension,scheduled,endAt,reminderOffsets,recurrenceFrequency?.name)
+     title="";description="";location="";endTimeEnabled=false;reminderOffsets=setOf(120,60,30);recurrenceFrequency=null
+    },enabled=title.isNotBlank()&&!endInvalid,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=VioletPrimary)) {
+     Text("Adicionar em "+selectedDate.format(DateTimeFormatter.ofPattern("dd/MM")))
     }
    }
   }
