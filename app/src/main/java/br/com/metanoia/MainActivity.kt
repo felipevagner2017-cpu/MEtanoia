@@ -278,7 +278,6 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
 }
 @Composable private fun MetanoiaApp(db:MetanoiaDatabase,scheduler:ReminderScheduler) {
  val context=LocalContext.current
- val permissionLauncher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
  val vm=remember { AppViewModel(context.applicationContext,db,scheduler) }
  val agenda by vm.agenda.collectAsStateWithLifecycle()
  val journal by vm.journal.collectAsStateWithLifecycle()
@@ -779,7 +778,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  }
  val runtimePermissionGranted = permissionRefresh >= 0 && LockScreenAgendaNotification.hasRuntimePermission(context)
  val notificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
- val canNotify = runtimePermissionGranted && notificationsEnabled
+ val canNotify = runtimePermissionGranted && notificationsEnabled && LockScreenAgendaNotification.canPost(context)
  val exactAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
   (context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager).canScheduleExactAlarms()
  val power = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
