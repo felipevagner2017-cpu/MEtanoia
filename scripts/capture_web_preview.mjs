@@ -57,6 +57,7 @@ try {
     await card.locator('[data-open-section="' + target + '"]').click();
     await capture(area.toLowerCase(), target);
   }
+  await tab("word");
   await capture("01-jornada-diaria", "word");
   await tab("areas");
   await capture("02-areas", "areas");
