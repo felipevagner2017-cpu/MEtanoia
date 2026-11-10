@@ -183,7 +183,7 @@ async function syncOnce(){
   if(localDirty){
    let candidateRecord=localRecord;
    if((queued||shadow)&&Number(row.revision||0)>Number(queued?.operation.baseRevision??shadow?.revision??0)){
-    const merged={...(decoded?.entity||{})},base=shadow?.plain?parse(shadow.plain):{};
+    const merged={...(decoded?.entity||localRecord.entity)},base=shadow?.plain?parse(shadow.plain):{};
     for(const field of new Set([...Object.keys(base),...Object.keys(localRecord.entity)])){
      const hadBase=Object.prototype.hasOwnProperty.call(base,field),hasLocal=Object.prototype.hasOwnProperty.call(localRecord.entity,field);
      const localChanged=hadBase!==hasLocal||JSON.stringify(base[field])!==JSON.stringify(localRecord.entity[field]);
