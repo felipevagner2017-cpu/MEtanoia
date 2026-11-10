@@ -338,7 +338,10 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
     }
     return json({ error: "Rota não encontrada." }, 404, origin);
   } catch (error) {
-    const message = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? "Solicitação muito grande." : "Falha ao processar a solicitação.";
-    return json({ error: message }, error instanceof Error && error.message === "PAYLOAD_TOO_LARGE" ? 413 : 400, origin);
+    const tooLarge = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE";
+    const message = tooLarge ? "Solicitação muito grande." : "Falha ao processar a solicitação.";
+    if (!tooLarge) console.error("MEtonoia D1 API request failed", error);
+    const diagnostic = env.METANOIA_PREVIEW_OPEN_REGISTRATION === "true" && error instanceof Error ? error.message : undefined;
+    return json({ error: message, ...(diagnostic ? { diagnostic } : {}) }, tooLarge ? 413 : 400, origin);
   }
 }
