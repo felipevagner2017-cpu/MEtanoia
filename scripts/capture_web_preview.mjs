@@ -121,8 +121,13 @@ try {
     throw new Error("Habit completion did not update its seven-day consistency.");
   }
   await tab("dashboard");
-  const cotidianoMetric = page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Cotidiano" }).last();
-  if (!(await cotidianoMetric.innerText()).includes("100%")) throw new Error("Dashboard did not recalculate the completed habit.");
+  const dashboardDebug = await page.evaluate(() => ({
+    metrics: [...document.querySelectorAll("#dashboardMetrics .dash-metric")].map(card => ({title:card.querySelector("h3")?.textContent, text:card.innerText})),
+    items: JSON.parse(localStorage.getItem("metonoia-pwa-v1") || "{}").items?.map(item => ({title:item.title,dimension:item.dimension,date:item.date,schedule:item.schedule,completions:item.completions}))
+  }));
+  console.log("DASHBOARD_HABIT_DEBUG=" + JSON.stringify(dashboardDebug));
+  const cotidianoMetric = dashboardDebug.metrics.find(metric => metric.title === "Cotidiano");
+  if (!cotidianoMetric?.text.includes("100%")) throw new Error("Dashboard did not recalculate the completed habit: " + JSON.stringify(dashboardDebug));
   await page.reload({ waitUntil: "networkidle" });
   await openCotidianoTool("habitos", "habits");
   const persistedHabit = page.locator("#habitsList").getByText(habitTitle);
