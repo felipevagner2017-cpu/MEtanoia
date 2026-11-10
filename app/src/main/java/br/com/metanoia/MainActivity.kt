@@ -379,6 +379,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  var selectedDate by remember { mutableStateOf(LocalDate.now()) }
  var editingItem by remember { mutableStateOf<AgendaItem?>(null) }
  var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
+  var calendarMode by remember { mutableStateOf("MÊS") }
  val lifecycleOwner = LocalLifecycleOwner.current
  var lastObservedDate by remember { mutableStateOf(LocalDate.now(zone)) }
  LaunchedEffect(lifecycleOwner) {
@@ -423,35 +424,64 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   }
   Card(Modifier.fillMaxWidth().padding(top=10.dp),colors=CardDefaults.cardColors(containerColor=CardSurface)) {
    Column(Modifier.padding(12.dp)) {
-    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
-     Text(displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year,color=GoldBright,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
-     Row {
-      IconButton(onClick={displayedMonth=displayedMonth.minusMonths(1)}) { Text("‹",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
-      IconButton(onClick={displayedMonth=displayedMonth.plusMonths(1)}) { Text("›",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
+    val weekStart=selectedDate.minusDays((selectedDate.dayOfWeek.value-1).toLong())
+     val weekDates=(0..6).map { weekStart.plusDays(it.toLong()) }
+     val calendarTitle=when(calendarMode) {
+      "DIA" -> selectedDate.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM",java.util.Locale("pt","BR"))).replaceFirstChar { it.uppercase() }
+      "SEMANA" -> "Semana · "+weekStart.format(DateTimeFormatter.ofPattern("dd/MM"))+" – "+weekDates.last().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+      else -> displayedMonth.month.getDisplayName(java.time.format.TextStyle.FULL,java.util.Locale("pt","BR")).replaceFirstChar { it.uppercase() }+" "+displayedMonth.year
      }
-    }
-    Row(Modifier.fillMaxWidth()) {
-     weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall) } }
-    }
-    cells.chunked(7).forEach { week->
-     Row(Modifier.fillMaxWidth()) {
-      week.forEach { date->
-       Box(Modifier.weight(1f).height(43.dp).padding(2.dp),contentAlignment=Alignment.Center) {
-        if(date!=null) {
-         val isSelected=date==selectedDate
-         val isToday=date==LocalDate.now()
-         val count=monthItems[date]?.size?:0
-         Column(Modifier.fillMaxSize().background(if(isSelected) VioletPrimary else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-          Text(date.dayOfMonth.toString(),color=Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
-          if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-           repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
-          } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
+     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+      Text(calendarTitle,color=GoldBright,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
+      Row {
+       IconButton(onClick={
+        when(calendarMode) {
+         "DIA" -> selectedDate=selectedDate.minusDays(1)
+         "SEMANA" -> selectedDate=selectedDate.minusWeeks(1)
+         else -> displayedMonth=displayedMonth.minusMonths(1)
+        }
+        if(calendarMode!="MÊS") displayedMonth=YearMonth.from(selectedDate)
+       }) { Text("‹",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
+       IconButton(onClick={
+        when(calendarMode) {
+         "DIA" -> selectedDate=selectedDate.plusDays(1)
+         "SEMANA" -> selectedDate=selectedDate.plusWeeks(1)
+         else -> displayedMonth=displayedMonth.plusMonths(1)
+        }
+        if(calendarMode!="MÊS") displayedMonth=YearMonth.from(selectedDate)
+       }) { Text("›",color=GoldBright,style=MaterialTheme.typography.headlineMedium) }
+      }
+     }
+     Row(Modifier.fillMaxWidth().padding(vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+      listOf("DIA","SEMANA","MÊS").forEach { mode ->
+       FilterChip(selected=calendarMode==mode,onClick={calendarMode=mode},label={Text(when(mode){"DIA"->"Dia";"SEMANA"->"Semana";else->"Mês"})})
+      }
+     }
+     if(calendarMode!="DIA") {
+      Row(Modifier.fillMaxWidth()) {
+       weekdays.forEach { day->Box(Modifier.weight(1f),contentAlignment=Alignment.Center) { Text(day,color = Ivory.copy(alpha = .78f),style=MaterialTheme.typography.labelSmall) } }
+      }
+      val visibleCells: List<LocalDate?> = if(calendarMode=="SEMANA") weekDates.map { it as LocalDate? } else cells
+      visibleCells.chunked(7).forEach { week->
+       Row(Modifier.fillMaxWidth()) {
+        week.forEach { date->
+         Box(Modifier.weight(1f).height(43.dp).padding(2.dp),contentAlignment=Alignment.Center) {
+          if(date!=null) {
+           val isSelected=date==selectedDate
+           val isToday=date==LocalDate.now()
+           val count=monthItems[date]?.size?:0
+           Column(Modifier.fillMaxSize().background(if(isSelected) VioletPrimary else Color.Transparent,MaterialTheme.shapes.small).clickable { selectedDate=date;displayedMonth=YearMonth.from(date) }.padding(vertical=3.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+            Text(date.dayOfMonth.toString(),color=Ivory,fontWeight=if(isSelected||isToday) FontWeight.Bold else FontWeight.Normal)
+            if(count>0) Row(horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+             repeat(minOf(count,3)) { Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small)) }
+            } else if(isToday) Box(Modifier.size(4.dp).background(Gold,MaterialTheme.shapes.small))
+           }
+          }
          }
         }
        }
       }
      }
-    }
     Row(Modifier.fillMaxWidth().padding(top=6.dp),horizontalArrangement=Arrangement.SpaceBetween) {
      Text("• Registros indicados em dourado",style=MaterialTheme.typography.labelSmall,color = Ivory.copy(alpha = .78f))
      Text("${items.size} registros",style=MaterialTheme.typography.labelSmall,color=Gold)
