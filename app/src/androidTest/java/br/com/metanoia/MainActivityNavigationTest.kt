@@ -118,6 +118,11 @@ class MainActivityNavigationTest {
         clickNavigationControl("Agenda")
         assertPageVisible("Agenda", "Minha agenda")
         captureScreen("06-agenda")
+        clickNavigationControl("Semana")
+        captureScreen("06b-agenda-semana")
+        clickNavigationControl("Dia")
+        captureScreen("06c-agenda-dia")
+        clickNavigationControl("Mês")
 
         clickNavigationControl("Áreas")
         clickNavigationControl("Cotidiano")
