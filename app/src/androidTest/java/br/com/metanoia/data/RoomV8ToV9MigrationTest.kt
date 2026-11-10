@@ -39,7 +39,6 @@ class RoomV8ToV9MigrationTest {
             .allowMainThreadQueries()
             .build()
         try {
-            val item = db.agendaDao().observeAll()
             val sqlite = db.openHelper.readableDatabase
             sqlite.query("SELECT id,title,location,endAt,reminderOffsets,seriesId FROM agenda_items WHERE id=42").use { cursor ->
                 assertTrue(cursor.moveToFirst())
