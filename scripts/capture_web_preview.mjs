@@ -15,6 +15,7 @@ try {
     hasTouch: true,
   });
   const page = await context.newPage();
+  // Isolated test profile: no personal data or leftovers in screenshot baseline.
   await page.addInitScript(() => { localStorage.clear(); sessionStorage.clear(); });
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
