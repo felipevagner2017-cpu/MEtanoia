@@ -53,7 +53,7 @@ const password="MEtanoia-preview-"+webcrypto.randomUUID();
 const deviceId=webcrypto.randomUUID();
 const registration=await fetch(url+"/api/auth/register",{method:"POST",headers:apiHeaders,body:JSON.stringify({email,password,platform:"pwa",deviceLabel:"CI Preview smoke test",deviceId})});
 const registered=await registration.json().catch(()=>({}));
-if(registration.status!==201||!registered.userId||registered.deviceId!==deviceId)throw new Error("Preview account registration failed (HTTP "+registration.status+").");
+if(registration.status!==201||!registered.userId||registered.deviceId!==deviceId)throw new Error("Preview account registration failed (HTTP "+registration.status+"): "+JSON.stringify(registered));
 const login=await fetch(url+"/api/auth/login",{method:"POST",headers:apiHeaders,body:JSON.stringify({email,password,platform:"pwa",deviceLabel:"CI Preview smoke test",deviceId})});
 const session=await login.json().catch(()=>({}));
 if(login.status!==200||!session.token)throw new Error("Preview login failed (HTTP "+login.status+").");
