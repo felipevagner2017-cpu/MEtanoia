@@ -26,6 +26,7 @@ class BootReceiver : BroadcastReceiver() {
         val dao = MetanoiaDatabase.get(context).agendaDao()
         val scheduler = ReminderScheduler(context)
         scheduler.scheduleDailyReminders()
+        br.com.metanoia.wallpaper.LockScreenAgendaNotification.refresh(context, MetanoiaDatabase.get(context))
         dao.pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule)
     }
 }
