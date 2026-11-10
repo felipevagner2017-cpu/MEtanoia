@@ -43,7 +43,7 @@ jobs:
       - name: Build a source bundle for both isolated platform branches
         run: |
           mkdir -p artifacts/source/web artifacts/source/android
-          git fetch origin deploy/cloudflare-metanoia-web work/phase1-integrated-main
+          git fetch origin +refs/heads/deploy/cloudflare-metanoia-web:refs/remotes/origin/deploy/cloudflare-metanoia-web +refs/heads/work/phase1-integrated-main:refs/remotes/origin/work/phase1-integrated-main
           git archive origin/deploy/cloudflare-metanoia-web | tar -x -C artifacts/source/web
           git archive origin/work/phase1-integrated-main | tar -x -C artifacts/source/android
           WEB_SHA="$(git rev-parse origin/deploy/cloudflare-metanoia-web)"
