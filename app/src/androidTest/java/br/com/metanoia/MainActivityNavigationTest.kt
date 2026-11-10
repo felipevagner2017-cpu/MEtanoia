@@ -6,12 +6,14 @@ import androidx.test.platform.app.InstrumentationRegistry
 import java.io.ByteArrayOutputStream
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.printToLog
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
@@ -58,7 +60,18 @@ class MainActivityNavigationTest {
         try {
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
-                    composeRule.onNodeWithText(expected, substring = false).performScrollTo().assertIsDisplayed()
+                    val target = hasText(expected, substring = false)
+                    val scrollContainers = composeRule.onAllNodes(hasScrollAction())
+                    var reached = false
+                    for (index in 0 until scrollContainers.fetchSemanticsNodes().size) {
+                        runCatching {
+                            scrollContainers[index].performScrollToNode(target)
+                            reached = true
+                        }
+                        if (reached) break
+                    }
+                    if (!reached) composeRule.onNodeWithText(expected, substring = false).performScrollTo()
+                    composeRule.onNodeWithText(expected, substring = false).assertIsDisplayed()
                     true
                 }.getOrDefault(false)
             }
