@@ -42,6 +42,7 @@ jobs:
           node --check scripts/require_remote_migrations.mjs
           node --check scripts/deploy_cloudflare_preview.mjs
           node --check scripts/capture_web_preview.mjs
+          node --check scripts/test_pastoral_study.mjs
       - name: Validate PWA manifest and referenced local assets
         run: |
           node - <<'NODE'
@@ -63,6 +64,8 @@ jobs:
         run: node scripts/test_pwa_sync.mjs
       - name: Test PWA agenda and habit recurrence
         run: node scripts/test_pwa_agenda.mjs
+      - name: Verify Scripture-first pastoral studies and source integrity
+        run: node scripts/test_pastoral_study.mjs
       - name: Validate D1 migration SQL
         run: python3 scripts/validate_d1_migrations.py
       - name: Install Wrangler
