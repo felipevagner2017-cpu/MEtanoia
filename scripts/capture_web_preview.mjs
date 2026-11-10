@@ -72,6 +72,14 @@ try {
     await card.scrollIntoViewIfNeeded();
     await card.locator('[data-open-section="' + target + '"]').click();
     await capture(area.toLowerCase(), target);
+    const overviewId = {Espiritual:"#dimensionOverviewEspiritual",Matrimonial:"#dimensionOverviewMatrimonial",Profissional:"#dimensionOverviewProfissional",Cotidiano:"#dimensionOverviewCotidiano"}[area];
+    const overview = page.locator(overviewId);
+    await overview.locator(".dimension-overview-ring").waitFor();
+    if (!(await overview.innerText()).includes("Painel de desenvolvimento")) throw new Error("Missing specialized development panel for " + area);
+    if (!(await overview.locator("[data-dimension-ai]").count())) throw new Error("Missing contextual AI action for " + area);
+    const box = await overview.locator(".dimension-overview-ring").boundingBox();
+    if (!box || box.width < 80 || box.height < 80) throw new Error("Progress ring is not rendered correctly for " + area);
+    await page.screenshot({ path: path.join(outDir, "dimension-" + area.toLowerCase() + ".png"), fullPage: false });
   }
   await tab("dashboard");
   await capture("00-dashboard-evolucao", "dashboard");
@@ -83,6 +91,7 @@ try {
   await tab("dashboard");
   await tab("word");
   await capture("01-jornada-diaria", "word");
+  if (await page.locator("#word .word-swipe-hint").count()) throw new Error("The unwanted Jornada Diária swipe-hint component is still present.");
   await tab("areas");
   await capture("02-areas", "areas");
   await openArea("Espiritual", "pastoralStudy");
@@ -126,6 +135,10 @@ try {
   if (!(await page.locator("#habitsList").innerText()).includes("100%")) {
     throw new Error("Habit completion did not update its seven-day consistency.");
   }
+  await page.locator("#cotidiano").waitFor({ state: "hidden" }).catch(() => {});
+  await tab("cotidiano");
+  const cotidianaOverview = page.locator("#dimensionOverviewCotidiano");
+  if (!(await cotidianaOverview.innerText()).includes("100%")) throw new Error("Cotidiano dimension overview did not update after recording a completed habit.");
   await tab("dashboard");
   const dashboardDebug = await page.evaluate(() => ({
     metrics: [...document.querySelectorAll("#dashboardMetrics .dash-metric")].map(card => ({title:card.querySelector("h3")?.textContent, text:card.innerText})),
@@ -165,6 +178,10 @@ try {
     throw new Error("Thirty-day dashboard period did not include the persisted check-in.");
   }
   await capture("dashboard-metricas-homologacao", "dashboard");
+  await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Devoção" }).locator("[data-dash-area]").click();
+  await page.waitForSelector("#pastoralStudy:not(.hidden)");
+  await page.locator("#dimensionOverviewEspiritual .dimension-overview-ring").waitFor();
+  await tab("dashboard");
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("#dashboard:not(.hidden)").waitFor();
   if (!(await page.locator("#dashboardMetrics .dash-metric").filter({ hasText: "Alimentação" }).innerText()).includes("100%")) {
