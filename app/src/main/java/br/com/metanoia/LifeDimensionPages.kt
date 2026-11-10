@@ -90,6 +90,7 @@ internal fun DailyJourneyPage(
     val personalizedReference = todayAnalysis?.scriptureReference?.takeIf { it.isNotBlank() }
     val reference = personalizedReference ?: word.reference
     val context = if (personalizedReference != null) todayAnalysis?.scriptureContext?.takeIf { it.isNotBlank() } ?: word.context else word.context
+    val reflection = if (personalizedReference != null) context else word.reflection
     val challenge = todayAnalysis?.nextStep?.takeIf { it.isNotBlank() } ?: word.challenge
     val dateLabel = today.format(DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM", Locale("pt", "BR")))
         .replaceFirstChar { it.uppercase(Locale("pt", "BR")) }
@@ -119,7 +120,7 @@ internal fun DailyJourneyPage(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text("PALAVRA DO DIA", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
-                    Text(word.title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(if (personalizedReference != null) "Palavra aplicada ao seu registro" else word.title, color = GoldBright, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(reference, color = Ivory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(context, color = Ivory.copy(alpha = .92f), style = MaterialTheme.typography.bodyMedium)
                 }
@@ -133,7 +134,7 @@ internal fun DailyJourneyPage(
             ) {
                 Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("REFLEXÃO", color = GoldChampagne, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
-                    Text(word.reflection, color = Ivory, style = MaterialTheme.typography.bodyLarge)
+                    Text(reflection, color = Ivory, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
