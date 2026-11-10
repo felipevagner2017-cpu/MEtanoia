@@ -232,7 +232,8 @@ try {
   await context.setOffline(false);
   const desktop = await browser.newPage({ viewport: { width: 1365, height: 900 } });
   desktop.on("pageerror", error => errors.push(error.message));
-  await desktop.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
+  await desktop.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await desktop.waitForSelector("#dashboard:not(.hidden)", { timeout: 15000 });
   await desktop.screenshot({ path: path.join(outDir, "desktop-dashboard.png"), fullPage: false });
   await desktop.locator('[data-tab="word"]').click();
   await desktop.waitForSelector("#word:not(.hidden)");
