@@ -112,7 +112,7 @@ const rebasedRecord=rebasedData.records?.find(x=>x.record_id===recordId);
 if(rebasedPull.status!==200||!rebasedRecord||rebasedRecord.revision!==2||rebasedRecord.source_device_id!==secondDevice)throw new Error("Preview rebased record metadata was not persisted.");
 const rebasedPlain=await accountCrypto.decryptRecordV2(session.userId,rebasedRecord.source_device_id,rebasedRecord.purpose,rebasedRecord.record_id,rebasedRecord.dimension,rebasedRecord.record_type,secondDek,rebasedRecord.payload_ciphertext);
 if(JSON.parse(new TextDecoder().decode(rebasedPlain)).body!=="second-device-concurrent-edit")throw new Error("Preview rebased record did not decrypt to the second-device update.");
-const backupResponse=await fetch(url+"/api/backups",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({deviceId,payloadCiphertext:firstCipher,recordCount:1,formatVersion:1})});
+const backupResponse=await fetch(url+"/api/backups/create",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({deviceId,payloadCiphertext:firstCipher,recordCount:1,formatVersion:1})});
 const backupData=await backupResponse.json().catch(()=>({}));
 if(backupResponse.status!==201||!backupData.id)throw new Error("Preview encrypted backup creation failed.");
 const backupRestore=await fetch(url+"/api/backups/"+backupData.id,{headers:auth});
