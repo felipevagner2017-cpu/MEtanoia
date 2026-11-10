@@ -1,5 +1,8 @@
 package br.com.metanoia
 
+import android.content.Intent
+import android.net.Uri
+
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
@@ -13,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -205,27 +209,148 @@ private fun DimensionAccessCard(modifier: Modifier, number: String, title: Strin
 
 @Composable
 internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
-    DimensionRecordPage(
-        eyebrow = "DIMENSÃO 01",
-        title = "Devocional",
-        description = "Devocional pastoral com estudo bíblico profundo, exegese responsável, contexto histórico-teológico e formação do caráter à luz das Escrituras.",
-        promptTitle = "Texto bíblico ou tema pastoral",
-        promptBody = "Registre a passagem, contexto histórico, observações do texto, palavras-chave, perguntas teológicas, interpretação e aplicação ao pastoreio.",
-        saveLabel = "Salvar estudo bíblico",
-        focusAreas = listOf(
-            "Estudos bíblicos aprofundados e exegese de passagens",
-            "Contextualização histórica, cultural e teológica",
-            "Estudo de livros, capítulos e textos bíblicos",
-            "Reflexões devocionais diárias",
-            "Aplicação prática das Escrituras ao pastoreio",
-            "Princípios, integridade e formação do caráter",
-            "Crescimento e maturidade espiritual",
-            "Histórico organizado de estudos",
-            "Acompanhamento da jornada espiritual"
-        ),
-        entries = entries,
-        onSave = onSave
-    )
+    var selectedTab by remember { mutableStateOf("Estudos pastorais") }
+    Column(Modifier.fillMaxSize().background(DeepViolet)) {
+        Row(
+            Modifier.fillMaxWidth().background(VioletSurface).padding(horizontal = 10.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            listOf("Estudos pastorais", "Meus registros").forEach { tab ->
+                TextButton(onClick = { selectedTab = tab }) {
+                    Text(
+                        tab,
+                        color = if (selectedTab == tab) GoldBright else Ivory.copy(alpha = .78f),
+                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            }
+        }
+        if (selectedTab == "Estudos pastorais") {
+            PastoralStudyPage()
+        } else {
+            DimensionRecordPage(
+                eyebrow = "DIMENSÃO 01",
+                title = "Devocional",
+                description = "Registros pastorais com estudo bíblico, exegese responsável, contexto histórico-teológico e formação do caráter à luz das Escrituras.",
+                promptTitle = "Texto bíblico ou tema pastoral",
+                promptBody = "Registre a passagem, contexto histórico, observações do texto, palavras-chave, perguntas teológicas, interpretação e aplicação ao pastoreio.",
+                saveLabel = "Salvar estudo bíblico",
+                focusAreas = listOf(
+                    "Estudos bíblicos aprofundados e exegese de passagens",
+                    "Contextualização histórica, cultural e teológica",
+                    "Estudo de livros, capítulos e textos bíblicos",
+                    "Reflexões devocionais diárias",
+                    "Aplicação prática das Escrituras ao pastoreio",
+                    "Princípios, integridade e formação do caráter",
+                    "Crescimento e maturidade espiritual",
+                    "Histórico organizado de estudos",
+                    "Acompanhamento da jornada espiritual"
+                ),
+                entries = entries,
+                onSave = onSave
+            )
+        }
+    }
+}
+
+@Composable
+private fun PastoralStudyPage() {
+    val context = LocalContext.current
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 15.dp, bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(11.dp)
+    ) {
+        item {
+            DimensionHero(
+                "FORMAÇÃO PASTORAL · ESTUDO 01",
+                "Avivamento bíblico",
+                "Arrependimento, presença do Espírito, santidade, comunhão e missão."
+            )
+        }
+        item {
+            StudySection(
+                "1 · Texto bíblico principal",
+                "Atos 2:37–47. Leia também Atos 1:8; Joel 2:12–13; Atos 4:31 e Romanos 12:1–2. A Escritura é o fundamento e a autoridade deste estudo; os autores citados adiante são interlocutores, não autoridades sobre o texto."
+            )
+        }
+        item {
+            StudySection(
+                "2 · Contexto histórico e literário",
+                "Atos 2 está situado após a ressurreição e ascensão de Jesus e o cumprimento da promessa do Espírito em Jerusalém, durante a festa de Pentecostes. Pedro interpreta o acontecimento à luz das Escrituras e anuncia Jesus crucificado, ressuscitado e exaltado. A resposta do povo nasce da proclamação do evangelho. O Pentecostes é um marco singular na história da redenção; não deve ser reduzido a uma fórmula repetível para produzir experiências."
+            )
+        }
+        item {
+            StudySection(
+                "3 · Exegese e movimento do texto",
+                "Atos 2:37–38: a mensagem acerca de Jesus alcança a consciência dos ouvintes; o arrependimento pedido por Pedro é uma mudança real de direção diante de Deus, não apenas emoção ou remorso. O batismo identifica publicamente os que recebem a palavra com Jesus Cristo. Atos 2:39 amplia a promessa sem autorizar presunção sobre a resposta individual de cada pessoa. Atos 2:42 apresenta quatro marcas da comunidade: ensino apostólico, comunhão, partir do pão e orações. Atos 2:43–47 descreve reverência, generosidade, vida comunitária, adoração e testemunho. O fruto do derramamento do Espírito não é espetáculo isolado: é uma comunidade formada pela Palavra e enviada em testemunho."
+            )
+        }
+        item {
+            StudySection(
+                "4 · Desenvolvimento teológico",
+                "O Espírito Santo é Deus presente e atuante, não uma força manipulável nem um recurso para autopromoção. Ele capacita o testemunho de Cristo (Atos 1:8), convence e conduz ao arrependimento, forma santidade e produz amor concreto. A graça não dispensa a obediência: ela a torna possível. A igreja persevera em doutrina, oração, mesa, comunhão e serviço. A missão nasce da adoração e se expressa no anúncio de Cristo e no cuidado do próximo."
+            )
+        }
+        item {
+            StudySection(
+                "5 · Perspectiva espiritual e avivalista",
+                "Um despertamento coerente com Atos 2 aprofunda a centralidade de Cristo, a convicção de pecado, o arrependimento, a vida de oração, a santidade, a unidade, a generosidade e a evangelização. Intensidade emocional não é, por si só, evidência de avivamento. O critério pastoral é o fruto submetido à Escritura: Cristo é anunciado, pecadores são chamados à reconciliação, discípulos amadurecem e a comunidade serve com amor."
+            )
+        }
+        item {
+            StudySection(
+                "6 · Contribuições de referências avivalistas",
+                "John Wesley: em The Scripture Way of Salvation (Sermão 43), relaciona a salvação recebida pela fé ao arrependimento e aos frutos de piedade e misericórdia no caminho da santificação. Síntese interpretativa: a graça não é mérito humano, mas também não deixa a vida intocada.\n\nBilly Graham: em The Holy Spirit: Activating God's Power in Your Life, trata da pessoa e da obra do Espírito na vida cristã. Síntese interpretativa: a dependência do Espírito deve permanecer submetida ao ensino bíblico e conduzir à transformação, não à busca de poder como fim em si mesmo.\n\nJohn Piper: em Let the Nations Be Glad!, apresenta a supremacia de Deus e a adoração como fundamento da missão. Síntese interpretativa: uma igreja despertada não guarda a alegria em Cristo para si; ela anuncia o evangelho entre os povos."
+            )
+        }
+        item {
+            StudySection(
+                "7 · Aplicação ministerial",
+                "• Pregue Cristo crucificado e ressuscitado, explicando o texto em seu contexto.\n• Convide ao arrependimento sem manipular culpa ou emoções.\n• Fortaleça oração, ensino bíblico, comunhão e cuidado mútuo.\n• Trate santidade como fruto da graça e formação diária do caráter.\n• Organize a evangelização como expressão da missão da igreja, com compaixão e clareza do evangelho.\n• Avalie o fruto ao longo do tempo, sem confundir números, manifestações ou entusiasmo com maturidade."
+            )
+        }
+        item {
+            StudySection(
+                "8 · Perguntas para aprofundamento",
+                "1. O que, na proclamação de Pedro, confronta a igreja hoje?\n2. Que diferença existe entre remorso passageiro e arrependimento bíblico?\n3. Como ensino apostólico, comunhão, mesa e oração moldam a comunidade local?\n4. Que práticas de piedade e misericórdia precisam ser fortalecidas no ministério?\n5. Como a igreja pode anunciar Cristo com coragem e servir a cidade com amor?\n6. Que frutos observáveis, sustentados pela Escritura, devem ser acompanhados nas próximas semanas?"
+            )
+        }
+        item {
+            StudySection(
+                "9 · Honestidade teológica",
+                "Cristãos fiéis às Escrituras divergem sobre aspectos da experiência do batismo no Espírito, os dons e a continuidade de determinadas manifestações. Este estudo não transforma uma tradição denominacional em regra universal. As posições devem ser avaliadas pela exegese, pelo conjunto do testemunho bíblico e pelo fruto cristão, mantendo Cristo e as Escrituras no centro."
+            )
+        }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("REFERÊNCIAS BIBLIOGRÁFICAS E FONTES", color = GoldBright, fontWeight = FontWeight.Bold)
+                    Text("As contribuições acima são paráfrases/sínteses interpretativas; não há citações literais atribuídas aos autores.", color = Ivory.copy(alpha = .82f), style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wesley.nnu.edu/john-wesley/the-sermons-of-john-wesley-1872-edition/sermon-43-the-scripture-way-of-salvation/"))) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("John Wesley · Sermão 43")
+                    }
+                    OutlinedButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://search.worldcat.org/title/The-Holy-Spirit-%3A-activating-God%27s-power-in-your-life/oclc/4393147"))) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Billy Graham · The Holy Spirit (1978)")
+                    }
+                    OutlinedButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.desiringgod.org/books/let-the-nations-be-glad"))) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("John Piper · Let the Nations Be Glad!")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudySection(title: String, body: String) {
+    Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(title, color = GoldBright, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            Text(body, color = Ivory, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
 }
 
 @Composable
