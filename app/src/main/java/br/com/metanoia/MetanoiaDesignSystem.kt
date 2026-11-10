@@ -9,12 +9,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Design tokens oficiais do MEtanoia — azul-marinho, branco e dourado. */
-internal val DeepViolet = Color(0xFF102542)
-internal val VioletPrimary = Color(0xFF173653)
-internal val VioletSurface = Color(0xFF1C3B59)
-internal val VioletSecondary = Color(0xFF244967)
-internal val CardSurface = Color(0xFF172F49)
+/** Design tokens oficiais do MEtanoia — roxo profundo, branco e dourado. */
+internal val DeepViolet = Color(0xFF12071E)
+internal val VioletPrimary = Color(0xFF35105F)
+internal val VioletSurface = Color(0xFF241036)
+internal val VioletSecondary = Color(0xFF4A286D)
+internal val CardSurface = Color(0xFF1E102A)
 internal val GoldChampagne = Color(0xFFC5A15A)
 internal val GoldBright = Color(0xFFE4C77E)
 internal val Ivory = Color(0xFFFFFFFF)
