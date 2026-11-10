@@ -63,6 +63,7 @@ import java.util.Locale
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 private val Navy = Ivory
 private val Gold = GoldChampagne
@@ -122,29 +123,78 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews = db.reviewDao().observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val confessions = db.confessionDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val analyses = db.dailyAnalysisDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
- fun addAgenda(title:String, kind:AgendaKind, dimension:LifeDimension, scheduledAt:Long, reminder:Boolean, recurrenceRule:String?) {
-  if(title.isBlank()) return
+ fun addAgenda(
+  title:String,
+  description:String,
+  location:String,
+  kind:AgendaKind,
+  dimension:LifeDimension,
+  scheduledAt:Long,
+  endAt:Long?,
+  reminderOffsets:Set<Int>,
+  recurrenceRule:String?
+ ) {
+  if(title.isBlank() || (endAt!=null && endAt<=scheduledAt)) return
   viewModelScope.launch {
    val zone=ZoneId.systemDefault()
    val start=Instant.ofEpochMilli(scheduledAt).atZone(zone)
-   val dates=if(kind==AgendaKind.HABIT && recurrenceRule!=null) {
+   val offsets=reminderOffsets.filter { it in listOf(120,60,30) }.distinct().sortedDescending()
+   val offsetsCsv=offsets.joinToString(",")
+   val duration=endAt?.minus(scheduledAt)
+   val dates=if(recurrenceRule!=null) {
     RecurrenceEngine.datesUntil(start.toLocalDate(),RecurrenceFrequency.valueOf(recurrenceRule),start.toLocalDate().plusDays(365))
    } else listOf(start.toLocalDate())
+   val seriesId=if(recurrenceRule!=null) UUID.randomUUID().toString() else null
+   val now=System.currentTimeMillis()
    dates.forEach { date->
     val occurrenceAt=date.atTime(start.hour,start.minute).atZone(zone).toInstant().toEpochMilli()
-    val reminderAt=if(reminder) occurrenceAt-30*60*1000L else null
-    val item=AgendaItem(title=title.trim(),kind=kind,dimension=dimension,scheduledAt=occurrenceAt,reminderAt=reminderAt,recurrenceRule=recurrenceRule)
+    val occurrenceEndAt=duration?.let { occurrenceAt+it }
+    val reminderAt=offsets.maxOrNull()?.let { occurrenceAt-it*60_000L }
+    val item=AgendaItem(
+     title=title.trim(),description=description.trim(),kind=kind,dimension=dimension,
+     scheduledAt=occurrenceAt,reminderAt=reminderAt,recurrenceRule=recurrenceRule,
+     location=location.trim(),endAt=occurrenceEndAt,reminderOffsets=offsetsCsv,seriesId=seriesId
+    )
     val id=db.agendaDao().insert(item)
-    if(reminder && reminderAt!=null && occurrenceAt>System.currentTimeMillis()) scheduler.schedule(item.copy(id=id))
-    LockScreenAgendaWallpaper.refresh(appContext, db)
+    if(reminderAt!=null && occurrenceAt>now) scheduler.schedule(item.copy(id=id))
    }
+   LockScreenAgendaWallpaper.refresh(appContext, db)
   }
  }
- fun updateAgenda(item:AgendaItem) {
+ fun updateAgenda(item:AgendaItem, applyToSeries:Boolean=false) {
+  if(item.title.isBlank() || (item.endAt!=null && item.endAt<=item.scheduledAt)) return
   viewModelScope.launch {
-   scheduler.cancel(item)
-   db.agendaDao().update(item)
-   if (item.reminderAt != null && item.scheduledAt > System.currentTimeMillis()) scheduler.schedule(item)
+   val offsets=item.reminderOffsets.split(",").mapNotNull { it.trim().toIntOrNull() }.filter { it in listOf(120,60,30) }.distinct().sortedDescending()
+   val offsetsCsv=offsets.joinToString(",")
+   val duration=item.endAt?.minus(item.scheduledAt)
+   val reminderFor:(Long)->Long?={ start->offsets.maxOrNull()?.let { start-it*60_000L } }
+   if(applyToSeries && item.seriesId!=null) {
+    val series=db.agendaDao().findSeries(item.seriesId)
+    val reference=series.firstOrNull { it.id==item.id }
+    if(reference!=null) {
+     val shift=item.scheduledAt-reference.scheduledAt
+     val updated=series.map { occurrence->
+      val newStart=occurrence.scheduledAt+shift
+      occurrence.copy(
+       title=item.title.trim(),description=item.description,location=item.location,
+       kind=item.kind,dimension=item.dimension,scheduledAt=newStart,
+       endAt=duration?.let { newStart+it },reminderOffsets=offsetsCsv,
+       reminderAt=reminderFor(newStart)
+      )
+     }
+     updated.forEach { scheduler.cancel(it) }
+     db.agendaDao().updateAll(updated)
+     updated.forEach { if(it.reminderAt!=null && it.scheduledAt>System.currentTimeMillis() && !it.completed) scheduler.schedule(it) }
+    }
+   } else {
+    val updated=item.copy(
+     title=item.title.trim(),reminderOffsets=offsetsCsv,reminderAt=reminderFor(item.scheduledAt),
+     seriesId=null,recurrenceRule=null
+    )
+    scheduler.cancel(item)
+    db.agendaDao().update(updated)
+    if(updated.reminderAt!=null && updated.scheduledAt>System.currentTimeMillis() && !updated.completed) scheduler.schedule(updated)
+   }
    LockScreenAgendaWallpaper.refresh(appContext, db)
   }
  }
@@ -155,6 +205,15 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
   LockScreenAgendaWallpaper.refresh(appContext, db)
  } }
  fun delete(item:AgendaItem) { viewModelScope.launch { scheduler.cancel(item); db.agendaDao().delete(item); LockScreenAgendaWallpaper.refresh(appContext, db) } }
+ fun deleteSeries(item:AgendaItem) { viewModelScope.launch {
+  val seriesId=item.seriesId
+  if(seriesId==null){scheduler.cancel(item);db.agendaDao().delete(item)}
+  else {
+   db.agendaDao().findSeries(seriesId).forEach { scheduler.cancel(it) }
+   db.agendaDao().deleteSeries(seriesId)
+  }
+  LockScreenAgendaWallpaper.refresh(appContext, db)
+ } }
  fun saveDailyReflection(diary:String, confession:String) {
   if(diary.isBlank() && confession.isBlank()) return
   viewModelScope.launch {
