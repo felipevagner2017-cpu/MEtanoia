@@ -99,4 +99,13 @@ for name in [
 ]:
     pull_test_capture(name)
 
+# Capture the actual Android keyguard after the app refreshes its persistent agenda notification.
+# The emulator may hide notification details if its own lock-screen privacy policy says so.
+adb("shell", "input", "keyevent", "223", check=False)
+time.sleep(1)
+adb("shell", "input", "keyevent", "224", check=False)
+time.sleep(2)
+capture("10-tela-bloqueada-agenda")
+print("Captura real da tela bloqueada:", os.path.join(OUT, "10-tela-bloqueada-agenda.png"), flush=True)
+
 print("Capturas reais do emulador:", ", ".join(sorted(os.listdir(OUT))), flush=True)
