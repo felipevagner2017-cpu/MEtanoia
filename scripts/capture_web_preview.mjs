@@ -149,8 +149,13 @@ try {
     throw new Error("Habit completion did not update its seven-day consistency.");
   }
   await page.locator("#cotidiano").waitFor({ state: "hidden" }).catch(() => {});
-  await openArea("Cotidiano", "cotidiano");
+  await tab("areas");
+  const cotidianoCardAfterHabit = page.locator('[data-word-slide="Cotidiano"]').first();
+  await cotidianoCardAfterHabit.scrollIntoViewIfNeeded();
+  await cotidianoCardAfterHabit.locator('[data-open-section="cotidiano"]').click();
+  await capture("cotidiano-após-registro-de-hábito", "cotidiano");
   const cotidianaOverview = page.locator("#dimensionOverviewCotidiano");
+  await page.screenshot({ path: path.join(outDir, "dimension-cotidiano-after-checkin.png"), fullPage: true });
   if (!(await cotidianaOverview.innerText()).includes("100%")) throw new Error("Cotidiano dimension overview did not update after recording a completed habit.");
   await tab("dashboard");
   const dashboardDebug = await page.evaluate(() => ({
