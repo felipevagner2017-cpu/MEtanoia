@@ -64,6 +64,12 @@ const accountCrypto=cryptoContext.MEtanoiaAccountCrypto;
 const passphrase="MEtanoia-preview-key-"+webcrypto.randomUUID();
 const envelope=await accountCrypto.createEnvelope(session.userId,passphrase);
 const auth={"Authorization":"Bearer "+session.token};
+const aiSmoke=await fetch(url+"/api/ai/chat",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({
+ dimension:"Devoção",context:"Validação técnica do Preview. Nenhum registro pessoal foi enviado.",history:[],
+ question:"Responda em português com uma frase curta confirmando que a análise contextual está disponível."
+})});
+const aiData=await aiSmoke.json().catch(()=>({}));
+if(aiSmoke.status!==200||typeof aiData.answer!=="string"||!aiData.answer.trim())throw new Error("Preview contextual AI inference failed (HTTP "+aiSmoke.status+").");
 const saveEnvelope=await fetch(url+"/api/crypto/key-envelope",{method:"POST",headers:{...apiHeaders,...auth},body:JSON.stringify({envelope})});
 if(saveEnvelope.status!==201)throw new Error("Preview encrypted key-envelope persistence failed (HTTP "+saveEnvelope.status+").");
 const dek=await accountCrypto.openEnvelope(session.userId,passphrase,envelope);
@@ -145,6 +151,7 @@ const summary=[
  "PWA root: HTTP "+page.status,
  "New-account registration: HTTP "+registration.status,
  "Login: HTTP "+login.status,
+  "Contextual AI inference: passed ("+aiData.model+")",
  "Encrypted key-envelope persistence and second-device recovery: passed",
  "Encrypted v2 push/pull, second-device decryption and metadata recovery: passed",
   "OperationId retry idempotency, stale-write conflict and rebase: passed",
