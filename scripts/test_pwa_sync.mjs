@@ -94,9 +94,9 @@ function makeDevice(deviceId, initialDb) {
         return new Response(JSON.stringify({records:rows,serverTime:Date.now(),hasMore:false,nextCursor:null}),{status:200});
       }
       if (path === "/api/sync/push") {
-        if (failNextPush) { failNextPush = false; throw new Error("simulated offline"); }
         const body = JSON.parse(options.body);
         pushAttempts.push(...body.operations.map(op => structuredClone(op)));
+        if (failNextPush) { failNextPush = false; throw new Error("simulated offline"); }
         const results = body.operations.map(op => {
           if (operationIds.has(op.operationId)) return {operationId:op.operationId,status:"applied",duplicate:true,revision:remote.get(op.recordId)?.revision};
           if (op.encryptionVersion === 2) {
