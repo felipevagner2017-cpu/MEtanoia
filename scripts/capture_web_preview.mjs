@@ -69,6 +69,7 @@ try {
 
   await tab("agenda");
   await capture("agenda", "agenda");
+  await page.waitForFunction(async () => "serviceWorker" in navigator && Boolean(await navigator.serviceWorker.getRegistration()), null, { timeout: 15000 }).catch(() => {});
   const pwa = await page.evaluate(async () => ({
     serviceWorker: "serviceWorker" in navigator ? Boolean(await navigator.serviceWorker.getRegistration()) : false,
     manifest: document.querySelector('link[rel="manifest"]')?.getAttribute("href") || null,
