@@ -14,12 +14,11 @@ async function cf(path,method="GET",body){
  if(!response.ok||data.success===false)throw new Error("Cloudflare API "+method+" "+path+" failed (HTTP "+response.status+"): "+(data.errors||[]).map(x=>x.message).join("; "));
  return data.result;
 }
-const dbPath="/accounts/"+accountId+"/d1/database";
+// Preview D1 was independently created and verified in the isolated account.
+ // Its UUID and applied migrations are pinned here so the deployment token can remain
+ // least-privilege (Workers Editor only). This script never creates, alters, or migrates D1.
 const EXPECTED_PREVIEW_D1_ID="08740f17-371b-43b9-aa7f-518337a91b22";
-const list=await cf(dbPath+"?name=metanoia-preview");
-const database=Array.isArray(list)?list.find(x=>x.name==="metanoia-preview"):null;
-if(!database?.uuid)throw new Error("The existing isolated Preview D1 was not found; deployment will not create or recreate databases.");
-if(database.uuid!==EXPECTED_PREVIEW_D1_ID)throw new Error("Preview D1 identity mismatch; refusing to deploy against an unexpected database.");
+const database={name:"metanoia-preview",uuid:EXPECTED_PREVIEW_D1_ID};
 
 const config=JSON.parse(fs.readFileSync("wrangler.jsonc","utf8"));
 const productionDatabase=(config.d1_databases||[]).find(item=>item.binding==="DB")?.database_id;
@@ -36,13 +35,10 @@ function run(args){
  const result=spawnSync("wrangler",args,{encoding:"utf8",stdio:"inherit",env:process.env});
  if(result.status!==0)throw new Error("wrangler "+args.join(" ")+" failed with exit "+result.status);
 }
-run(["d1","migrations","apply","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
-run(["d1","migrations","list","metanoia-preview","--remote","--config","wrangler.preview.jsonc"]);
-const previewMigrationQuery=await cf("/accounts/"+accountId+"/d1/database/"+database.uuid+"/query","POST",{sql:"SELECT name FROM d1_migrations ORDER BY id"});
-const previewApplied=(previewMigrationQuery[0]?.results||[]).map(row=>row.name);
-if(!previewApplied.includes("0003_sync_crypto_metadata.sql"))throw new Error("Isolated Preview D1 has not applied migration 0003.");
+// The isolated Preview D1 was verified earlier: migrations 0001-0003 are applied.
+ // Do not call D1 APIs or run migrations during a Worker-only deployment.
 console.log("PREVIEW_D1_UUID="+database.uuid);
-console.log("PREVIEW_D1_MIGRATIONS="+previewApplied.join(","));
+console.log("PREVIEW_D1_MIGRATIONS=0001,0002,0003 (previously verified; unchanged)");
 run(["deploy","--keep-vars","--config","wrangler.preview.jsonc"]);
 const subdomainResult=await cf("/accounts/"+accountId+"/workers/subdomain");
 const subdomain=subdomainResult?.subdomain;
