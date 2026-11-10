@@ -335,6 +335,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 .dash-metric h3{width:100%;min-height:30px;display:flex;align-items:center;justify-content:center;text-align:center}
 .dash-ring{width:72px;height:72px;flex-basis:72px}
 .dash-metric .dash-evidence{min-height:0}
+
+.dash-ai-cta{margin-top:14px;padding-top:12px;border-top:1px solid var(--stroke)}.dash-ai-cta .btn{width:100%}
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia-symbol.webp" alt="Emblema oficial MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
@@ -344,7 +346,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
  <div class="dash-hero panel"><div class="eyebrow">MEtonoia · transformação contínua</div><h2>Sua evolução</h2><p class="muted">Um retrato honesto do que você registrou — sem transformar dias sem registro em fracasso.</p><div class="dash-period" role="group" aria-label="Período de análise"><button class="btn active" data-dash-period="7">7 dias</button><button class="btn" data-dash-period="30">30 dias</button><button class="btn" data-dash-period="90">90 dias</button></div><div id="dashSummary" class="dash-summary"></div></div>
  <div class="dash-section-head"><div><div class="eyebrow">Indicadores fundamentados</div><h2>Dimensões e hábitos</h2></div><span class="dash-period-label" id="dashPeriodLabel">Últimos 7 dias</span></div>
  <div id="dashboardMetrics" class="dashboard-metrics"></div>
- <div class="panel dash-insights"><div class="eyebrow">Leitura do período</div><h2>O que seus registros mostram</h2><div id="dashInsights"></div></div>
+ <div class="panel dash-insights"><div class="eyebrow">Leitura do período</div><h2>O que seus registros mostram</h2><div id="dashInsights"></div><div class="dash-ai-cta"><p class="muted">Quer uma leitura mais profunda? A inteligência pode relacionar seus registros, sempre respeitando a autorização de compartilhamento.</p><button class="btn gold" id="dashOpenAi" type="button">Analisar meu histórico com IA</button></div></div>
  <div class="panel dash-method"><div class="eyebrow">Transparência</div><h3>Como os indicadores são calculados</h3><p><b>Compromissos e dimensões:</b> conclusões registradas ÷ ocorrências programadas no período. Só há percentual quando existe ao menos uma ocorrência prevista.</p><p><b>Exercícios, alimentação e bem-estar:</b> respostas válidas ÷ respostas efetivamente registradas; opções “Não registrei” são excluídas. Bem-estar é autoavaliação, não diagnóstico.</p><p><b>Sem dados suficientes:</b> o painel mostra “Sem base” em vez de inventar um número. A comparação usa o período imediatamente anterior, com a mesma duração. Nas dimensões, ≥75% sinaliza maior constância observada e <50% sugere revisar o planejamento; são faixas de leitura, não notas de valor pessoal.</p></div>
 </section>
 <section id="word" aria-label="Jornada diária"><div id="dailyJourney"></div></section>
