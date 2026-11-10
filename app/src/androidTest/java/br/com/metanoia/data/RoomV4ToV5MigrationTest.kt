@@ -43,7 +43,7 @@ class RoomV4ToV5MigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8)
+            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9)
             .build()
         try {
             assertEquals("Compromisso legado", migrated.agendaDao().findById(41L)?.title)
