@@ -9,7 +9,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, work/phase1-integrated-main ]
+    branches: [ main, work/phase1-integrated-main, feature/android-notifications-lockscreen ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
           CERT_SHA256=$(sed -n 's/^V2 Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-debug-cert.txt" | head -n1)
           test -n "$CERT_SHA256" || { echo "Certificado do APK não foi identificado." >&2; exit 1; }
           PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
-          for expected in "name='br.com.metanoia.preview'" "versionCode='8'" "versionName='0.5.2-preview'"; do
+          for expected in "name='br.com.metanoia.preview'" "versionCode='9'" "versionName='0.5.3-preview'"; do
             case "$PACKAGE_INFO" in *"$expected"*) ;; *) echo "Metadado inesperado: $expected" >&2; exit 1 ;; esac
           done
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
@@ -241,7 +241,7 @@ jobs:
           retention-days: 30
 
   publish-preview:
-    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'work/phase1-integrated-main') || github.ref == 'refs/heads/work/phase1-integrated-main'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/android-notifications-lockscreen') || github.ref == 'refs/heads/feature/android-notifications-lockscreen'
     needs: [build, room-integration]
     permissions:
       contents: write
@@ -255,9 +255,9 @@ jobs:
       - name: Publish only after build and emulator tests pass
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-preview
+          tag_name: android-lockscreen-preview
           target_commitish: ${{ github.event.pull_request.head.sha || github.sha }}
-          name: MEtanoia Android Preview — 0.5.2-preview
+          name: MEtanoia Android Preview — 0.5.3-preview
           prerelease: true
           make_latest: false
           fail_on_unmatched_files: true
