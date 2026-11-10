@@ -42,7 +42,7 @@ jobs:
           CERT_SHA256=$(sed -n 's/^V2 Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/metanoia-debug-cert.txt" | head -n1)
           test -n "$CERT_SHA256" || { echo "Certificado do APK não foi identificado." >&2; exit 1; }
           PACKAGE_INFO=$("$AAPT" dump badging "$APK" | grep -m1 "^package:")
-          for expected in "name='br.com.metanoia.preview'" "versionCode='9'" "versionName='0.5.3-preview'"; do
+          for expected in "name='br.com.metanoia.preview.lockscreen'" "versionCode='9'" "versionName='0.5.3-preview'"; do
             case "$PACKAGE_INFO" in *"$expected"*) ;; *) echo "Metadado inesperado: $expected" >&2; exit 1 ;; esac
           done
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
