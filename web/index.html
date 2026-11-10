@@ -307,11 +307,39 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 .ai-message.ai-user{background:linear-gradient(145deg,#3A2250,#241631);border-color:var(--stroke-strong)}
 .event-emoji-picker{background:#1A1024;border-color:var(--stroke)}
 .modalbg{background:rgba(16,8,23,.84)}
+
+/* Dashboard de evolução — roxo profundo e dourado */
+.dash-hero{background:radial-gradient(circle at 92% 8%,#67457a55,transparent 34%),linear-gradient(145deg,#3b2052,#1a1025 78%);border-color:var(--stroke-strong)}
+.dash-hero h2{font:600 clamp(25px,5vw,32px) Georgia,serif;color:var(--gold-bright);margin:4px 0 7px}
+.dash-period{display:flex;gap:7px;margin:17px 0 12px}.dash-period .btn{flex:1;min-height:36px;padding:8px}.dash-period .btn.active{background:linear-gradient(135deg,#F0D9A1,#C9A96D);color:#211033;border-color:#F0D9A1}
+.dash-summary{display:flex;align-items:center;gap:10px;padding-top:11px;border-top:1px solid var(--stroke)}
+.dash-summary strong{font:600 17px Georgia,serif;color:var(--gold-bright)}.dash-summary span{font-size:11px;color:var(--ink-soft)}
+.dash-section-head{display:flex;justify-content:space-between;align-items:end;gap:8px;margin:22px 3px 12px}.dash-section-head h2{margin:0;font-size:19px}.dash-period-label{font-size:10px;color:var(--muted)}
+.dashboard-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dash-metric{min-width:0;padding:14px 11px;border:1px solid var(--stroke);border-radius:17px;background:linear-gradient(150deg,#2d1b3d,#1a1024);box-shadow:var(--shadow-soft)}
+.dash-metric-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.dash-metric h3{font-size:12px;line-height:1.35;margin:0;color:var(--ink)}
+.dash-ring{--progress:0deg;width:76px;height:76px;flex:0 0 76px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from -90deg,var(--gold-bright) var(--progress),#ffffff17 0);position:relative;box-shadow:0 0 20px #d9bc8310}
+.dash-ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#21132e;border:1px solid #d9bc8328}
+.dash-ring strong{position:relative;font:700 17px Georgia,serif;color:var(--gold-bright)}
+.dash-metric .dash-evidence{font-size:10px;line-height:1.5;color:var(--muted);margin:10px 0 0;min-height:30px}
+.dash-trend{display:flex;align-items:center;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid #ffffff12;font-size:10px;color:var(--ink-soft)}
+.dash-trend b{color:var(--gold-bright)}.dash-metric button{border:0;background:none;padding:7px 0 0;color:var(--gold);font-size:10px;font-weight:700}
+.dash-insights h2{font-size:18px}.dash-insight{padding:10px 0;border-bottom:1px solid #ffffff13}.dash-insight:last-child{border:0}.dash-insight b{color:var(--gold-bright);font-size:12px}.dash-insight p{font-size:11px;line-height:1.55;margin:4px 0 0}
+.dash-method{background:linear-gradient(150deg,#241631,#160d20)}.dash-method h3{color:var(--gold-bright)}.dash-method p{font-size:10px;line-height:1.6;margin:8px 0}
+@media(max-width:360px){.dashboard-metrics{gap:7px}.dash-metric{padding:11px 8px}.dash-ring{width:66px;height:66px;flex-basis:66px}.dash-metric h3{font-size:11px}}
+@media(min-width:650px){.dashboard-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.dash-metric{padding:15px}.dash-ring{width:82px;height:82px;flex-basis:82px}}
 </style></head>
 <body>
 <header><div class="headerline"><div class="brand"><img src="/icons/metonoia-symbol.webp" alt="Emblema oficial MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
 <main>
 
+<section id="dashboard" aria-label="Dashboard de evolução pessoal">
+ <div class="dash-hero panel"><div class="eyebrow">MEtonoia · transformação contínua</div><h2>Sua evolução</h2><p class="muted">Um retrato honesto do que você registrou — sem transformar dias sem registro em fracasso.</p><div class="dash-period" role="group" aria-label="Período de análise"><button class="btn active" data-dash-period="7">7 dias</button><button class="btn" data-dash-period="30">30 dias</button><button class="btn" data-dash-period="90">90 dias</button></div><div id="dashSummary" class="dash-summary"></div></div>
+ <div class="dash-section-head"><div><div class="eyebrow">Indicadores fundamentados</div><h2>Dimensões e hábitos</h2></div><span class="dash-period-label" id="dashPeriodLabel">Últimos 7 dias</span></div>
+ <div id="dashboardMetrics" class="dashboard-metrics"></div>
+ <div class="panel dash-insights"><div class="eyebrow">Leitura do período</div><h2>O que seus registros mostram</h2><div id="dashInsights"></div></div>
+ <div class="panel dash-method"><div class="eyebrow">Transparência</div><h3>Como os indicadores são calculados</h3><p><b>Compromissos e dimensões:</b> conclusões registradas ÷ ocorrências programadas no período. Só há percentual quando existe ao menos uma ocorrência prevista.</p><p><b>Exercícios, alimentação e bem-estar:</b> respostas válidas ÷ respostas efetivamente registradas; opções “Não registrei” são excluídas. Bem-estar é autoavaliação, não diagnóstico.</p><p><b>Sem dados suficientes:</b> o painel mostra “Sem base” em vez de inventar um número. A comparação usa o período imediatamente anterior, com a mesma duração. Nas dimensões, ≥75% sinaliza maior constância observada e <50% sugere revisar o planejamento; são faixas de leitura, não notas de valor pessoal.</p></div>
+</section>
 <section id="word" aria-label="Jornada diária"><div id="dailyJourney"></div></section>
 <section id="areas" class="hidden" aria-label="Áreas da vida"><div id="wordAreas"></div><div class="panel area-tools"><div class="eyebrow">Acompanhamento pessoal</div><h2>Continue sua jornada</h2><p class="muted">Seus registros e revisões permanecem organizados e protegidos neste espaço.</p><div class="row area-tools-actions"><button class="btn" data-open-section="diary">Diário e confissão</button><button class="btn" data-open-section="evolution">Evolução semanal</button><button class="btn" data-open-section="intel">Inteligência bíblica</button></div></div></section>
 <section id="agenda" class="hidden">
@@ -382,5 +410,5 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
 </div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
-<nav class="tabs" aria-label="Navegação principal"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="areas"><b>◈</b>Áreas</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button></nav>
-<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/sync.js?v=20261110-1"></script><script src="/app.js?v=20261110-12"></script></body></html>
+<nav class="tabs" aria-label="Navegação principal"><button class="tab active" data-tab="dashboard"><b>◉</b>Evolução</button><button class="tab" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="areas"><b>◈</b>Áreas</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button></nav>
+<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/sync.js?v=20261110-1"></script><script src="/app.js?v=20261110-13"></script></body></html>
