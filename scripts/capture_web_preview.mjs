@@ -16,7 +16,7 @@ try {
   });
   const page = await context.newPage();
   // Isolated test profile: no personal data or leftovers in screenshot baseline.
-  await page.addInitScript(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.addInitScript(() => { if (!sessionStorage.getItem("__metonoiaFreshTestProfile")) { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem("__metonoiaFreshTestProfile", "1"); } });
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push("console: " + message.text()); });
   const response = await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 60000 });
