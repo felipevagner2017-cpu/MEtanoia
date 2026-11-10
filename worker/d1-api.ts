@@ -341,7 +341,9 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
     const tooLarge = error instanceof Error && error.message === "PAYLOAD_TOO_LARGE";
     const message = tooLarge ? "Solicitação muito grande." : "Falha ao processar a solicitação.";
     if (!tooLarge) console.error("MEtonoia D1 API request failed", error);
-    const diagnostic = env.METANOIA_PREVIEW_OPEN_REGISTRATION === "true" && error instanceof Error ? error.message : undefined;
+    const diagnostic = env.METANOIA_PREVIEW_OPEN_REGISTRATION === "true"
+      ? (error instanceof Error ? { name: error.name, message: error.message, stack: error.stack?.split("\n").slice(0,4).join("\n") } : { type: typeof error, value: String(error) })
+      : undefined;
     return json({ error: message, ...(diagnostic ? { diagnostic } : {}) }, tooLarge ? 413 : 400, origin);
   }
 }
