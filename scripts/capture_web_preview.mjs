@@ -136,7 +136,7 @@ try {
     throw new Error("Habit completion did not update its seven-day consistency.");
   }
   await page.locator("#cotidiano").waitFor({ state: "hidden" }).catch(() => {});
-  await tab("cotidiano");
+  await openArea("Cotidiano", "cotidiano");
   const cotidianaOverview = page.locator("#dimensionOverviewCotidiano");
   if (!(await cotidianaOverview.innerText()).includes("100%")) throw new Error("Cotidiano dimension overview did not update after recording a completed habit.");
   await tab("dashboard");
