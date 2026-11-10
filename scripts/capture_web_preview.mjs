@@ -84,8 +84,9 @@ try {
     await page.screenshot({ path: path.join(outDir, "dimension-" + area.toLowerCase() + ".png"), fullPage: true });
     await overview.locator("[data-dimension-ai]").click();
     const aiPrompt = await page.locator("#aiQuestion").inputValue();
-    const requiredPrompt = {Espiritual:"bíblica",Matrimonial:"perspectiva",Profissional:"metas",Cotidiano:"bem-estar"}[area];
-    if (!aiPrompt.toLowerCase().includes(requiredPrompt)) throw new Error("AI prompt is not specialized for " + area);
+    const expectedScope = {Espiritual:"Devoção",Matrimonial:"Matrimônio",Profissional:"Profissional",Cotidiano:"Cotidiano"}[area];
+    const actualScope = await page.locator("#aiDimension").inputValue();
+    if (actualScope !== expectedScope || aiPrompt.trim().length < 100) throw new Error("The dimension-specific AI action did not prepare its analysis for " + area);
     await tab("areas");
   }
   await tab("dashboard");
