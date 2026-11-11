@@ -122,6 +122,34 @@ class SqlCipherDatabaseMigrationTest {
     }
 
     @Test
+    fun invalidOrMissingKeystoreKeyFailsClosedWithoutChangingEncryptedDatabase() = runBlocking {
+        val f = Fixture()
+        val plain = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName).build()
+        val id = plain.agendaDao().insert(AgendaItem(title = "Não pode ser perdido", scheduledAt = f.now))
+        plain.close()
+        val key = SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
+        val encrypted = openEncrypted(f, key)
+        encrypted.close()
+        val file = context.getDatabasePath(f.databaseName)
+        val before = file.readBytes()
+
+        AccountKeyStore(context).save(f.keyId, ByteArray(32) { (it + 1).toByte() })
+        assertThrows(Exception::class.java) {
+            SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
+        }
+        assertArrayEquals("A falha de chave não pode reescrever o banco", before, file.readBytes())
+        assertFalse(hasPlainSqliteHeader(file))
+
+        AccountKeyStore(context).remove(f.keyId, deleteKeystoreKey = true)
+        assertThrows(IllegalStateException::class.java) {
+            SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
+        }
+        assertArrayEquals("A ausência da chave não pode reescrever o banco", before, file.readBytes())
+        context.deleteDatabase(f.databaseName)
+        Unit
+    }
+
+    @Test
     fun interruptionAfterPlaintextRenameRestoresSourceAndNextLaunchCompletesMigration() = runBlocking {
         val f = Fixture()
         val plain = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName).build()
