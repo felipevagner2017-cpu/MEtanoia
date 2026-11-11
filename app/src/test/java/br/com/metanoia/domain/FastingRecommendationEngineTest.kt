@@ -83,4 +83,15 @@ class FastingRecommendationEngineTest {
         assertNull(engine.recommend(LifeDimension.SPIRITUAL, listOf("distração"), listOf(previous)))
     }
 
+
+    @Test
+    fun blankOrUnrecognizedRecordsDoNotCreateFalsePersonalization() {
+        val result = engine.recommend(
+            LifeDimension.PROFESSIONAL,
+            listOf("", "   ", "registro sem sinal reconhecível"),
+            emptyList()
+        )
+        requireNotNull(result)
+        assertTrue(result.recommendationReason.contains("sugestão é geral"))
+    }
 }
