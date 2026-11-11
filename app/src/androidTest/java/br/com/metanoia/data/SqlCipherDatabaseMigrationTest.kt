@@ -93,6 +93,7 @@ class SqlCipherDatabaseMigrationTest {
         assertEquals("Revisão preservada", reopened.reviewDao().observeHistory().first().single { it.id == reviewId }.reflection)
         reopened.close()
         context.deleteDatabase(f.databaseName)
+        Unit
     }
 
     @Test
@@ -117,6 +118,7 @@ class SqlCipherDatabaseMigrationTest {
         assertEquals("Recuperação", encrypted.agendaDao().findById(id)?.title)
         encrypted.close()
         context.deleteDatabase(f.databaseName)
+        Unit
     }
 
     @Test
@@ -143,6 +145,7 @@ class SqlCipherDatabaseMigrationTest {
         assertEquals("Promoção recuperável", encrypted.agendaDao().findById(id)?.title)
         encrypted.close()
         context.deleteDatabase(f.databaseName)
+        Unit
     }
 
     private fun openEncrypted(f: Fixture, key: ByteArray): MetanoiaDatabase =
