@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "br.com.metanoia"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "br.com.metanoia"
