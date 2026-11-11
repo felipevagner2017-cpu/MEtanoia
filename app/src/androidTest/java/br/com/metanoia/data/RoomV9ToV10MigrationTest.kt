@@ -114,6 +114,13 @@ class RoomV9ToV10MigrationTest {
             assertEquals(1, dao.deletePlan("fast-1"))
             assertEquals(null, dao.findPlan("fast-1"))
 
+            sqlite.query("SELECT COUNT(*) FROM agenda_items WHERE id IN (42,43)").use { assertTrue(it.moveToFirst()); assertEquals(2, it.getInt(0)) }
+            sqlite.query("SELECT COUNT(*) FROM journal_entries WHERE id=7").use { assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0)) }
+            sqlite.query("SELECT COUNT(*) FROM review_entries WHERE id=8").use { assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0)) }
+            sqlite.query("SELECT COUNT(*) FROM confession_entries WHERE id=9").use { assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0)) }
+            sqlite.query("SELECT COUNT(*) FROM daily_analysis WHERE dayKey='2026-11-10'").use { assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0)) }
+            sqlite.query("PRAGMA user_version").use { assertTrue(it.moveToFirst()); assertEquals(10, it.getInt(0)) }
+
             sqlite.query("PRAGMA integrity_check").use {
                 assertTrue(it.moveToFirst())
                 assertEquals("ok", it.getString(0))
