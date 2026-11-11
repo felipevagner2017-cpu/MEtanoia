@@ -89,7 +89,7 @@
           '<div class="eyebrow">MEtonoia · Segurança local</div>' +
           '<h2 id="vaultTitle">' + title + '</h2>' +
           '<p class="muted">' + description + '</p>' +
-          (errorMessage ? '<p class="reading-note" role="alert">' + errorMessage + '</p>' : '') +
+          '<p class="reading-note" id="vaultError" role="alert"></p>' +
           '<form id="vaultPassphraseForm">' +
             '<label for="vaultPassphrase">' + (mode === "restore" ? "Frase da cópia" : "Frase de criptografia") + '</label>' +
             '<input id="vaultPassphrase" class="field" type="password" minlength="12" maxlength="256" autocomplete="off" required>' +
@@ -98,6 +98,7 @@
           '</form>' +
         '</div>';
       document.body.appendChild(overlay);
+      if (errorMessage) overlay.querySelector("#vaultError").textContent = errorMessage;
       const form = overlay.querySelector("#vaultPassphraseForm");
       const input = overlay.querySelector("#vaultPassphrase");
       input.focus();
@@ -205,11 +206,7 @@
         if (canonical(verified) !== canonical(data)) throw new Error("A validação da migração local falhou. A cópia antiga foi preservada.");
         data = verified;
       } else {
-        data = validateData(defaultData);
-        ciphertext = await window.MEtanoiaAccountCrypto.encryptRecord(
-          USER_ID, RECORD_ID, DIMENSION, RECORD_TYPE, key, JSON.stringify(data)
-        );
-        await write(db, { "app-state": ciphertext });
+        throw new Error("O envelope de criptografia existe, mas os dados cifrados estão ausentes. Nenhum registro foi recriado ou sobrescrito.");
       }
 
       if (legacyRaw !== null) {
@@ -224,7 +221,7 @@
     let queue = Promise.resolve();
     const save = nextData => {
       const validated = validateData(nextData);
-      queue = queue.then(async () => {
+      queue = queue.catch(() => {}).then(async () => {
         const encrypted = await window.MEtanoiaAccountCrypto.encryptRecord(
           USER_ID, RECORD_ID, DIMENSION, RECORD_TYPE, key, JSON.stringify(validated)
         );
