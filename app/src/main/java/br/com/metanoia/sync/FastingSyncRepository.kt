@@ -88,8 +88,11 @@ class FastingSyncRepository(
         require(record.sourceDeviceId.isNotBlank() && record.purpose in setOf("fasting-plan", "fasting-entry")) {
             "Contexto criptográfico remoto incompleto."
         }
+        require(
+            (record.recordType == "fasting_plan" && record.purpose == "fasting-plan") ||
+                (record.recordType == "fasting_daily_entry" && record.purpose == "fasting-entry")
+        ) { "Tipo e finalidade criptográfica do registro não correspondem." }
         val metadata = database.syncRecordMetadataDao().findByRecordId(record.recordId)
-        val existingType = metadata?.entityType
         database.withTransaction {
             database.syncRemoteRecordDao().replace(
                 SyncRemoteRecord(
@@ -105,6 +108,10 @@ class FastingSyncRepository(
                 database.syncRemoteRecordDao().markConflict(accountId, record.recordId, "Há alterações locais pendentes.")
                 return@withTransaction false
             }
+            if (metadata != null && metadata.revision >= record.revision) {
+                database.syncRemoteRecordDao().markApplied(accountId, record.recordId, record.revision)
+                return@withTransaction true
+            }
 
             val key = requireNotNull(accountKeys.load(accountId)) {
                 "A chave da conta não está desbloqueada neste aparelho."
@@ -117,7 +124,11 @@ class FastingSyncRepository(
             } finally {
                 key.fill(0)
             }
-            val json = JSONObject(String(plaintext, Charsets.UTF_8))
+            val json = try {
+                JSONObject(String(plaintext, Charsets.UTF_8))
+            } finally {
+                plaintext.fill(0)
+            }
             when (record.recordType) {
                 "fasting_plan" -> {
                     require(record.purpose == "fasting-plan")
@@ -156,6 +167,9 @@ class FastingSyncRepository(
         dimension: String, recordType: String, baseRevision: Long, json: String
     ): SyncOutboxOperation {
         require(accountId.isNotBlank() && deviceId.isNotBlank())
+        require(baseRevision in 0L..Int.MAX_VALUE.toLong()) {
+            "A revisão excede o intervalo suportado pela fila local."
+        }
         val key = requireNotNull(accountKeys.load(accountId)) {
             "Entre na conta e desbloqueie a chave criptográfica antes de sincronizar."
         }
@@ -214,6 +228,7 @@ class FastingSyncRepository(
         LifeDimension.MATRIMONIAL -> "MATRIMONIAL"
         LifeDimension.PROFESSIONAL -> "PROFESSIONAL"
         LifeDimension.INDIVIDUAL -> "DAILY"
+        LifeDimension.ROUTINE -> "DAILY"
     }
 
     private fun stableRecordId(kind: String, localId: String): String {
