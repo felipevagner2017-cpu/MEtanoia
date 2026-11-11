@@ -33,6 +33,15 @@ interface FastingDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertDailyEntry(entry: FastingDailyEntry)
 
+    @Update
+    suspend fun updateDailyEntry(entry: FastingDailyEntry)
+
+    @Query("DELETE FROM fasting_daily_entries WHERE id = :id")
+    suspend fun deleteDailyEntry(id: String): Int
+
+    @Query("DELETE FROM fasting_plans WHERE id = :id")
+    suspend fun deletePlan(id: String): Int
+
     @Query("SELECT * FROM fasting_daily_entries WHERE planId = :planId AND dayIndex = :dayIndex LIMIT 1")
     suspend fun findDailyEntry(planId: String, dayIndex: Int): FastingDailyEntry?
 }
