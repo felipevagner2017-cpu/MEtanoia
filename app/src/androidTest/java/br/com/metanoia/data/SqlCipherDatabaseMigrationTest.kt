@@ -35,6 +35,12 @@ class SqlCipherDatabaseMigrationTest {
         val journalId = plain.journalDao().insert(
             JournalEntry(title = "Diário preservado", content = "Relato privado de teste", dimension = LifeDimension.MATRIMONIAL, createdAt = f.now, updatedAt = f.now)
         )
+        val habitId = plain.agendaDao().insert(
+            AgendaItem(
+                title = "Hábito recorrente preservado", kind = AgendaKind.HABIT, scheduledAt = f.now,
+                recurrenceRule = "FREQ=WEEKLY;BYDAY=MO", seriesId = "habit-series-1"
+            )
+        )
         val reviewId = plain.reviewDao().insert(
             ReviewEntry(period = ReviewPeriod.WEEKLY, periodStart = f.now - 7 * 86400000L, periodEnd = f.now, reflection = "Revisão preservada", createdAt = f.now)
         )
@@ -69,6 +75,7 @@ class SqlCipherDatabaseMigrationTest {
 
         val encrypted = openEncrypted(f, key)
         assertEquals("Compromisso preservado", encrypted.agendaDao().findById(agendaId)?.title)
+        assertEquals("FREQ=WEEKLY;BYDAY=MO", encrypted.agendaDao().findById(habitId)?.recurrenceRule)
         assertEquals("Relato privado de teste", encrypted.journalDao().observeAll().first().single { it.id == journalId }.content)
         assertEquals("Revisão preservada", encrypted.reviewDao().observeHistory().first().single { it.id == reviewId }.reflection)
         assertEquals("Confissão de teste preservada", encrypted.confessionDao().findForDay("2026-11-11")?.content)
@@ -83,6 +90,7 @@ class SqlCipherDatabaseMigrationTest {
         assertNull(encrypted.fastingDao().findPlan(f.planId))
         assertNull(encrypted.fastingDao().findDailyEntry(f.planId, 0))
         assertEquals("Compromisso preservado", encrypted.agendaDao().findById(agendaId)?.title)
+        assertEquals("Hábito recorrente preservado", encrypted.agendaDao().findById(habitId)?.title)
         assertEquals("Relato privado de teste", encrypted.journalDao().observeAll().first().single { it.id == journalId }.content)
         encrypted.close()
 
