@@ -35,7 +35,7 @@ class RoomV5ToV6MigrationTest {
   } finally { legacy.close() }
   val db=Room.databaseBuilder(context,MetanoiaDatabase::class.java,name).addMigrations(MetanoiaDatabase.MIGRATION_5_6,MetanoiaDatabase.MIGRATION_6_7,MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9, MetanoiaDatabase.MIGRATION_9_10).build()
   try {
-   assertEquals(9,db.openHelper.readableDatabase.version)
+   assertEquals(10,db.openHelper.readableDatabase.version)
    assertEquals("Agenda V5",db.agendaDao().findById(501L)?.title)
    assertEquals("Diário V5",db.journalDao().findForDay("2026-11-05")?.title)
    assertEquals("Revisão V5",db.reviewDao().observeHistory().first().single().reflection)
