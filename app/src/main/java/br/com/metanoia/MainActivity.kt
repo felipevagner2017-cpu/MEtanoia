@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
@@ -78,45 +79,90 @@ class MainActivity : ComponentActivity() {
   super.attachBaseContext(newBase.createConfigurationContext(configuration))
  }
  override fun onCreate(savedInstanceState: Bundle?) {
-  installSplashScreen()
+  var databaseReady = false
+  var database: MetanoiaDatabase? = null
+  var scheduler: ReminderScheduler? = null
+  var startupError: String? = null
+  installSplashScreen().setKeepOnScreenCondition { !databaseReady }
   super.onCreate(savedInstanceState)
-  val db = MetanoiaDatabase.get(this)
-  val scheduler = ReminderScheduler(this)
-  scheduler.scheduleDailyReminders()
-  lifecycleScope.launch(Dispatchers.IO) { db.agendaDao().pendingReminders(System.currentTimeMillis()).forEach(scheduler::schedule) }
-  LockScreenWallpaperWorker.schedule(this)
-  LockScreenAgendaWallpaper.refresh(this, db)
-  // Official MEtanoia navy, gold and white Material 3 system.
-  setContent { MaterialTheme(
-   colorScheme = darkColorScheme(
-    primary = GoldBright,
-    onPrimary = DeepViolet,
-    primaryContainer = VioletSecondary,
-    onPrimaryContainer = Ivory,
-    secondary = GoldChampagne,
-    onSecondary = DeepViolet,
-    secondaryContainer = VioletSurface,
-    onSecondaryContainer = Ivory,
-    tertiary = GoldChampagne,
-    onTertiary = DeepViolet,
-    background = DeepViolet,
-    onBackground = Ivory,
-    surface = CardSurface,
-    onSurface = Ivory,
-    surfaceVariant = VioletSurface,
-    onSurfaceVariant = Ivory,
-    outline = GoldChampagne.copy(alpha = 0.48f),
-    outlineVariant = GoldChampagne.copy(alpha = 0.24f),
-    error = Color(0xFFFF9A8B),
-    onError = DeepViolet
-   ),
-   typography = MetanoiaTypography,
-   shapes = MetanoiaShapes
-  ) {
-   Surface(Modifier.fillMaxSize(), color=DeepViolet) { Box(Modifier.fillMaxSize()) { MetanoiaApp(db, scheduler); MetanoiaBrandWatermark() } }
-  } }
+
+  lifecycleScope.launch {
+   try {
+    database = withContext(Dispatchers.IO) { MetanoiaDatabase.get(this@MainActivity) }
+    scheduler = ReminderScheduler(this@MainActivity)
+    scheduler?.scheduleDailyReminders()
+    LockScreenWallpaperWorker.schedule(this@MainActivity)
+    withContext(Dispatchers.IO) {
+     database?.let { readyDb ->
+      runCatching { readyDb.agendaDao().pendingReminders(System.currentTimeMillis()).forEach { scheduler?.schedule(it) } }
+      runCatching { LockScreenAgendaWallpaper.refresh(this@MainActivity, readyDb) }
+     }
+    }
+   } catch (error: Throwable) {
+    startupError = error.message ?: "O armazenamento protegido não pôde ser aberto. Os arquivos originais foram preservados."
+   }
+   databaseReady = true
+
+   // Official MEtanoia navy, gold and white Material 3 system.
+   setContent { MaterialTheme(
+    colorScheme = darkColorScheme(
+     primary = GoldBright,
+     onPrimary = DeepViolet,
+     primaryContainer = VioletSecondary,
+     onPrimaryContainer = Ivory,
+     secondary = GoldChampagne,
+     onSecondary = DeepViolet,
+     secondaryContainer = VioletSurface,
+     onSecondaryContainer = Ivory,
+     tertiary = GoldChampagne,
+     onTertiary = DeepViolet,
+     background = DeepViolet,
+     onBackground = Ivory,
+     surface = CardSurface,
+     onSurface = Ivory,
+     surfaceVariant = VioletSurface,
+     onSurfaceVariant = Ivory,
+     outline = GoldChampagne.copy(alpha = 0.48f),
+     outlineVariant = GoldChampagne.copy(alpha = 0.24f),
+     error = Color(0xFFFF9A8B),
+     onError = DeepViolet
+    ),
+    typography = MetanoiaTypography,
+    shapes = MetanoiaShapes
+   ) {
+    Surface(Modifier.fillMaxSize(), color=DeepViolet) {
+     val readyDb = database
+     val readyScheduler = scheduler
+     if (readyDb != null && readyScheduler != null) {
+      Box(Modifier.fillMaxSize()) { MetanoiaApp(readyDb, readyScheduler); MetanoiaBrandWatermark() }
+     } else {
+      DatabaseRecoveryScreen(
+       message = startupError ?: "O banco local ainda não está disponível.",
+       onRetry = { recreate() }
+      )
+     }
+    }
+   } }
+  }
  }
 }
+@Composable
+private fun DatabaseRecoveryScreen(message: String, onRetry: () -> Unit) {
+ Column(
+  modifier = Modifier.fillMaxSize().background(DeepViolet).padding(24.dp),
+  verticalArrangement = Arrangement.Center,
+  horizontalAlignment = Alignment.CenterHorizontally
+ ) {
+  Text("MEtonoia", color = GoldBright, fontSize = 27.sp, fontWeight = FontWeight.SemiBold)
+  Spacer(Modifier.height(18.dp))
+  Text("Proteção dos dados locais", color = Ivory, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+  Spacer(Modifier.height(10.dp))
+  Text(message, color = Ivory.copy(alpha = 0.82f), fontSize = 14.sp)
+  Spacer(Modifier.height(22.dp))
+  Button(onClick = onRetry) { Text("Tentar novamente") }
+ }
+}
+
 private class AppViewModel(private val appContext: Context, private val db: MetanoiaDatabase, private val scheduler: ReminderScheduler): ViewModel() {
  val agenda = db.agendaDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
  val journal = db.journalDao().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
