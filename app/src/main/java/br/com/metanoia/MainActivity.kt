@@ -302,10 +302,16 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    ))
   }
  }
- fun saveDimensionRecord(title:String,body:String,dimension:LifeDimension) {
-  if(title.isBlank() || body.isBlank()) return
+ fun saveDimensionRecord(title:String,body:String,dimension:LifeDimension,onComplete:(Boolean)->Unit) {
+  if(title.isBlank() || body.isBlank()) {
+   onComplete(false)
+   return
+  }
   viewModelScope.launch(Dispatchers.IO) {
-   db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension,dayKey=LocalDate.now().toString()))
+   val saved = runCatching {
+    db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension,dayKey=LocalDate.now().toString()))
+   }.isSuccess
+   withContext(Dispatchers.Main.immediate) { onComplete(saved) }
   }
  }
  fun addReview(period:ReviewPeriod, body:String) {
@@ -433,9 +439,9 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
       modifier=Modifier.fillMaxSize().weight(1f)
      ) { areaPage ->
       when(areaPage) {
-       0 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL) }
-       1 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL) }
-       2 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
+       0 -> SpiritualDimensionPage(journal.filter{it.dimension==LifeDimension.SPIRITUAL}) { title,body,complete -> vm.saveDimensionRecord(title,body,LifeDimension.SPIRITUAL,complete) }
+       1 -> MatrimonialDimensionPage(journal.filter{it.dimension==LifeDimension.MATRIMONIAL}) { title,body,complete -> vm.saveDimensionRecord(title,body,LifeDimension.MATRIMONIAL,complete) }
+       2 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body,complete -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL,complete) }
        3 -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
         Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
          listOf("Jornada","Diário","Revisões","Alertas").forEach { label ->
@@ -443,7 +449,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
          }
         }
         when(cotidianoTab) {
-         "Jornada" -> CotidianoDimensionPage(journal.filter{it.dimension==LifeDimension.INDIVIDUAL || it.dimension==LifeDimension.ROUTINE}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.ROUTINE) }
+         "Jornada" -> CotidianoDimensionPage(journal.filter{it.dimension==LifeDimension.INDIVIDUAL || it.dimension==LifeDimension.ROUTINE}) { title,body,complete -> vm.saveDimensionRecord(title,body,LifeDimension.ROUTINE,complete) }
          "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
          "Revisões" -> ReviewPage(reviews,vm)
          else -> NotificationSettingsPage(context,agenda,{
