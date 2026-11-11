@@ -201,6 +201,29 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  pwa-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium test runtime
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Validate PWA cryptography and local vault
+        run: |
+          node --check web/crypto.js
+          node --check web/local-vault.js
+          node --check web/app.js
+          node --check web/sw.js
+          node scripts/test_account_crypto.mjs
+          node scripts/test_local_vault_browser.mjs
+
   room-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 30
