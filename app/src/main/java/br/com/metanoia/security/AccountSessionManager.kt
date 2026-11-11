@@ -1,6 +1,7 @@
 package br.com.metanoia.security
 
 import android.content.Context
+import br.com.metanoia.BuildConfig
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -118,5 +119,5 @@ class AccountSessionManager(
         } finally { connection.disconnect() }
     }
 
-    companion object { const val API_BASE_URL = "https://metanoia.restaura-lar.workers.dev" }
+    companion object { val API_BASE_URL: String = BuildConfig.METANOIA_API_BASE_URL }
 }
