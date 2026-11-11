@@ -253,13 +253,19 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: gradle connectedDebugAndroidTest --stacktrace && python3 scripts/capture_emulator_screens.py
+          script: |
+            set -o pipefail
+            gradle connectedDebugAndroidTest --stacktrace --info 2>&1 | tee "$RUNNER_TEMP/room-integration.log"
+      - name: Capture emulator screenshots
+        if: success()
+        run: python3 scripts/capture_emulator_screens.py
       - name: Upload instrumented test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: metonoia-room-instrumented-reports
           path: |
+            ${{ runner.temp }}/room-integration.log
             app/build/reports/androidTests/connected/**
             app/build/outputs/androidTest-results/connected/**
           if-no-files-found: warn
