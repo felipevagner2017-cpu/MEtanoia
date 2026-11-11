@@ -295,6 +295,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                                 databaseKey
                             )
                             INSTANCE = database
+                            database
                         } catch (error: Throwable) {
                             database.close()
                             throw error
