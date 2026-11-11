@@ -16,10 +16,12 @@ class ReminderScheduler(private val context: Context) {
         cancel(item)
         if (item.completed || item.reminderAt == null || item.scheduledAt <= System.currentTimeMillis()) return
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        offsets.forEachIndexed { index, minutes ->
-            if (!preferences.leadEnabled(minutes)) return@forEachIndexed
+        val selectedOffsets = item.reminderOffsets.split(",").mapNotNull { it.trim().toIntOrNull() }.distinct()
+        selectedOffsets.forEach { minutes ->
+            val index = offsets.indexOf(minutes)
+            if (index < 0 || !preferences.leadEnabled(minutes)) return@forEach
             val triggerAt = item.scheduledAt - minutes * 60_000L
-            if (triggerAt <= System.currentTimeMillis()) return@forEachIndexed
+            if (triggerAt <= System.currentTimeMillis()) return@forEach
             val pending = eventPendingIntent(item.id, index, minutes)
             setAlarm(alarmManager, triggerAt, pending)
         }

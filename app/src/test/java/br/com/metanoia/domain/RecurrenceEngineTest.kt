@@ -23,6 +23,33 @@ class RecurrenceEngineTest {
         )
     }
 
+    @Test fun monthlySeriesKeepsItsOriginalDayAfterFebruary() {
+        assertEquals(
+            listOf(
+                LocalDate.of(2027, 1, 31),
+                LocalDate.of(2027, 2, 28),
+                LocalDate.of(2027, 3, 31),
+                LocalDate.of(2027, 4, 30)
+            ),
+            RecurrenceEngine.datesUntil(
+                LocalDate.of(2027, 1, 31),
+                RecurrenceFrequency.MONTHLY,
+                LocalDate.of(2027, 4, 30)
+            )
+        )
+    }
+
+    @Test fun weeklySeriesRepeatsOnTheSameWeekday() {
+        assertEquals(
+            listOf(LocalDate.of(2026, 11, 3), LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 17)),
+            RecurrenceEngine.datesUntil(
+                LocalDate.of(2026, 11, 3),
+                RecurrenceFrequency.WEEKLY,
+                LocalDate.of(2026, 11, 17)
+            )
+        )
+    }
+
     @Test fun weekdaysGeneratesOnlyMondayThroughFriday() {
         assertEquals(
             listOf(LocalDate.of(2026, 11, 6), LocalDate.of(2026, 11, 9), LocalDate.of(2026, 11, 10)),

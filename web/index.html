@@ -73,7 +73,7 @@ label{color:#E5D4AC}
 .consent-line{display:flex;align-items:flex-start;gap:9px;margin:14px 0;padding:12px;border:1px solid #C5A15A55;border-radius:10px;color:#E2C47E}.consent-line input{width:18px;height:18px;accent-color:#C5A15A;flex:0 0 auto}
 .daily-challenge{padding:16px;border:1px solid #C5A15A;background:linear-gradient(135deg,#211a0d,#0b0b0b);border-radius:14px;margin:12px 0}.daily-challenge p{color:#f3e8d0;margin:5px 0}
 .danger{border:1px solid #a54b4b;color:#ffb8b8;background:#210e0e;margin-top:12px}
-@media(max-width:520px){.ingrid-profile{align-items:flex-start}.ingrid-profile img{width:92px;height:145px}.tabs{grid-template-columns:repeat(6,minmax(0,1fr))}.tab{font-size:10px;padding:8px 2px}.tab b{font-size:16px}}
+@media(max-width:520px){.ingrid-profile{align-items:flex-start}.ingrid-profile img{width:92px;height:145px}.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tab{font-size:10px;padding:8px 2px}.tab b{font-size:16px}}
 
 /* Palavra — experiência premium em quatro páginas horizontais */
 .word-welcome{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 19px;border:1px solid #c5a15a77;border-radius:20px;background:linear-gradient(125deg,#1c3b5d 0%,#102542 52%,#09172a 100%);box-shadow:0 14px 32px #0004}
@@ -174,12 +174,133 @@ label{color:#E8D7B4}
 @media(max-width:380px){.word-slide{min-height:430px;padding:17px}.word-welcome{padding:17px}}
 
 .word-slide-actions{display:flex;justify-content:flex-end;margin-top:12px}.word-slide-actions .btn{min-width:145px;border-radius:12px}.word-slide-foot{margin-top:auto}
+
+.ai-assistant-panel{border-color:#D9BC83aa;background:linear-gradient(155deg,#211a0d,#0b0b0b)}.ai-consent{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #C5A15A66;border-radius:11px;color:#E5D4AC;font-size:11px;line-height:1.5}.ai-consent input{width:18px;height:18px;flex:0 0 18px;accent-color:#C5A15A}.ai-conversation{display:flex;flex-direction:column;gap:9px;max-height:360px;overflow:auto;padding:10px;border:1px solid #C5A15A44;border-radius:12px;background:#050505}.ai-message{padding:11px;border:1px solid #C5A15A44;border-radius:11px;background:#15120d}.ai-message.ai-user{background:#211b10;border-color:#C5A15A88}.ai-message b{font-size:10px;letter-spacing:.12em;color:#E2C47E}.ai-message p{margin:6px 0 0;color:#F3F0E7;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.6}.ai-assistant-panel .row{flex-wrap:wrap}
+
+/* Jornada premium — quatro dimensões em um único espaço horizontal */
+body{background:radial-gradient(ellipse at 50% -12%,#45245f 0%,#241333 38%,#0b0710 82%);color:#F3F0E7}
+header{background:linear-gradient(145deg,#100817 0%,#1B092B 62%,#2c1740 100%);border-bottom:1px solid #D9BC83;box-shadow:0 12px 34px #08030e99}
+main{max-width:790px;padding:16px 16px 26px}
+#word{display:flex;flex-direction:column;gap:15px}
+.word-welcome{min-height:145px;padding:22px 21px;border:1px solid #D9BC83aa;border-radius:22px;background:radial-gradient(circle at 92% 15%,#68417a66 0%,transparent 34%),linear-gradient(125deg,#42205E 0%,#28133E 58%,#160b22 100%);box-shadow:0 16px 34px #08030e88}
+.word-welcome h2{font-size:clamp(22px,5vw,27px);letter-spacing:-.035em;color:#F3F0E7;margin:5px 0 8px}
+.word-welcome p{font-size:12.5px;line-height:1.65;color:#E5DCEB}
+.word-progress{border-color:#D9BC83aa;background:#1B092B88;box-shadow:inset 0 0 0 5px #D9BC8310}
+.word-progress span{color:#F0D9A1}
+.word-topic-rail{gap:9px;padding:14px 1px 11px;scroll-padding-inline:8px}
+.word-topic{flex:1 0 0;min-width:0;min-height:76px;padding:11px 9px;border-radius:15px;background:linear-gradient(150deg,#2b193b,#160d20);border:1px solid #D9BC8355;box-shadow:0 5px 16px #08030e55;transition:transform .18s ease,border-color .18s ease}
+.word-topic b{font-size:11px;color:#F3F0E7}
+.word-topic small{color:#BDB0C6}
+.word-topic>span{color:#F0D9A1}
+.word-topic.active{background:linear-gradient(145deg,#F0D9A1,#C9A96D);border-color:#fff0bd;box-shadow:0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b{color:#211033}
+.word-swipe-hint{padding:5px 3px 10px;color:#BDB0C6;font-size:9px;letter-spacing:.16em}
+.word-hint-arrows{color:#F0D9A1;font-size:17px}
+.word-carousel{gap:12px;padding:0 0 5px;scroll-padding-inline:0;overscroll-behavior-x:contain}
+.word-slide{flex:0 0 100%;min-height:440px;padding:21px 19px;border-radius:22px;border:1px solid #D9BC83aa;background:radial-gradient(circle at 100% 0%,#54336a55 0%,transparent 35%),linear-gradient(155deg,#29183a 0%,#1b1027 60%,#100817 100%);box-shadow:0 15px 35px #08030e88}
+.word-slide-head{gap:14px;border-bottom:1px solid #D9BC8355}
+.word-slide-head h2{font-size:22px;color:#F0D9A1}
+.word-slide-head p{color:#CFC2D8}
+.word-icon,.word-dimension-avatar{width:52px;height:52px;flex:0 0 52px;border:1px solid #D9BC83aa;border-radius:16px;background:#160b21;display:grid;place-items:center;object-fit:contain;padding:5px;color:#F0D9A1;box-shadow:0 5px 15px #08030e66}
+.daily-word-source{padding:20px 2px 14px}
+.word-kicker,.challenge-mark{color:#F0D9A1}
+.word-challenge{padding:15px 16px;background:linear-gradient(120deg,#4a2860,#2a173b);border:1px solid #D9BC8388}
+.word-challenge p{color:#F3F0E7;line-height:1.6}
+.word-slide-actions .btn{min-height:44px;border-radius:13px;padding-inline:18px}
+.word-pagination{padding:8px 0 2px}
+.word-disclaimer{font-size:10px;line-height:1.55;margin:10px 2px 0;color:#BDB0C6}
+.home-reminder{margin:0}
+.home-reminder-card{background:linear-gradient(125deg,#28163a,#160b21);border-color:#D9BC8388}
+.tabs{background:#100817f5;border-top:1px solid #D9BC8388;box-shadow:0 -8px 24px #08030e55}
+.tab{color:#BDB0C6}
+.tab.active{background:linear-gradient(145deg,#42205E,#28133E);color:#F0D9A1;outline:1px solid #D9BC8355}
+@media(max-width:520px){
+ main{padding:12px 12px 22px}
+ .word-welcome{padding:18px 16px;min-height:136px}
+ .word-topic-rail{gap:7px;padding-top:12px}
+ .word-topic{min-height:72px;padding:9px 6px;grid-template-columns:20px 1fr;gap:0 5px}
+ .word-topic>span{font-size:18px}
+ .word-topic b{font-size:10px}
+ .word-topic small{font-size:8px}
+ .word-slide{min-height:440px;padding:18px 15px}
+ .word-slide-head h2{font-size:20px}
+}
+@media(max-width:360px){.word-topic{flex-basis:108px}.word-progress{flex-basis:58px;height:58px}}
+
+
+/* Estado inicial neutro: nenhuma dimensão marcada automaticamente */
+.word-topic.active{position:relative;background:linear-gradient(145deg,#322043,#1b1027);border-color:#F0D9A1;color:#F0D9A1;box-shadow:inset 0 0 0 1px #F0D9A155,0 7px 19px #08030e66;transform:translateY(-2px)}
+.word-topic.active b,.word-topic.active small,.word-topic.active>span{color:#F0D9A1}
+.word-topic.active::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:1px;background:#F0D9A1;transform:rotate(45deg);opacity:.78;box-shadow:0 0 9px #F0D9A1aa}
+
+
+/* Sistema visual refinado — superfícies, tipografia e controles consistentes */
+:root{
+ --ink:#F5F0F7;--ink-soft:#D8CCDF;--muted:#B7A9C2;
+ --canvas:#100817;--surface:#1A1024;--surface-raised:#241631;
+ --surface-soft:#2D1C3C;--gold:#D9BC83;--gold-bright:#F0D9A1;
+ --stroke:rgba(217,188,131,.25);--stroke-strong:rgba(217,188,131,.52);
+ --shadow-soft:0 8px 24px rgba(0,0,0,.22);--shadow-deep:0 18px 42px rgba(0,0,0,.34);
+ --radius-card:20px;
+}
+html{background:var(--canvas);scroll-behavior:smooth}
+body{background:radial-gradient(ellipse at 50% -16%,#402451 0%,#21132e 36%,var(--canvas) 78%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:20;padding:13px max(16px,calc((100vw - 790px)/2)) 14px;background:rgba(16,8,23,.91);border-bottom:1px solid var(--stroke-strong);box-shadow:0 8px 26px rgba(0,0,0,.22);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.brand{gap:13px}.brand img{width:44px;height:44px;filter:drop-shadow(0 3px 10px rgba(217,188,131,.18))}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:21px;letter-spacing:.13em;color:#FBF7F0}
+.tag{font-size:9px;letter-spacing:.13em;color:#D8C7A4}
+main{max-width:790px;padding:18px 16px 112px}
+.panel,.word-welcome,.word-slide,.home-reminder-card{border-radius:var(--radius-card);box-shadow:var(--shadow-soft)}
+.panel{padding:19px;background:linear-gradient(150deg,rgba(43,27,57,.96),rgba(24,14,34,.98));border:1px solid var(--stroke)}
+.panel h2,.panel h3{color:var(--ink);letter-spacing:-.025em}
+.eyebrow,.word-kicker,.challenge-mark{font-size:9px;font-weight:750;letter-spacing:.17em;color:var(--gold);text-transform:uppercase}
+p,.muted{color:var(--ink-soft)}
+.muted{font-size:12px;line-height:1.65}
+.btn{min-height:43px;padding:10px 16px;border:1px solid var(--stroke-strong);border-radius:13px;background:linear-gradient(145deg,#342342,#241631);color:var(--ink);font-family:inherit;font-size:12px;line-height:1.2;font-weight:650;letter-spacing:.015em;box-shadow:0 4px 12px rgba(0,0,0,.16);transition:transform .16s ease,border-color .16s ease,background .16s ease}
+.btn:active{transform:scale(.98)}
+.btn.gold{background:linear-gradient(135deg,#F0D9A1,#D1B477);border-color:#F6E6BE;color:#21152A;box-shadow:0 6px 17px rgba(217,188,131,.18)}
+.field,select.field,textarea.field,input.field{width:100%;min-height:45px;padding:12px 13px;border:1px solid rgba(217,188,131,.32);border-radius:13px;background:#120B1B;color:var(--ink);font-family:inherit;font-size:13px;line-height:1.5;font-weight:500;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);transition:border-color .18s ease,box-shadow .18s ease}
+.field::placeholder{color:#8F809B}
+.field:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,188,131,.12)}
+label{display:block;margin:12px 0 6px;color:#E5D8E9;font-size:11px;font-weight:650}
+.word-welcome{position:relative;overflow:hidden;background:radial-gradient(circle at 90% 10%,rgba(217,188,131,.15),transparent 32%),linear-gradient(125deg,#42265A,#281638 60%,#170D22);border:1px solid var(--stroke-strong)}
+.word-welcome:after{content:"";position:absolute;inset:auto -35px -72px auto;width:190px;height:190px;border:1px solid rgba(217,188,131,.13);border-radius:50%;box-shadow:0 0 0 18px rgba(217,188,131,.025),0 0 0 38px rgba(217,188,131,.018);pointer-events:none}
+.word-topic-rail{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.word-topic-rail::-webkit-scrollbar,.word-carousel::-webkit-scrollbar{display:none}
+.word-topic{min-width:0;min-height:78px;border-radius:15px}
+.word-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.word-slide{scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.word-slide-head{display:flex;align-items:center}
+.word-slide-head p{font-size:11px;line-height:1.5}
+.daily-word-source{padding:19px 2px 13px}
+.daily-word-source .goldtext{font-family:Georgia,"Times New Roman",serif;font-size:17px;line-height:1.5;color:var(--gold-bright);margin:9px 0}
+.daily-word-source p{font-size:12px;line-height:1.7}
+.word-challenge{border-radius:15px}
+.word-challenge p{font-size:12px;line-height:1.65}
+.word-slide-foot{padding-top:12px;border-top:1px solid rgba(217,188,131,.17);font-size:9px;letter-spacing:.1em;color:#AFA1B9}
+.word-pagination button{width:7px;height:7px;border:0;border-radius:99px;background:#75647F;transition:width .2s ease}
+.word-pagination button.active{width:23px;border-radius:8px;background:var(--gold-bright)}
+.calendar-panel,.calendar-tools,.confession-panel,.ai-assistant-panel{background:linear-gradient(150deg,#2B1B39,#1A1024);border-color:var(--stroke)}
+.calendar-head,.calendar-selected{padding:12px 0}
+.calendar-nav{width:38px;height:38px;border:1px solid var(--stroke);border-radius:12px;background:#251631;color:var(--gold-bright)}
+.calendar-day{border-radius:11px}
+.item{border:1px solid var(--stroke);border-radius:14px;background:rgba(18,11,27,.78);padding:12px;margin:8px 0}
+.tabs{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:4px;padding:8px max(7px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));background:rgba(16,8,23,.94);border-top:1px solid var(--stroke-strong);box-shadow:0 -8px 28px rgba(0,0,0,.28);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.tab{flex:1;max-width:116px;min-width:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid transparent;border-radius:13px;background:transparent;color:#B7A9C2;font-size:9px;font-weight:650;letter-spacing:.015em}
+.tab b{font-size:17px;line-height:1.1;font-weight:500;color:inherit}
+.tab.active{background:linear-gradient(145deg,rgba(76,46,96,.8),rgba(42,25,58,.92));border-color:rgba(217,188,131,.24);color:var(--gold-bright)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-bright);outline-offset:3px}
+@media(min-width:700px){main{padding-top:22px}.word-slide{min-height:460px;padding:25px}.panel{padding:23px}}
+@media(max-width:520px){header{padding:11px 13px 12px}.brand img{width:39px;height:39px}h1{font-size:19px}.tag{font-size:8px;letter-spacing:.09em}.headerline{gap:8px}.headerline>.row{gap:6px}.headerline .btn{min-height:38px;padding:8px 10px;font-size:10px}main{padding:13px 12px 108px}.panel{padding:16px;border-radius:17px}.tabs{gap:2px;padding-left:5px;padding-right:5px}.tab{font-size:8px;min-height:49px;border-radius:11px}.tab b{font-size:16px}.word-slide{min-height:455px}.word-welcome{border-radius:18px}}
+@media(max-width:360px){.tag{max-width:170px}.tab{font-size:7px}.headerline .btn{padding:7px 8px}.word-slide{min-height:470px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style></head>
 <body>
-<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><button id="install" class="btn gold" hidden>Instalar</button></div><div class="date" id="todayDate"></div></header>
+<header><div class="headerline"><div class="brand"><img src="/icons/metonoia.svg" alt="Símbolo MEtanoia"><div><h1>MEtanoia</h1><div class="tag">UMA MENTE RENOVADA. UMA VIDA INTENCIONAL.</div></div></div><div class="row"><button id="aiOpen" class="btn gold">Assistente IA</button><button id="install" class="btn gold" hidden>Instalar</button></div></div><div class="date" id="todayDate"></div></header>
 <main>
 
-<section id="word"><div class="panel"><div class="eyebrow">Jornada pessoal · MEtanoia</div><h2>Mensagens e desafios</h2><p class="muted">Uma única jornada com quatro dimensões. Deslize horizontalmente para acessar Devocional, Matrimônio, Profissional e Cotidiano.</p><div id="homeReminderCard" class="home-reminder"></div><div id="wordAreas"></div></div></section>
+<section id="word" aria-label="Jornada pessoal"><div id="wordAreas"></div><div id="homeReminderCard" class="home-reminder"></div></section>
 <section id="agenda" class="hidden">
 <div class="panel calendar-panel">
  <div class="eyebrow">Planejamento pessoal</div><h2>Minha agenda</h2>
@@ -193,8 +314,41 @@ label{color:#E8D7B4}
 </section>
 <section id="ingrid" class="hidden"><div class="panel"><div class="eyebrow">Aliança · presença · cuidado</div><h2>Ingrid</h2><p class="muted">Um espaço para cultivar atenção, parceria e cuidado respeitoso. O ciclo não define o humor, as vontades ou as necessidades dela.</p><div id="ingridContent"></div></div></section>
 <section id="diary" class="hidden"><div class="panel"><div class="eyebrow">Exame da realidade</div><h2>Diário</h2><p class="muted">Relate o que aconteceu e classifique a área. A inteligência usará esses relatos para oferecer direção bíblica.</p><label>Área da vida</label><select id="jd" class="field"><option>Espiritual</option><option>Matrimonial</option><option>Profissional</option><option>Cotidiano</option></select><label>Título do relato</label><input id="jt" class="field" placeholder="Ex.: Uma conversa difícil"><label>O que aconteceu? O que pensei, senti ou fiz?</label><textarea id="jb" class="field" rows="5" placeholder="Escreva com sinceridade..."></textarea><div id="journalPrompts"></div><button id="saveJ" class="btn gold">Salvar no diário</button></div><div class="panel confession-panel"><div class="eyebrow">Espaço reservado · não permanente</div><h2>Confissão</h2><p class="muted">Relate algo que você reconhece como erro, pecado ou atitude que precisa ser corrigida. A orientação será apresentada à luz das Escrituras. Este relato não será salvo no diário nem no histórico.</p><label>O que aconteceu? O que você fez e quem foi afetado?</label><textarea id="confessionText" class="field" rows="5" placeholder="Escreva com sinceridade. Este campo é temporário..."></textarea><div class="row"><button id="confessionRun" class="btn gold">Receber orientação bíblica</button><button id="confessionClear" class="btn">Limpar</button></div><div id="confessionResult"></div></div><div class="panel"><h2>Meus relatos</h2><div id="journalList"></div></div></section>
-<section id="intel" class="hidden"><div class="panel"><div class="eyebrow">Inteligência bíblica</div><h2>Direção a partir do seu diário</h2><p class="muted">Passagens, princípios, reflexões e passos práticos associados aos relatos de cada área. Sem presumir intenções ou emitir diagnóstico espiritual.</p><div id="intelligenceAreas"></div></div></section>
+<section id="intel" class="hidden"><div class="panel"><div class="eyebrow">Inteligência bíblica</div><h2>Direção a partir do seu diário</h2><p class="muted">Passagens, princípios, reflexões e passos práticos associados aos relatos de cada área. Sem presumir intenções ou emitir diagnóstico espiritual.</p><div id="intelligenceAreas"></div></div>
+<div class="panel ai-assistant-panel">
+ <div class="eyebrow">METANOIA AI · INTELIGÊNCIA INTEGRADA</div>
+ <h2>Converse com a inteligência do MEtanoia</h2>
+ <p class="muted">A IA pode relacionar Devoção, Matrimônio, Profissional e Cotidiano. A análise local continua funcionando sem internet.</p>
+ <label for="aiDimension">Foco da conversa</label>
+ <select id="aiDimension" class="field"><option>Visão integrada</option><option>Devoção</option><option>Matrimônio</option><option>Profissional</option><option>Cotidiano</option></select>
+ <div class="area">
+  <div class="eyebrow">Conta MEtanoia</div>
+  <label for="accountEmail">E-mail da conta</label>
+  <input id="accountEmail" class="field" type="email" autocomplete="username" placeholder="seu@email.com">
+  <label for="accountEncryptionPassphrase">Frase de criptografia (independente da senha da conta)</label>
+  <input id="accountEncryptionPassphrase" class="field" type="password" autocomplete="off" minlength="12" maxlength="256" placeholder="Use uma frase exclusiva com pelo menos 12 caracteres">
+  <p class="muted">A frase nunca é enviada ao servidor. Sem ela ou uma chave de recuperação futura, os dados cifrados não poderão ser recuperados.</p>
+  <label for="accountPassword">Senha da conta</label>
+  <input id="accountPassword" class="field" type="password" autocomplete="current-password" placeholder="Senha com pelo menos 12 caracteres">
+  <label for="registrationKey">Código de convite (somente no primeiro cadastro)</label>
+  <input id="registrationKey" class="field" type="password" autocomplete="off" placeholder="Código de convite fornecido pelo administrador">
+  <div class="row" style="flex-wrap:wrap">
+   <button id="accountLogin" class="btn">Entrar</button>
+   <button id="accountUnlock" class="btn">Inicializar / desbloquear criptografia</button>
+   <button id="accountRegister" class="btn">Criar conta</button>
+   <button id="accountLogout" class="btn" hidden>Sair</button>
+  </div>
+  <div id="accountStatus" class="muted" role="status">Entre com sua conta para usar a IA autenticada.</div>
+ </div>
+ <p class="muted">A credencial fica apenas nesta sessão do navegador. Não a compartilhe. O uso do modelo na nuvem pode gerar cobrança conforme o volume de tokens.</p>
+ <label class="ai-consent"><input id="aiConsent" type="checkbox"> <span>Autorizo o envio dos registros recentes relacionados ao foco escolhido e da pergunta digitada ao serviço de IA do MEtanoia, hospedado na Cloudflare. Os dados serão usados para gerar esta resposta e não serão gravados pelo endpoint do aplicativo.</span></label>
+ <div id="aiConversation" class="ai-conversation" aria-live="polite"><div class="empty">Sua conversa aparecerá aqui. Nenhum registro será enviado até você autorizar e enviar uma pergunta.</div></div>
+ <label for="aiQuestion">O que você deseja compreender ou planejar?</label>
+ <textarea id="aiQuestion" class="field" rows="3" placeholder="Escreva sua pergunta..."></textarea>
+ <div class="row"><button id="aiSend" class="btn gold">Enviar à IA</button><button id="aiClear" class="btn">Limpar conversa</button></div>
+ <div id="aiStatus" class="muted" role="status">Entre com sua conta MEtanoia para autorizar a sessão.</div>
+</div></section>
 <section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
-<nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="ingrid"><b>♡</b>Ingrid</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
-<div id="modal"></div><script src="/app.js?v=20261104-31"></script></body></html>
+<nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
+<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/app.js?v=20261104-39"></script></body></html>
