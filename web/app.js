@@ -446,4 +446,12 @@ $("localBackupFile").onchange=async()=>{
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("install").hidden=false});$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
 if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});await registration.update();}catch(error){console.warn("Não foi possível verificar atualização do MEtanoia",error);}});
 $("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();
-})();
+})().catch(error=>{
+ const overlay=document.createElement("div"),panel=document.createElement("div");
+ overlay.className="modalbg";overlay.style.zIndex="10000";panel.className="modal";
+ const eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent="MEtonoia · Proteção dos dados";
+ const heading=document.createElement("h2");heading.textContent="Não foi possível abrir os registros";
+ const message=document.createElement("p");message.className="muted";message.textContent=error?.message||"O armazenamento protegido não pôde ser aberto. Nenhuma cópia antiga foi apagada.";
+ const retry=document.createElement("button");retry.className="btn gold";retry.textContent="Tentar novamente";retry.onclick=()=>location.reload();
+ panel.append(eyebrow,heading,message,retry);overlay.append(panel);document.body.append(overlay);
+});
