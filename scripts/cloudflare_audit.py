@@ -52,12 +52,14 @@ for worker_name in ("metanoia", "metanoia-preview", "metonoia"):
     status, data = get(f"/accounts/{account}/workers/scripts/{worker_name}/settings")
     settings = data.get("result", {}) if status == 200 and data.get("success") else {}
     bindings = settings.get("bindings", [])
-    add(f"Bindings for {worker_name} (HTTP {status})", [
-        f"- workers_dev={settings.get('workers_dev', 'not returned')}; compatibility_date={settings.get('compatibility_date', 'not returned')}",
+    binding_lines = [
         f"- {b.get('type', 'unknown')} binding {b.get('name', 'unnamed')}" +
         (f" — database {b.get('database_name', b.get('id', 'not returned'))}" if b.get("type", "").lower() == "d1" else "")
         for b in bindings
-    ] if bindings else ["- No bindings returned or Worker settings are not accessible."])
+    ]
+    add(f"Bindings for {worker_name} (HTTP {status})", [
+        f"- workers_dev={settings.get('workers_dev', 'not returned')}; compatibility_date={settings.get('compatibility_date', 'not returned')}"
+    ] + (binding_lines if binding_lines else ["- No bindings returned or Worker settings are not accessible."]))
 
 status, data = get(f"/accounts/{account}/workers/domains")
 domains = data.get("result", []) if status == 200 and data.get("success") else []
