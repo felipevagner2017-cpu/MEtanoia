@@ -9,7 +9,7 @@ permissions:
 
 on:
   push:
-    branches: [ main, work/phase1-integrated-main ]
+    branches: [ main, work/phase1-integrated-main, feature/intelligent-agenda-fasting-voice ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
