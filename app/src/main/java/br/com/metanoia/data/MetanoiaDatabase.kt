@@ -278,15 +278,30 @@ abstract class MetanoiaDatabase : RoomDatabase() {
                 INSTANCE ?: run {
                     val appContext = context.applicationContext
                     val databaseKey = SqlCipherDatabaseMigration.ensureEncrypted(appContext)
-                    val encryptedFactory = SupportOpenHelperFactory(databaseKey.copyOf())
-                    databaseKey.fill(0)
-                    Room.databaseBuilder(
-                        appContext,
-                        MetanoiaDatabase::class.java,
-                        SqlCipherDatabaseMigration.DATABASE_NAME
-                    ).openHelperFactory(encryptedFactory)
-                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
-                        .build().also { INSTANCE = it }
+                    try {
+                        val database = Room.databaseBuilder(
+                            appContext,
+                            MetanoiaDatabase::class.java,
+                            SqlCipherDatabaseMigration.DATABASE_NAME
+                        ).openHelperFactory(SupportOpenHelperFactory(databaseKey.copyOf()))
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                            .build()
+                        try {
+                            // Force Room's full schema validation before discarding recovery.
+                            database.openHelper.writableDatabase
+                            SqlCipherDatabaseMigration.completeEncryptedValidation(
+                                appContext,
+                                SqlCipherDatabaseMigration.DATABASE_NAME,
+                                databaseKey
+                            )
+                            INSTANCE = database
+                        } catch (error: Throwable) {
+                            database.close()
+                            throw error
+                        }
+                    } finally {
+                        databaseKey.fill(0)
+                    }
                 }
             }
     }
