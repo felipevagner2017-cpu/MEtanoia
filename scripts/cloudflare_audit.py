@@ -85,7 +85,8 @@ PREVIEW_URL = "https://metanoia-preview.restaura-lar.workers.dev"
 def public_probe(path, method="GET", payload=None):
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     headers = {"User-Agent": "Mozilla/5.0 (compatible; MEtanoia-Preview-Audit/1.0)", "Accept": "text/html,application/json"}
-    if body is not None:\n        headers.update({"Content-Type": "application/json", "Origin": PREVIEW_URL})
+    if body is not None:
+        headers.update({"Content-Type": "application/json", "Origin": PREVIEW_URL})
     req = urllib.request.Request(PREVIEW_URL + path, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=20) as response:
