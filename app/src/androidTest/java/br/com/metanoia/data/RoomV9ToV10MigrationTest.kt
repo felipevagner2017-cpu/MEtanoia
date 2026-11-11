@@ -111,8 +111,12 @@ class RoomV9ToV10MigrationTest {
             assertEquals("Reflexão revisada", dao.findDailyEntry("fast-1", 0)?.reflection)
             assertEquals(1, dao.deleteDailyEntry("entry-1"))
             assertEquals(null, dao.findDailyEntry("fast-1", 0))
-            assertEquals(1, dao.deletePlan("fast-1"))
+            val secondReflection = FastingDailyEntry("entry-2", "fast-1", 1, "Registro a excluir junto com o plano", "Concluído", 1200L)
+            dao.insertDailyEntry(secondReflection)
+            assertEquals(secondReflection, dao.findDailyEntry("fast-1", 1))
+            assertEquals(1, dao.deletePlanAndEntries("fast-1"))
             assertEquals(null, dao.findPlan("fast-1"))
+            assertEquals(null, dao.findDailyEntry("fast-1", 1))
 
             sqlite.query("SELECT COUNT(*) FROM agenda_items WHERE id IN (42,43)").use { assertTrue(it.moveToFirst()); assertEquals(2, it.getInt(0)) }
             sqlite.query("SELECT COUNT(*) FROM journal_entries WHERE id=7").use { assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0)) }
