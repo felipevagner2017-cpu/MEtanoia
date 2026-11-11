@@ -34,7 +34,15 @@ const original = {
   items: [{ id: "agenda-1", title: "PRIVATE_AGENDA_SENTINEL", date: "2026-11-11" }],
   journal: [{ id: "journal-1", title: "PRIVATE_DIARY_SENTINEL", body: "Confissão e diário não podem ficar legíveis." }],
   reviews: [{ id: "review-1", body: "Revisão privada." }],
-  words: []
+  words: [],
+  confessions: [{ id: "confession-1", content: "PRIVATE_CONFESSION_SENTINEL" }],
+  dailyAnalysis: [{ id: "analysis-1", summary: "PRIVATE_ANALYSIS_SENTINEL" }],
+  fastingPlans: [{ id: "fasting-1", purpose: "PRIVATE_FASTING_SENTINEL" }],
+  fastingEntries: [{ id: "fasting-entry-1", reflection: "PRIVATE_FASTING_REFLECTION_SENTINEL" }],
+  studyProgress: [{ id: "study-1", chapter: 4, status: "in_progress" }],
+  studyReflections: [{ id: "study-reflection-1", body: "PRIVATE_STUDY_SENTINEL" }],
+  goals: [{ id: "goal-1", title: "PRIVATE_GOAL_SENTINEL" }],
+  habits: [{ id: "habit-1", title: "PRIVATE_HABIT_SENTINEL" }]
 };
 
 async function unlock(page, value, create = false) {
@@ -77,7 +85,10 @@ try {
   }, legacyKey);
   if (localState.legacy !== null) throw new Error("Legacy plaintext localStorage was not removed after verified migration.");
   if (!localState.values.envelope?.ciphertext || !localState.values.payload?.startsWith("v1.")) throw new Error("Encrypted IndexedDB envelope or payload is missing.");
-  if (JSON.stringify(localState.values).includes("PRIVATE_DIARY_SENTINEL")) throw new Error("A private diary sentinel is visible in IndexedDB values.");
+  const storedValues = JSON.stringify(localState.values);
+  for (const sentinel of ["PRIVATE_DIARY_SENTINEL", "PRIVATE_CONFESSION_SENTINEL", "PRIVATE_ANALYSIS_SENTINEL", "PRIVATE_FASTING_SENTINEL", "PRIVATE_FASTING_REFLECTION_SENTINEL", "PRIVATE_STUDY_SENTINEL", "PRIVATE_GOAL_SENTINEL", "PRIVATE_HABIT_SENTINEL"]) {
+    if (storedValues.includes(sentinel)) throw new Error("A sensitive app-state sentinel is visible in IndexedDB: " + sentinel);
+  }
 
   await page.evaluate(async () => {
     window.localVault.data.items.push({ id: "agenda-2", title: "Persisted offline" });
@@ -190,6 +201,25 @@ try {
   if (!download.suggestedFilename().includes("MEtanoia-backup-")) throw new Error("The PWA export control did not create the protected backup file.");
   console.log("PASS: real PWA startup, legacy data migration, and user-interface export flow.");
   await appContext.close();
+
+  // A fresh tab in the same browser profile must reopen the persisted vault.
+  await page.close();
+  const reopenedPage = await context.newPage();
+  await reopenedPage.goto(base + "/vault-harness");
+  const reopenedPromise = reopenedPage.evaluate(async key => {
+    window.reopenedVault = await window.MEtanoiaLocalVault.open(key, { items: [], journal: [], reviews: [], words: [] });
+    return window.reopenedVault.data;
+  }, legacyKey);
+  await unlock(reopenedPage, phrase, false);
+  const reopened = await reopenedPromise;
+  if (reopened.journal[0]?.body !== original.journal[0].body ||
+      reopened.confessions[0]?.content !== "PRIVATE_CONFESSION_SENTINEL" ||
+      reopened.fastingEntries[0]?.reflection !== "PRIVATE_FASTING_REFLECTION_SENTINEL" ||
+      reopened.studyProgress[0]?.chapter !== 4) {
+    throw new Error("Encrypted records were not preserved after closing and reopening the browser tab.");
+  }
+  console.log("PASS: browser tab close/reopen, including confession, fasting, study, goals and habits collections.");
+  await reopenedPage.close();
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
