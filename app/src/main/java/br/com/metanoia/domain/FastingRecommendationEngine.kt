@@ -34,7 +34,7 @@ class FastingRecommendationEngine {
         }
         if (alreadySuggested) return null
 
-        val (need, reason, purpose) = identifyNeed(dimension, text)
+        val (need, reason, purpose) = identifyNeed(dimension, text, recentRecords.isEmpty())
         val (references, context, practice) = scriptureFor(dimension)
         return FastingSuggestion(
             dimension = dimension,
@@ -49,7 +49,7 @@ class FastingRecommendationEngine {
         )
     }
 
-    private fun identifyNeed(dimension: LifeDimension, text: String): Triple<String, String, String> {
+    private fun identifyNeed(dimension: LifeDimension, text: String, noRecords: Boolean): Triple<String, String, String> {
         val signals = when (dimension) {
             LifeDimension.SPIRITUAL -> listOf(
                 listOf("distra", "celular", "rede social", "pressa") to "Distrações podem estar reduzindo o espaço de atenção dedicado à oração e às Escrituras."
@@ -71,7 +71,7 @@ class FastingRecommendationEngine {
             LifeDimension.PROFESSIONAL -> "Rever prioridades e proteger um período de concentração."
             else -> "Observar hábitos e escolher uma prioridade cotidiana."
         }
-        val reason = if (recentRecords.isEmpty()) {
+        val reason = if (noRecords) {
             "Não há registros recentes suficientes para inferir uma dificuldade específica; esta é uma sugestão geral, não uma avaliação."
         } else {
             match?.second ?: "A sugestão é geral porque os registros fornecidos não apresentam um sinal específico para esta dimensão."
