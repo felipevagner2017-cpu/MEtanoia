@@ -28,9 +28,10 @@ class FastingRecommendationEngine {
         previousPlans: List<FastingPlan>
     ): FastingSuggestion? {
         val text = recentRecords.joinToString(" ").lowercase(Locale.ROOT)
-        val alreadySuggested = previousPlans.take(8).any {
-            it.dimension == dimension && it.type == "NON_FOOD" &&
-                (System.currentTimeMillis() - it.createdAt) < RECENCY_WINDOW_MS
+        val now = System.currentTimeMillis()
+        val alreadySuggested = previousPlans.any {
+            val age = now - it.createdAt
+            it.dimension == dimension && age in 0..RECENCY_WINDOW_MS
         }
         if (alreadySuggested) return null
 
