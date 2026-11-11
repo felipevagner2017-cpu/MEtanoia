@@ -43,6 +43,7 @@ class RoomV9ToV10MigrationTest {
             legacy.execSQL("CREATE TABLE sync_cursors(accountId TEXT NOT NULL,deviceId TEXT NOT NULL,serverUpdatedAt INTEGER NOT NULL,afterRecordId TEXT NOT NULL,updatedAt INTEGER NOT NULL,PRIMARY KEY(accountId,deviceId))")
             legacy.execSQL("CREATE TABLE sync_remote_records(accountId TEXT NOT NULL DEFAULT '',recordId TEXT NOT NULL,dimension TEXT NOT NULL,recordType TEXT NOT NULL,payloadCiphertext TEXT NOT NULL,encryptionVersion INTEGER NOT NULL,revision INTEGER NOT NULL,clientUpdatedAt INTEGER NOT NULL,serverUpdatedAt INTEGER NOT NULL,deletedAt INTEGER,sourceDeviceId TEXT,status TEXT NOT NULL,lastError TEXT,PRIMARY KEY(accountId,recordId))")
             legacy.execSQL("CREATE INDEX index_sync_remote_records_accountId_serverUpdatedAt_recordId ON sync_remote_records(accountId,serverUpdatedAt,recordId)")
+            legacy.execSQL("CREATE INDEX index_agenda_items_seriesId ON agenda_items(seriesId)")
             legacy.execSQL("""INSERT INTO agenda_items(
                 id,title,description,dimension,kind,scheduledAt,completed,recurrenceRule,reminderAt,createdAt
             ) VALUES(42,'Consulta','Retorno','ROUTINE','APPOINTMENT',1700000000000,0,NULL,1699992800000,1690000000000)""")
