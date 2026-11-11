@@ -1,5 +1,8 @@
 (async()=> {
 const $=id=>document.getElementById(id),K="metonoia-pwa-v1",areas=["Espiritual","Matrimonial","Profissional","Cotidiano"],days=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+let promptInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;const install=$("install");if(install)install.hidden=false});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(registration=>registration.update()).catch(error=>console.warn("Não foi possível verificar atualização do MEtanoia",error));
 const localVault=await window.MEtanoiaLocalVault.open(K,{items:[],journal:[],reviews:[],words:[]});
 let db=localVault.data;
 const uid=()=>crypto.randomUUID?.()||String(Date.now()+Math.random()),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -12,7 +15,7 @@ function normalizeDatabase(){
 }
 normalizeDatabase();
 await localVault.save(db);
-let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected),calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1),observedToday=today(),promptInstall=null;
+let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected),calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1),observedToday=today();
 const save=()=>localVault.save(db);
 const occurrence=(x,k)=>x.completions?.[k]||{done:!!x.done&&x.date===k,note:""};
 function occursOn(x,d){const k=key(d);if(!fixed(x))return x.date===k;if(k<(x.date||"0000-01-01")||(x.endDate&&k>x.endDate))return false;return (Array.isArray(x.weekdays)?x.weekdays:[]).includes(d.getDay())}function forDate(d){return db.items.filter(x=>occursOn(x,d)).sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
@@ -443,8 +446,7 @@ $("localBackupFile").onchange=async()=>{
  }catch(error){status.textContent=error.message||"A cópia não pôde ser autenticada; os dados atuais foram preservados."}
  finally{$("localBackupFile").value=""}
 };
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("install").hidden=false});$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
-if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});await registration.update();}catch(error){console.warn("Não foi possível verificar atualização do MEtanoia",error);}});
+$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
 $("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();
 })().catch(error=>{
  const overlay=document.createElement("div"),panel=document.createElement("div");
