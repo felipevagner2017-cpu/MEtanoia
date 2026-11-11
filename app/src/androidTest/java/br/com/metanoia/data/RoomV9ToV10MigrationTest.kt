@@ -49,6 +49,9 @@ class RoomV9ToV10MigrationTest {
             legacy.execSQL("""INSERT INTO agenda_items(
                 id,title,description,dimension,kind,scheduledAt,completed,recurrenceRule,reminderAt,createdAt
             ) VALUES(42,'Consulta','Retorno','ROUTINE','APPOINTMENT',1700000000000,0,NULL,1699992800000,1690000000000)""")
+            legacy.execSQL("""INSERT INTO agenda_items(
+                id,title,description,dimension,kind,scheduledAt,completed,recurrenceRule,reminderAt,createdAt
+            ) VALUES(43,'Hábito de leitura','Ler um capítulo','SPIRITUAL','HABIT',1700000000000,0,'DAILY',NULL,1690000000000)""")
             legacy.execSQL("INSERT INTO journal_entries(id,title,content,dimension,createdAt,updatedAt,dayKey) VALUES(7,'Diário preservado','Registro anterior','SPIRITUAL',100,110,'2026-11-10')")
             legacy.execSQL("INSERT INTO review_entries(id,period,periodStart,periodEnd,reflection,createdAt) VALUES(8,'WEEKLY',1,7,'Revisão preservada',120)")
             legacy.execSQL("INSERT INTO confession_entries(id,dayKey,content,createdAt,updatedAt) VALUES(9,'2026-11-10','Confissão preservada',130,140)")
@@ -79,6 +82,7 @@ class RoomV9ToV10MigrationTest {
                 assertEquals("fasting_plans", cursor.getString(0))
                 assertFalse(cursor.moveToNext())
             }
+            sqlite.query("SELECT title,kind FROM agenda_items WHERE id=43").use { assertTrue(it.moveToFirst()); assertEquals("Hábito de leitura", it.getString(0)); assertEquals("HABIT", it.getString(1)) }
             sqlite.query("SELECT title,content FROM journal_entries WHERE id=7").use { assertTrue(it.moveToFirst()); assertEquals("Diário preservado", it.getString(0)); assertEquals("Registro anterior", it.getString(1)) }
             sqlite.query("SELECT reflection FROM review_entries WHERE id=8").use { assertTrue(it.moveToFirst()); assertEquals("Revisão preservada", it.getString(0)) }
             sqlite.query("SELECT content FROM confession_entries WHERE id=9").use { assertTrue(it.moveToFirst()); assertEquals("Confissão preservada", it.getString(0)) }
