@@ -326,7 +326,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
  val reviews by vm.reviews.collectAsStateWithLifecycle()
  val confessions by vm.confessions.collectAsStateWithLifecycle()
  val analyses by vm.analyses.collectAsStateWithLifecycle()
- var cotidianoTab by remember { mutableStateOf("Diário") }
+ var cotidianoTab by remember { mutableStateOf("Jornada") }
  var showAiAssistant by remember { mutableStateOf(false) }
  var aiInitialDimension by remember { mutableStateOf("Visão integrada") }
  val sectionLabels = listOf("Jornada diária","Áreas","Agenda")
@@ -437,11 +437,12 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
        2 -> ProfessionalDimensionPage(journal.filter{it.dimension==LifeDimension.PROFESSIONAL}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.PROFESSIONAL) }
        3 -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
         Row(Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-         listOf("Diário","Revisões","Alertas").forEach { label ->
+         listOf("Jornada","Diário","Revisões","Alertas").forEach { label ->
           TextButton(onClick={cotidianoTab=label}) { Text(label,color=if(cotidianoTab==label) GoldBright else Ivory,fontWeight=if(cotidianoTab==label) FontWeight.Bold else FontWeight.Normal) }
          }
         }
         when(cotidianoTab) {
+         "Jornada" -> CotidianoDimensionPage(journal.filter{it.dimension==LifeDimension.INDIVIDUAL || it.dimension==LifeDimension.ROUTINE}) { title,body -> vm.saveDimensionRecord(title,body,LifeDimension.ROUTINE) }
          "Diário" -> JournalPage(journal,confessions,analyses,agenda,vm)
          "Revisões" -> ReviewPage(reviews,vm)
          else -> NotificationSettingsPage(context,agenda,{

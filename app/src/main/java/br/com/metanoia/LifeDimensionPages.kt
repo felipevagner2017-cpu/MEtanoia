@@ -360,7 +360,7 @@ internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (Str
         title = "Profissional",
         description = "Uma jornada de desenvolvimento profissional: clareza de objetivos, coragem para enfrentar desafios e evolução por meio de ações verificáveis.",
         promptTitle = "Meta, projeto ou desafio profissional",
-        promptBody = "Defina o resultado desejado, o obstáculo atual, o próximo passo concreto, o prazo, os recursos e como medirá o progresso.",
+        promptBody = "Descreva sua situação profissional atual, experiência, responsabilidades e recursos disponíveis.",
         saveLabel = "Registrar plano profissional",
         focusAreas = listOf(
             "Metas e resultados mensuráveis",
@@ -371,6 +371,28 @@ internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (Str
             "Resultados, conquistas e aprendizados",
             "Histórico de evolução profissional",
             "Próxima ação prática e prazo"
+        ),
+        entries = entries,
+        onSave = onSave
+    )
+}
+
+@Composable
+internal fun CotidianoDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
+    DimensionRecordPage(
+        eyebrow = "DIMENSÃO 04",
+        title = "Cotidiano",
+        description = "Organização, hábitos, disciplina, autoconhecimento e qualidade de vida com passos possíveis e acompanhamento honesto.",
+        promptTitle = "Objetivo de rotina ou desenvolvimento pessoal",
+        promptBody = "Descreva sua realidade atual, rotina, energia, responsabilidades e o que deseja melhorar.",
+        saveLabel = "Registrar objetivo cotidiano",
+        focusAreas = listOf(
+            "Organização da rotina e prioridades",
+            "Construção e manutenção de hábitos",
+            "Disciplina com equilíbrio e constância",
+            "Autoconhecimento e percepção de dificuldades",
+            "Descanso, saúde cotidiana e qualidade de vida",
+            "Ações pequenas, observáveis e sustentáveis"
         ),
         entries = entries,
         onSave = onSave
@@ -391,6 +413,12 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         entries.take(5).none { it.content.contains(candidate, ignoreCase = true) }
     } ?: challenges.first()
     var note by remember(LocalDate.now()) { mutableStateOf("") }
+    var relationshipGoal by remember { mutableStateOf("") }
+    var relationshipContext by remember { mutableStateOf("") }
+    var relationshipObstacle by remember { mutableStateOf("") }
+    var relationshipAction by remember { mutableStateOf("") }
+    var relationshipDeadline by remember { mutableStateOf("") }
+    var relationshipMeasure by remember { mutableStateOf("") }
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
@@ -410,6 +438,29 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
                 title = "ACOMPANHAMENTO MATRIMONIAL",
                 description = "A evolução é observada pelas atitudes registradas, não por suposições sobre os sentimentos de Ingrid."
             )
+        }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("META E CONTEXTO DO CASAL", color = GoldChampagne, fontWeight = FontWeight.Bold)
+                    OutlinedTextField(value = relationshipGoal, onValueChange = { relationshipGoal = it }, modifier = Modifier.fillMaxWidth(), label = { Text("O que deseja fortalecer ou reconstruir?") }, singleLine = true)
+                    OutlinedTextField(value = relationshipContext, onValueChange = { relationshipContext = it }, modifier = Modifier.fillMaxWidth(), label = { Text("O que aconteceu? Descreva fatos e contexto sem atribuir culpa.") }, minLines = 3)
+                    OutlinedTextField(value = relationshipObstacle, onValueChange = { relationshipObstacle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Qual dificuldade ou necessidade está percebendo?") }, minLines = 2)
+                    OutlinedTextField(value = relationshipAction, onValueChange = { relationshipAction = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Próxima conversa ou atitude possível") }, minLines = 2)
+                    OutlinedTextField(value = relationshipDeadline, onValueChange = { relationshipDeadline = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Quando pretende dar esse passo?") }, singleLine = true)
+                    OutlinedTextField(value = relationshipMeasure, onValueChange = { relationshipMeasure = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Como reconhecerá um avanço concreto?") }, minLines = 2)
+                    Button(
+                        onClick = {
+                            val content = "META: $relationshipGoal\nCONTEXTO ATUAL: $relationshipContext\nDIFICULDADE PERCEBIDA: $relationshipObstacle\nPRÓXIMA AÇÃO: $relationshipAction\nPRAZO: $relationshipDeadline\nINDICADOR DE AVANÇO: $relationshipMeasure"
+                            onSave("Meta matrimonial · $relationshipGoal", content)
+                            relationshipGoal = ""; relationshipContext = ""; relationshipObstacle = ""; relationshipAction = ""; relationshipDeadline = ""; relationshipMeasure = ""
+                        },
+                        enabled = relationshipGoal.isNotBlank() && (relationshipContext.isNotBlank() || relationshipAction.isNotBlank()),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Salvar meta e plano matrimonial") }
+                    Text("O registro descreve sua perspectiva. A IA deverá perguntar antes de concluir o que Ingrid pensa ou sente.", color = Ivory.copy(alpha = .72f), style = MaterialTheme.typography.bodySmall)
+                }
+            }
         }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = VioletSurface), modifier = Modifier.fillMaxWidth()) {
@@ -486,6 +537,7 @@ private fun DimensionRecordPage(
     var successMeasure by remember { mutableStateOf("") }
     val isSpiritual = eyebrow.contains("01")
     val isProfessional = eyebrow.contains("03")
+    val isStructuredGoal = isProfessional || eyebrow.contains("04")
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
@@ -496,7 +548,11 @@ private fun DimensionRecordPage(
             JourneyProgressCard(
                 totalRecords = entries.size,
                 latestDate = entries.maxByOrNull { it.createdAt }?.dayKey.orEmpty(),
-                title = if (eyebrow.contains("03")) "EVOLUÇÃO PROFISSIONAL" else "JORNADA DE DESENVOLVIMENTO",
+                title = when {
+                    isProfessional -> "EVOLUÇÃO PROFISSIONAL"
+                    eyebrow.contains("04") -> "EVOLUÇÃO COTIDIANA"
+                    else -> "JORNADA DE DESENVOLVIMENTO"
+                },
                 description = "Acompanhe os registros, decisões, aprendizados e próximos passos documentados."
             )
         }
@@ -521,11 +577,12 @@ private fun DimensionRecordPage(
                         OutlinedTextField(value = contextNotes, onValueChange = { contextNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Contexto histórico, cultural e literário") }, minLines = 3)
                         OutlinedTextField(value = analysisNotes, onValueChange = { analysisNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Observações do texto, estrutura e palavras-chave") }, minLines = 3)
                         OutlinedTextField(value = applicationNotes, onValueChange = { applicationNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Interpretação, fundamento bíblico e aplicação pastoral") }, minLines = 4)
-                    } else if (isProfessional) {
-                        OutlinedTextField(value = obstacle, onValueChange = { obstacle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Obstáculo ou desafio atual") }, minLines = 2)
+                    } else if (isStructuredGoal) {
+                        OutlinedTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth(), label = { Text(promptBody) }, minLines = 3)
+                        OutlinedTextField(value = obstacle, onValueChange = { obstacle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Obstáculo ou dificuldade atual") }, minLines = 2)
                         OutlinedTextField(value = nextAction, onValueChange = { nextAction = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Próxima ação concreta") }, minLines = 2)
-                        OutlinedTextField(value = deadline, onValueChange = { deadline = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Prazo para executar") }, singleLine = true)
-                        OutlinedTextField(value = successMeasure, onValueChange = { successMeasure = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Como vou medir o resultado?") }, minLines = 2)
+                        OutlinedTextField(value = deadline, onValueChange = { deadline = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Prazo ou frequência desejada") }, singleLine = true)
+                        OutlinedTextField(value = successMeasure, onValueChange = { successMeasure = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Como vou reconhecer o resultado?") }, minLines = 2)
                     } else {
                         OutlinedTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth(), label = { Text(promptBody) }, minLines = 5)
                     }
@@ -533,7 +590,7 @@ private fun DimensionRecordPage(
                         onClick = {
                             val content = when {
                                 isSpiritual -> "Contexto: $contextNotes\nObservações: $analysisNotes\nInterpretação e aplicação pastoral: $applicationNotes"
-                                isProfessional -> "Meta ou projeto: $body\nObstáculo: $obstacle\nPróxima ação: $nextAction\nPrazo: $deadline\nMedida de resultado: $successMeasure"
+                                isStructuredGoal -> "META/OBJETIVO: $recordTitle\nCONTEXTO ATUAL: $body\nOBSTÁCULO OU DIFICULDADE: $obstacle\nPRÓXIMA AÇÃO: $nextAction\nPRAZO/FREQUÊNCIA: $deadline\nCRITÉRIO DE RESULTADO: $successMeasure"
                                 else -> body
                             }
                             onSave(recordTitle, content)
@@ -542,7 +599,7 @@ private fun DimensionRecordPage(
                         },
                         enabled = recordTitle.isNotBlank() && when {
                             isSpiritual -> contextNotes.isNotBlank() || analysisNotes.isNotBlank() || applicationNotes.isNotBlank()
-                            isProfessional -> obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
+                            isStructuredGoal -> body.isNotBlank() || obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
                             else -> body.isNotBlank()
                         },
                         modifier = Modifier.fillMaxWidth()
