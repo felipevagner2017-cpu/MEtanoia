@@ -214,6 +214,7 @@ try {
   await appContext.close();
 
   // Two independent tabs must reserve distinct counters from the same IndexedDB database.
+  await context.setOffline(false);
   const parallelPage = await context.newPage();
   await parallelPage.goto(base + "/vault-harness");
   const parallelOpen = parallelPage.evaluate(async key => {
