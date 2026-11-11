@@ -6,6 +6,7 @@ import br.com.metanoia.data.FastingPlan
 import br.com.metanoia.data.LifeDimension
 import br.com.metanoia.data.MetanoiaDatabase
 import br.com.metanoia.data.SyncOutboxOperation
+import br.com.metanoia.data.SyncCursorEntity
 import br.com.metanoia.data.SyncRecordMetadata
 import br.com.metanoia.data.SyncRemoteRecord
 import br.com.metanoia.security.AccountCrypto
@@ -34,20 +35,52 @@ class FastingSyncRepository(
         accountId: String,
         token: String,
         deviceId: String,
-        since: Long = 0L,
-        afterId: String = ""
+        since: Long? = null,
+        afterId: String? = null
     ): SyncCycleResult {
-        val cycle = SyncCoordinator(database.syncOutboxDao()).synchronize(
-            accountId = accountId, token = token, deviceId = deviceId, since = since, afterId = afterId
-        )
+        require(accountId.isNotBlank() && token.isNotBlank() && deviceId.isNotBlank())
+        val storedCursor = database.syncCursorDao().get(accountId, deviceId)
+        val explicitCursor = since != null || afterId != null
+        var cursorSince = if (explicitCursor) since ?: 0L else storedCursor?.serverUpdatedAt ?: 0L
+        var cursorAfter = if (explicitCursor) afterId.orEmpty() else storedCursor?.afterRecordId.orEmpty()
+        var uploaded = 0
         var conflicts = 0
-        cycle.downloaded
-            .filter { it.encryptionVersion == 2 && it.recordType in setOf("fasting_plan", "fasting_daily_entry") }
-            .sortedBy { if (it.recordType == "fasting_plan") 0 else 1 }
-            .forEach { record ->
-                if (!applyRemote(record, accountId)) conflicts++
+        var rejected = 0
+        var hasMore = false
+        var nextCursor: String? = null
+        val downloaded = mutableListOf<PulledSyncRecord>()
+        val coordinator = SyncCoordinator(database.syncOutboxDao())
+        var pages = 0
+        do {
+            val cycle = coordinator.synchronize(
+                accountId = accountId, token = token, deviceId = deviceId,
+                since = cursorSince, afterId = cursorAfter
+            )
+            uploaded += cycle.uploaded
+            conflicts += cycle.conflicts
+            rejected += cycle.rejected
+            downloaded += cycle.downloaded
+            cycle.downloaded
+                .filter { it.encryptionVersion == 2 && it.recordType in setOf("fasting_plan", "fasting_daily_entry") }
+                .sortedBy { if (it.recordType == "fasting_plan") 0 else 1 }
+                .forEach { record ->
+                    if (!applyRemote(record, accountId)) conflicts++
+                }
+            hasMore = cycle.hasMore
+            nextCursor = cycle.nextCursor
+            if (nextCursor != null) {
+                val separator = nextCursor.indexOf(':')
+                require(separator > 0) { "Cursor de sincronização inválido." }
+                cursorSince = nextCursor.substring(0, separator).toLongOrNull()
+                    ?: throw IllegalStateException("Timestamp do cursor inválido.")
+                cursorAfter = nextCursor.substring(separator + 1)
+                database.syncCursorDao().save(
+                    SyncCursorEntity(accountId, deviceId, cursorSince, cursorAfter, now())
+                )
             }
-        return cycle.copy(conflicts = cycle.conflicts + conflicts)
+            pages++
+        } while (hasMore && pages < 20)
+        return SyncCycleResult(uploaded, conflicts, rejected, downloaded, hasMore, nextCursor)
     }
 
     suspend fun savePlanAndQueue(plan: FastingPlan, accountId: String, deviceId: String): SyncOutboxOperation {
