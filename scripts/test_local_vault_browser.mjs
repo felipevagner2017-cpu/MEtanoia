@@ -213,6 +213,24 @@ try {
   console.log("PASS: real PWA startup, legacy data migration, and user-interface export flow.");
   await appContext.close();
 
+  // Two independent tabs must reserve distinct counters from the same IndexedDB database.
+  const parallelPage = await context.newPage();
+  await parallelPage.goto(base + "/vault-harness");
+  const parallelOpen = parallelPage.evaluate(async key => {
+    window.parallelVault = await window.MEtanoiaLocalVault.open(key, { items: [], journal: [], reviews: [], words: [] });
+    return true;
+  }, legacyKey);
+  await unlock(parallelPage, phrase, false);
+  await parallelOpen;
+  const concurrentNonces = await Promise.all([
+    page.evaluate(() => window.localVault.reserveCounter("sync-user", "device-b", "fasting-plan")),
+    parallelPage.evaluate(() => window.parallelVault.reserveCounter("sync-user", "device-b", "fasting-plan"))
+  ]);
+  if (concurrentNonces.slice().sort((a,b)=>a-b).join(",") !== "0,1") {
+    throw new Error("Two tabs reserved a duplicate shared-device nonce.");
+  }
+  await parallelPage.close();
+
   // A fresh tab in the same browser profile must reopen the persisted vault.
   await page.close();
   const reopenedPage = await context.newPage();
@@ -240,6 +258,30 @@ try {
   }
   console.log("PASS: browser tab close/reopen, including confession, fasting, study, goals and habits collections.");
   await reopenedPage.close();
+  await context.close();
+
+  // Restoring an older export must not roll back the independent IndexedDB nonce counter.
+  const rollbackContext = await browser.newContext();
+  const rollbackPage = await rollbackContext.newPage();
+  await rollbackPage.goto(base + "/vault-harness");
+  const rollbackOpen = rollbackPage.evaluate(async key => {
+    window.rollbackVault = await window.MEtanoiaLocalVault.open(key, { items: [], journal: [], reviews: [], words: [] });
+    return true;
+  }, legacyKey);
+  await unlock(rollbackPage, phrase, true);
+  await rollbackOpen;
+  const oldBackup = await rollbackPage.evaluate(async pass => window.rollbackVault.exportBackup(pass, window.rollbackVault.data), exportPhrase);
+  const used = await rollbackPage.evaluate(async () => Promise.all(Array.from({length:3}, () =>
+    window.rollbackVault.reserveCounter("sync-user", "device-c", "fasting-entry")
+  )));
+  if (used.join(",") !== "0,1,2") throw new Error("Initial nonce reservations were not monotonic.");
+  await rollbackPage.evaluate(async ({backup,pass}) => window.rollbackVault.restoreBackup(backup,pass), {backup:oldBackup,pass:exportPhrase});
+  const afterRollback = await rollbackPage.evaluate(() =>
+    window.rollbackVault.reserveCounter("sync-user", "device-c", "fasting-entry")
+  );
+  if (afterRollback !== 3) throw new Error("Restoring an older backup rolled back the AES-GCM nonce counter.");
+  console.log("PASS: cross-tab atomic nonce reservation and backup-rollback resistance.");
+  await rollbackContext.close();
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
