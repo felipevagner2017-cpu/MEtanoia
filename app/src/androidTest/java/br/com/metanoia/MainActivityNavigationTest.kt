@@ -45,7 +45,23 @@ class MainActivityNavigationTest {
             true
         }.getOrDefault(false)
         if (!alreadyVisible) {
-            target.performScrollTo()
+            // Dimension tabs live in a horizontal scroller. performScrollTo()
+            // only handles bring-into-view in the vertical direction, so it
+            // leaves off-screen tabs such as Matrimonio unreachable on phones.
+            val scrollContainers = composeRule.onAllNodes(hasScrollAction())
+            for (index in 0 until scrollContainers.fetchSemanticsNodes().size) {
+                runCatching { scrollContainers[index].performScrollToNode(hasText(label, substring = false) and hasClickAction()) }
+                val nowVisible = runCatching {
+                    target.assertIsDisplayed()
+                    true
+                }.getOrDefault(false)
+                if (nowVisible) break
+            }
+            val visibleAfterHorizontalScroll = runCatching {
+                target.assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+            if (!visibleAfterHorizontalScroll) target.performScrollTo()
         }
         target.assertIsDisplayed().performClick()
         composeRule.mainClock.advanceTimeBy(1_500)
