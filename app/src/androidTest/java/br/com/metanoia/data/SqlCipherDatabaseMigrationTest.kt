@@ -71,9 +71,10 @@ class SqlCipherDatabaseMigrationTest {
         val key = SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
         val databaseFile = context.getDatabasePath(f.databaseName)
         assertFalse("O arquivo ativo não pode continuar com o cabeçalho SQLite em texto", hasPlainSqliteHeader(databaseFile))
-        assertFalse("A cópia de recuperação deve ser removida após a validação", File(databaseFile.absolutePath + ".plaintext-recovery").exists())
+        assertTrue("A cópia de recuperação deve permanecer até Room validar o esquema", File(databaseFile.absolutePath + ".plaintext-recovery").exists())
 
         val encrypted = openEncrypted(f, key)
+        assertFalse("A cópia de recuperação só pode ser removida depois da validação Room", File(databaseFile.absolutePath + ".plaintext-recovery").exists())
         assertEquals("Compromisso preservado", encrypted.agendaDao().findById(agendaId)?.title)
         assertEquals("FREQ=WEEKLY;BYDAY=MO", encrypted.agendaDao().findById(habitId)?.recurrenceRule)
         assertEquals("Relato privado de teste", encrypted.journalDao().observeAll().first().single { it.id == journalId }.content)
@@ -164,18 +165,30 @@ class SqlCipherDatabaseMigrationTest {
         assertTrue("A cópia de recuperação deve existir até a próxima validação", File(file.absolutePath + ".plaintext-recovery").exists())
 
         val key = SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
-        assertFalse(File(file.absolutePath + ".plaintext-recovery").exists())
+        assertTrue("A cópia original precisa permanecer até Room validar o banco", File(file.absolutePath + ".plaintext-recovery").exists())
         val encrypted = openEncrypted(f, key)
+        assertFalse("A cópia só é removida depois da validação Room", File(file.absolutePath + ".plaintext-recovery").exists())
         assertEquals("Promoção recuperável", encrypted.agendaDao().findById(id)?.title)
         encrypted.close()
         context.deleteDatabase(f.databaseName)
         Unit
     }
 
-    private fun openEncrypted(f: Fixture, key: ByteArray): MetanoiaDatabase =
-        Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName)
+    private fun openEncrypted(f: Fixture, key: ByteArray): MetanoiaDatabase {
+        val database = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName)
             .openHelperFactory(SupportOpenHelperFactory(key.copyOf()))
+            .addMigrations(
+                MetanoiaDatabase.MIGRATION_1_2, MetanoiaDatabase.MIGRATION_2_3,
+                MetanoiaDatabase.MIGRATION_3_4, MetanoiaDatabase.MIGRATION_4_5,
+                MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7,
+                MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9,
+                MetanoiaDatabase.MIGRATION_9_10
+            )
             .build()
+        database.openHelper.writableDatabase
+        SqlCipherDatabaseMigration.completeEncryptedValidation(context, f.databaseName, key)
+        return database
+    }
 
     private fun hasPlainSqliteHeader(file: File): Boolean {
         if (!file.exists() || file.length() < 16) return false
