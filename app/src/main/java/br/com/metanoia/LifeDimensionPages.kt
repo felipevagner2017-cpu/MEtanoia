@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
@@ -420,7 +421,7 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
     var relationshipDeadline by remember { mutableStateOf("") }
     var relationshipMeasure by remember { mutableStateOf("") }
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxSize().testTag("matrimonial-dimension-list").background(DeepViolet).padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
