@@ -29,7 +29,7 @@ class RoomV6ToV7MigrationTest {
         } finally { legacy.close() }
 
         val db = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9).build()
+            .addMigrations(MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9, MetanoiaDatabase.MIGRATION_9_10).build()
         try {
             val dao = db.syncRemoteRecordDao()
             val legacyRow = dao.find("", "same-record")
