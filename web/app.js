@@ -440,7 +440,9 @@ async function syncFastingData(silent=false){
    }
   }
  }
- let imported=0,remoteConflicts=0,since=0,afterId="";
+ let imported=0,remoteConflicts=0;
+ const savedCursor=localVault.getSyncMetadata(userId,"__sync-cursor__");
+ let since=Number(savedCursor?.since||0),afterId=String(savedCursor?.afterId||"");
  for(let page=0;page<20;page++){
   const response=await fetch("/api/sync/pull?since="+since+"&afterId="+encodeURIComponent(afterId),{headers});
   const result=await response.json().catch(()=>({}));
@@ -468,8 +470,14 @@ async function syncFastingData(silent=false){
    await save();
    await localVault.setSyncMetadata(userId,record.record_id,{revision:Number(record.revision||0),state:"synced",localDigest:await fastingRecordDigest(value),sourceDeviceId:record.source_device_id,purpose});imported++;
   }
-  if(!result.hasMore||!result.nextCursor)break;
-  since=Number(result.nextCursor.since||0);afterId=String(result.nextCursor.afterId||"");
+  const lastRecord=result.records?.[result.records.length-1];
+  const nextCursor=result.nextCursor||(lastRecord?{since:lastRecord.server_updated_at,afterId:lastRecord.record_id}:null);
+  if(nextCursor){
+   since=Number(nextCursor.since||0);afterId=String(nextCursor.afterId||"");
+   await localVault.setSyncMetadata(userId,"__sync-cursor__",{since,afterId,state:"cursor"});
+  }
+  if(!result.hasMore)break;
+  if(!nextCursor)throw new Error("A API não forneceu cursor para continuar a sincronização.");
   if(page===19)throw new Error("A sincronização excedeu o limite de páginas desta execução; tente novamente.");
  }
  accountStatus("Sincronização protegida concluída: "+uploaded+" enviados, "+imported+" recebidos, "+(conflicts+remoteConflicts)+" conflitos e "+rejected+" rejeitados.");
