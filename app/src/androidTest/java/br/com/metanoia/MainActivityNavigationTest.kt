@@ -141,7 +141,15 @@ class MainActivityNavigationTest {
         val relationshipGoal = "Fortalecer a comunicação do casal"
         composeRule.onNode(hasText("O que deseja fortalecer ou reconstruir?", substring = false) and hasSetTextAction()).performTextInput(relationshipGoal)
         composeRule.onNode(hasText("O que aconteceu? Descreva fatos e contexto sem atribuir culpa.", substring = false) and hasSetTextAction()).performTextInput("Quero conversar com mais calma sobre nossas prioridades.")
-        composeRule.onNodeWithText("Salvar meta e plano matrimonial", substring = false).performClick()
+        // The six-field form extends below the viewport. With the IME open, the
+        // save action is composed but off-screen; explicitly bring it into view
+        // before clicking so the test exercises the real Room save callback.
+        composeRule.onNodeWithText("Salvar meta e plano matrimonial", substring = false)
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        // assertPageVisible waits for the Room-backed Flow to render the inserted
+        // record, rather than assuming that the asynchronous ViewModel write is done.
         assertPageVisible("Matrimônio", "Meta matrimonial · $relationshipGoal")
         captureScreen("03-matrimonio")
 
