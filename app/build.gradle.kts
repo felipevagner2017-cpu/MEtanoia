@@ -16,6 +16,7 @@ android {
         versionCode = 8
         versionName = "0.5.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "METANOIA_API_BASE_URL", "\"https://metanoia.restaura-lar.workers.dev\"")
     }
 
     signingConfigs {
@@ -34,6 +35,7 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
+            buildConfigField("String", "METANOIA_API_BASE_URL", "\"https://metanoia-preview.restaura-lar.workers.dev\"")
         }
         getByName("release") {
             isMinifyEnabled = false
@@ -44,7 +46,10 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
