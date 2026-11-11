@@ -84,7 +84,10 @@ internal object SqlCipherDatabaseMigration {
                 "Room validou a base criptografada, mas a cópia de recuperação não pôde ser removida."
             }
         }
-        cleanupSidecars(database)
+        // Room has already opened this database before this callback. Its -wal/-shm
+        // files may be active; deleting them here can invalidate live SQLCipher
+        // connections and cause HMAC failures on subsequent page reads. SQLite/Room
+        // owns the lifecycle of active sidecars after the database is opened.
     }
 
     private fun createAndPersistKey(keyStore: AccountKeyStore, keyId: String): ByteArray {

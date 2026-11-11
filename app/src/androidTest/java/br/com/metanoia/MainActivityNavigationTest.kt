@@ -110,14 +110,39 @@ class MainActivityNavigationTest {
 
         clickNavigationControl("Matrimônio")
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
+        assertPageVisible("Matrimônio", "META E CONTEXTO DO CASAL")
+        val relationshipGoal = "Fortalecer a comunicação do casal"
+        composeRule.onNode(hasText("O que deseja fortalecer ou reconstruir?", substring = false) and hasSetTextAction()).performTextInput(relationshipGoal)
+        composeRule.onNode(hasText("O que aconteceu? Descreva fatos e contexto sem atribuir culpa.", substring = false) and hasSetTextAction()).performTextInput("Quero conversar com mais calma sobre nossas prioridades.")
+        composeRule.onNodeWithText("Salvar meta e plano matrimonial", substring = false).performClick()
+        assertPageVisible("Matrimônio", "Meta matrimonial · $relationshipGoal")
         captureScreen("03-matrimonio")
 
         clickNavigationControl("Profissional")
         assertPageVisible("Profissional", "DIMENSÃO 03")
+        val professionalGoal = "Organizar uma transição profissional"
+        composeRule.onNode(hasText("Meta, projeto ou desafio profissional", substring = false) and hasSetTextAction()).performTextInput(professionalGoal)
+        composeRule.onNode(hasText("Descreva sua situação profissional atual, experiência, responsabilidades e recursos disponíveis.", substring = false) and hasSetTextAction()).performTextInput("Atualmente trabalho com vendas e quero migrar para trabalho remoto.")
+        composeRule.onNode(hasText("Obstáculo ou dificuldade atual", substring = false) and hasSetTextAction()).performTextInput("Preciso identificar competências transferíveis.")
+        composeRule.onNode(hasText("Próxima ação concreta", substring = false) and hasSetTextAction()).performTextInput("Mapear três funções compatíveis.")
+        composeRule.onNode(hasText("Prazo ou frequência desejada", substring = false) and hasSetTextAction()).performTextInput("Próximos sete dias")
+        composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Lista de competências e três vagas analisadas.")
+        composeRule.onNodeWithText("Registrar plano profissional", substring = false).performClick()
+        assertPageVisible("Profissional", professionalGoal)
         captureScreen("04-profissional")
 
         clickNavigationControl("Cotidiano")
-        assertPageVisible("Cotidiano", "Diário de hoje")
+        assertPageVisible("Cotidiano", "EVOLUÇÃO COTIDIANA")
+        assertPageVisible("Cotidiano", "Objetivo de rotina ou desenvolvimento pessoal")
+        val dailyGoal = "Criar uma rotina diária consistente"
+        composeRule.onNode(hasText("Objetivo de rotina ou desenvolvimento pessoal", substring = false) and hasSetTextAction()).performTextInput(dailyGoal)
+        composeRule.onNode(hasText("Descreva sua realidade atual, rotina, energia, responsabilidades e o que deseja melhorar.", substring = false) and hasSetTextAction()).performTextInput("Minha rotina varia e preciso organizar horários.")
+        composeRule.onNode(hasText("Obstáculo ou dificuldade atual", substring = false) and hasSetTextAction()).performTextInput("Falta de constância.")
+        composeRule.onNode(hasText("Próxima ação concreta", substring = false) and hasSetTextAction()).performTextInput("Definir horário de início do dia.")
+        composeRule.onNode(hasText("Prazo ou frequência desejada", substring = false) and hasSetTextAction()).performTextInput("Todos os dias")
+        composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Cumprir o horário em cinco dias da semana.")
+        composeRule.onNodeWithText("Registrar objetivo cotidiano", substring = false).performClick()
+        assertPageVisible("Cotidiano", dailyGoal)
         captureScreen("05-cotidiano")
 
         clickNavigationControl("Agenda")
