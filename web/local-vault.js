@@ -279,17 +279,70 @@
     let counterQueue = Promise.resolve();
     async function reserveCounter(accountId, deviceId, purpose) {
       if (!accountId || !deviceId || !purpose) throw new Error("Contexto do contador criptográfico incompleto.");
-      const task = counterQueue.catch(() => {}).then(async () => {
-        data.syncNonceCounters = data.syncNonceCounters || {};
-        const key = JSON.stringify([accountId, deviceId, purpose]);
-        const current = Number(data.syncNonceCounters[key] ?? 0);
-        if (!Number.isSafeInteger(current) || current < 0 || current >= Number.MAX_SAFE_INTEGER) {
-          throw new Error("Contador criptográfico local inválido ou esgotado.");
-        }
-        data.syncNonceCounters[key] = current + 1;
-        await save(data); // The increment is committed inside the encrypted app-state before the nonce is used.
-        return current;
-      });
+      const task = counterQueue.catch(() => {}).then(() => new Promise((resolve, reject) => {
+        const counterKey = JSON.stringify([accountId, deviceId, purpose]);
+        const counterRecordId = "nonce-counter:" + counterKey;
+        const legacyNext = Number(data.syncNonceCounters?.[counterKey] ?? 0);
+        const tx = db.transaction(STORE, "readwrite");
+        const store = tx.objectStore(STORE);
+        let reserved = null, failure = null, keepAlive = true;
+        const keepTransactionAlive = () => {
+          if (!keepAlive) return;
+          const ping = store.get("__nonce-transaction-keepalive__");
+          ping.onsuccess = () => { if (keepAlive) keepTransactionAlive(); };
+          ping.onerror = () => {
+            failure = ping.error || new Error("Falha ao manter a reserva atômica do nonce.");
+            keepAlive = false;
+            try { tx.abort(); } catch {}
+          };
+        };
+        keepTransactionAlive();
+        const request = store.get(counterRecordId);
+        request.onerror = () => {
+          failure = request.error || new Error("Não foi possível ler o contador criptográfico.");
+          keepAlive = false;
+          try { tx.abort(); } catch {}
+        };
+        request.onsuccess = async () => {
+          try {
+            if (!Number.isSafeInteger(legacyNext) || legacyNext < 0) throw new Error("Contador legado inválido.");
+            let storedNext = 0;
+            if (request.result) {
+              const bytes = await window.MEtanoiaAccountCrypto.decryptRecord(
+                USER_ID, counterRecordId, DIMENSION, "nonce-counter", key, request.result
+              );
+              try { storedNext = Number(new TextDecoder().decode(bytes)); } finally { bytes.fill(0); }
+            }
+            if (!Number.isSafeInteger(storedNext) || storedNext < 0) throw new Error("Contador protegido adulterado ou inválido.");
+            const current = Math.max(storedNext, legacyNext);
+            if (current >= Number.MAX_SAFE_INTEGER - 1) throw new Error("Contador criptográfico esgotado.");
+            const next = current + 1;
+            const encrypted = await window.MEtanoiaAccountCrypto.encryptRecord(
+              USER_ID, counterRecordId, DIMENSION, "nonce-counter", key, encoder.encode(String(next))
+            );
+            store.put(encrypted, counterRecordId);
+            data.syncNonceCounters = data.syncNonceCounters || {};
+            data.syncNonceCounters[counterKey] = next;
+            reserved = current;
+            keepAlive = false;
+          } catch (error) {
+            failure = error;
+            keepAlive = false;
+            try { tx.abort(); } catch {}
+          }
+        };
+        tx.oncomplete = async () => {
+          try {
+            // The IndexedDB transaction is the cross-tab atomic source of truth.
+            // The encrypted app-state copy is a compatibility watermark only;
+            // backups cannot roll back the independent counter record.
+            await save(data);
+            resolve(reserved);
+          } catch (error) { reject(error); }
+        };
+        tx.onerror = () => reject(failure || tx.error || new Error("Falha ao reservar nonce."));
+        tx.onabort = () => reject(failure || tx.error || new Error("Reserva de nonce cancelada."));
+      }));
       counterQueue = task;
       return task;
     }
