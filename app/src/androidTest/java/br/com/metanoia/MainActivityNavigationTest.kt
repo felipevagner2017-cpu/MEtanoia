@@ -20,6 +20,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.printToLog
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
@@ -83,7 +85,9 @@ class MainActivityNavigationTest {
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
                     val target = hasText(expected, substring = false)
-                    if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
+                    if (tab == "Matrimônio" && expected == "META E CONTEXTO DO CASAL") {
+                        composeRule.onNodeWithTag("matrimonial-dimension-list").performScrollToNode(target)
+                    } else if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
                         composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
                     } else if (tab == "Devocional" && expected == "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES") {
                         composeRule.onNodeWithTag("pastoral-study-list").performScrollToNode(target)
@@ -124,8 +128,10 @@ class MainActivityNavigationTest {
         clickNavigationControl("Meus registros")
         assertPageVisible("Devocional", "DIMENSÃO 01")
 
-        // Return to the parent Áreas pager before selecting another dimension.
+        // Return to Áreas, then use a real horizontal swipe on the narrow-screen tab strip.
         clickNavigationControl("Áreas")
+        composeRule.onNodeWithTag("area-dimension-tabs").performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
         clickNavigationControl("Matrimônio")
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
         assertPageVisible("Matrimônio", "META E CONTEXTO DO CASAL")
@@ -136,6 +142,10 @@ class MainActivityNavigationTest {
         assertPageVisible("Matrimônio", "Meta matrimonial · $relationshipGoal")
         captureScreen("03-matrimonio")
 
+        // Leave and re-enter Matrimonio to verify pager state and content remain reachable.
+        clickNavigationControl("Devocional")
+        clickNavigationControl("Matrimônio")
+        assertPageVisible("Matrimônio", "META E CONTEXTO DO CASAL")
         clickNavigationControl("Profissional")
         assertPageVisible("Profissional", "DIMENSÃO 03")
         val professionalGoal = "Organizar uma transição profissional"
