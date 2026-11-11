@@ -36,7 +36,7 @@ add(f"Workers inventory (HTTP {status})", [
     for w in workers
 ] if workers else [f"- Inventory unavailable or empty. Check Workers Scripts Read. API message: {data.get('errors', data.get('error', 'none'))}"])
 
-for worker_name in ("metanoia", "metonoia"):
+for worker_name in ("metanoia", "metanoia-preview", "metonoia"):
     match = next((w for w in workers if w.get("id") == worker_name), None)
     if not match or not match.get("tag"):
         SUMMARY.append("## Builds for " + worker_name + "\n- Worker not found in this account.")
@@ -48,7 +48,7 @@ for worker_name in ("metanoia", "metonoia"):
         for b in builds[:8]
     ] if builds else ["- Build history unavailable or empty. Check Workers CI Read."])
 
-for worker_name in ("metanoia", "metonoia"):
+for worker_name in ("metanoia", "metanoia-preview", "metonoia"):
     status, data = get(f"/accounts/{account}/workers/scripts/{worker_name}/settings")
     settings = data.get("result", {}) if status == 200 and data.get("success") else {}
     bindings = settings.get("bindings", [])
@@ -77,6 +77,39 @@ add(f"D1 database inventory (HTTP {status})", [
     f"- {d.get('name')} — ID {d.get('uuid', d.get('id', 'unknown'))} — created {d.get('created_at', 'unknown')}"
     for d in databases
 ] if databases else ["- D1 inventory unavailable or empty. Check D1 Read."])
+
+# Public, read-only smoke checks for the isolated Preview Worker. The login probe
+# uses a synthetic address and an invalid password; it never creates or mutates data.
+PREVIEW_URL = "https://metanoia-preview.restaura-lar.workers.dev"
+def public_probe(path, method="GET", payload=None):
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Origin": PREVIEW_URL} if body is not None else {}
+    req = urllib.request.Request(PREVIEW_URL + path, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return response.status, response.headers.get("Access-Control-Allow-Origin", ""), response.read(1024).decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.headers.get("Access-Control-Allow-Origin", ""), exc.read(1024).decode("utf-8", "replace")
+    except Exception as exc:
+        return 0, "", type(exc).__name__
+
+root_status, _, _ = public_probe("/")
+SUMMARY.append(f"## Preview static PWA smoke check (HTTP {root_status})")
+login_status, cors_origin, login_body = public_probe("/api/auth/login", "POST", {
+    "email": "preview-readonly-probe@example.invalid",
+    "password": "invalid-probe-credential",
+    "platform": "pwa",
+})
+try:
+    login_error = json.loads(login_body).get("error", "")
+except Exception:
+    login_error = "non-JSON response"
+SUMMARY.extend([
+    f"## Preview D1 API smoke check (HTTP {login_status})",
+    f"- CORS origin accepted: {cors_origin == PREVIEW_URL}",
+    f"- Diagnostic: {login_error or 'no error message'}",
+    "- Probe is read-only: synthetic invalid login only; no account or row is created.",
+])
 
 for build_id in ("b32cf052-dba3-4f71-a794-c7c91cceaa5a", "d08878b1-c4bf-4e7a-9c58-f745332e23cd", "ff732fe1-14d1-493f-bd97-658253f49053", "acb6fba7-4e02-4a40-991d-873faabe8eba", "99a49e20-ae4d-424d-8bb2-2a328fbd31fc"):
     status, data = get(f"/accounts/{account}/builds/builds/{build_id}")
