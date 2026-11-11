@@ -13,7 +13,7 @@ const server = http.createServer((request, response) => {
     response.end("<!doctype html><html lang='pt-BR'><meta charset='utf-8'><body><script src='/crypto.js'></script><script src='/local-vault.js'></script></body></html>");
     return;
   }
-  const relative = pathname === "/" ? "index.html" : pathname.replace(/^\\//, "");
+  const relative = pathname === "/" ? "index.html" : pathname.replace(/^\//, "");
   const file = path.resolve(webRoot, relative);
   if (!file.startsWith(webRoot + path.sep) && file !== path.join(webRoot, "index.html")) {
     response.writeHead(403); response.end(); return;
