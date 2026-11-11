@@ -25,6 +25,31 @@ class FastingSyncRepository(
     private val accountCrypto: AccountCrypto = AccountCrypto(),
     private val now: () -> Long = System::currentTimeMillis
 ) {
+    /**
+     * Sends queued account-encrypted records and applies authenticated fasting
+     * records returned by the same pull cycle. The caller persists nextCursor
+     * and invokes again when hasMore is true.
+     */
+    suspend fun synchronize(
+        accountId: String,
+        token: String,
+        deviceId: String,
+        since: Long = 0L,
+        afterId: String = ""
+    ): SyncCycleResult {
+        val cycle = SyncCoordinator(database.syncOutboxDao()).synchronize(
+            accountId = accountId, token = token, deviceId = deviceId, since = since, afterId = afterId
+        )
+        var conflicts = 0
+        cycle.downloaded
+            .filter { it.encryptionVersion == 2 && it.recordType in setOf("fasting_plan", "fasting_daily_entry") }
+            .sortedBy { if (it.recordType == "fasting_plan") 0 else 1 }
+            .forEach { record ->
+                if (!applyRemote(record, accountId)) conflicts++
+            }
+        return cycle.copy(conflicts = cycle.conflicts + conflicts)
+    }
+
     suspend fun savePlanAndQueue(plan: FastingPlan, accountId: String, deviceId: String): SyncOutboxOperation {
         val dimension = wireDimension(plan.dimension)
         val recordId = stableRecordId("fasting-plan", plan.id)
