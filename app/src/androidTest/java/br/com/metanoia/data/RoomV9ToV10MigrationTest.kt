@@ -2,6 +2,7 @@ package br.com.metanoia.data
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -85,6 +86,8 @@ class RoomV9ToV10MigrationTest {
             sqlite.query("SELECT payloadCiphertext FROM sync_outbox WHERE operationId='op-a'").use { assertTrue(it.moveToFirst()); assertEquals("ciphertext", it.getString(0)) }
 
             val dao = db.fastingDao()
+            assertTrue(dao.recentPlans().isEmpty())
+            assertEquals(null, dao.findPlan("missing"))
             val plan = FastingPlan("fast-1", LifeDimension.SPIRITUAL, "NON_FOOD", "Atenção", "Registro de teste", "Oração e reflexão", "Mateus 6:16–18", "Jesus ensina a sinceridade", "Escolha livre", "Leia e reflita", 1, 1000L, 2000L, createdAt = 1000L)
             dao.insertPlan(plan)
             assertEquals(plan, dao.findPlan("fast-1"))
@@ -93,6 +96,13 @@ class RoomV9ToV10MigrationTest {
             val reflection = FastingDailyEntry("entry-1", "fast-1", 0, "Reflexão inicial", "Em paz", 1100L)
             dao.insertDailyEntry(reflection)
             assertEquals(reflection, dao.findDailyEntry("fast-1", 0))
+            var duplicateRejected = false
+            try {
+                dao.insertDailyEntry(reflection.copy(id = "entry-duplicate"))
+            } catch (_: SQLiteConstraintException) {
+                duplicateRejected = true
+            }
+            assertTrue("Duplicate plan/day entry must be rejected", duplicateRejected)
             dao.updateDailyEntry(reflection.copy(reflection = "Reflexão revisada"))
             assertEquals("Reflexão revisada", dao.findDailyEntry("fast-1", 0)?.reflection)
             assertEquals(1, dao.deleteDailyEntry("entry-1"))
