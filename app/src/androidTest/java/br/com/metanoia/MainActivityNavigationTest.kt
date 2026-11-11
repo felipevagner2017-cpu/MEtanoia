@@ -108,6 +108,8 @@ class MainActivityNavigationTest {
         clickNavigationControl("Meus registros")
         assertPageVisible("Devocional", "DIMENSÃO 01")
 
+        // Return to the parent Áreas pager before selecting another dimension.
+        clickNavigationControl("Áreas")
         clickNavigationControl("Matrimônio")
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
         assertPageVisible("Matrimônio", "META E CONTEXTO DO CASAL")
