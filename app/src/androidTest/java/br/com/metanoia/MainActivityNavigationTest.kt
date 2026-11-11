@@ -1,7 +1,9 @@
 package br.com.metanoia
 
 import android.Manifest
+import br.com.metanoia.data.LifeDimension
 import br.com.metanoia.data.MetanoiaDatabase
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 import android.os.ParcelFileDescriptor
@@ -34,6 +36,15 @@ class MainActivityNavigationTest {
 
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    private fun assertJournalPersisted(title: String, dimension: LifeDimension) = runBlocking {
+        val database = MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
+        val matches = database.journalDao().observeAll().first().filter { it.title == title }
+        check(matches.size == 1) { "Esperado exatamente um registro Room para '$title'; encontrados: ${matches.size}." }
+        check(matches.single().dimension == dimension) {
+            "Dimensão persistida incorreta para '$title': ${matches.single().dimension}."
+        }
+    }
 
     private fun clickNavigationControl(label: String) {
         // Avoid issuing a bring-into-view request for a tab that is already
@@ -130,6 +141,16 @@ class MainActivityNavigationTest {
         captureScreen("02b-fontes")
         clickNavigationControl("Meus registros")
         assertPageVisible("Devocional", "DIMENSÃO 01")
+        val runSuffix = System.nanoTime().toString()
+        val devotionalTitle = "Estudo bíblico Atos 2:42 $runSuffix"
+        composeRule.onNode(hasText("Texto bíblico ou tema pastoral", substring = false) and hasSetTextAction())
+            .performTextInput(devotionalTitle)
+        composeRule.onNode(hasText("Contexto histórico, cultural e literário", substring = false) and hasSetTextAction())
+            .performTextInput("Atos 2 descreve a formação da comunidade cristã após Pentecostes.")
+        composeRule.onNodeWithText("Salvar estudo bíblico", substring = false)
+            .performScrollTo().assertIsDisplayed().performClick()
+        assertPageVisible("Devocional", devotionalTitle)
+        assertJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
 
         // Return to Áreas, then use a real horizontal swipe on the narrow-screen tab strip.
         clickNavigationControl("Áreas")
@@ -151,6 +172,7 @@ class MainActivityNavigationTest {
         // assertPageVisible waits for the Room-backed Flow to render the inserted
         // record, rather than assuming that the asynchronous ViewModel write is done.
         assertPageVisible("Matrimônio", "Meta matrimonial · $relationshipGoal")
+        assertJournalPersisted("Meta matrimonial · $relationshipGoal", LifeDimension.MATRIMONIAL)
         captureScreen("03-matrimonio")
 
         // Leave and re-enter Matrimonio to verify pager state and content remain reachable.
@@ -168,6 +190,7 @@ class MainActivityNavigationTest {
         composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Lista de competências e três vagas analisadas.")
         composeRule.onNodeWithText("Registrar plano profissional", substring = false).performClick()
         assertPageVisible("Profissional", professionalGoal)
+        assertJournalPersisted(professionalGoal, LifeDimension.PROFESSIONAL)
         captureScreen("04-profissional")
 
         clickNavigationControl("Cotidiano")
@@ -182,6 +205,7 @@ class MainActivityNavigationTest {
         composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Cumprir o horário em cinco dias da semana.")
         composeRule.onNodeWithText("Registrar objetivo cotidiano", substring = false).performClick()
         assertPageVisible("Cotidiano", dailyGoal)
+        assertJournalPersisted(dailyGoal, LifeDimension.ROUTINE)
         captureScreen("05-cotidiano")
 
         clickNavigationControl("Agenda")
