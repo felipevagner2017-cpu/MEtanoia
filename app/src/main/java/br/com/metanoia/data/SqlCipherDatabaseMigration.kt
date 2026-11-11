@@ -82,6 +82,7 @@ internal object SqlCipherDatabaseMigration {
             val encryptedCurrentIsValid = database.exists() && key != null &&
                 runCatching { verifyEncrypted(database, key); true }.getOrDefault(false)
             if (encryptedCurrentIsValid) {
+                cleanupSidecars(database)
                 check(backup.delete() || !backup.exists()) {
                     "Não foi possível remover a cópia temporária não criptografada após validar o banco criptografado."
                 }
@@ -95,6 +96,7 @@ internal object SqlCipherDatabaseMigration {
                 if (encryptedTemporaryIsValid) {
                     check(temporary.renameTo(database)) { "Não foi possível recuperar a cópia criptografada temporária." }
                     verifyEncrypted(database, key!!)
+                    cleanupSidecars(database)
                     check(backup.delete() || !backup.exists()) { "Não foi possível remover a cópia de recuperação." }
                     return
                 }
@@ -122,9 +124,6 @@ internal object SqlCipherDatabaseMigration {
         if (temporary.exists()) {
             // Without a recovery source this can only be an incomplete pre-swap export.
             check(temporary.delete() || !temporary.exists()) { "Não foi possível remover a exportação temporária incompleta." }
-        }
-        if (failed.exists() && !database.exists()) {
-            check(failed.renameTo(database)) { "Não foi possível restaurar o arquivo preservado." }
         }
     }
 
@@ -169,6 +168,7 @@ internal object SqlCipherDatabaseMigration {
         } finally {
             source.close()
         }
+        cleanupSidecars(sourceFile)
 
         verifyEncrypted(temporaryFile, key, expectedCounts)
         faultInjector?.invoke(Stage.AFTER_EXPORT_VALIDATED)
@@ -179,11 +179,10 @@ internal object SqlCipherDatabaseMigration {
             check(temporaryFile.renameTo(sourceFile)) { "Não foi possível promover a base criptografada." }
             faultInjector?.invoke(Stage.AFTER_ENCRYPTED_DATABASE_PROMOTED)
             verifyEncrypted(sourceFile, key, expectedCounts)
+            cleanupSidecars(sourceFile)
             check(backupFile.delete() || !backupFile.exists()) {
                 "A base foi criptografada, mas a cópia temporária não pôde ser removida. A abertura foi bloqueada por segurança."
             }
-            File(sourceFile.absolutePath + "-wal").delete()
-            File(sourceFile.absolutePath + "-shm").delete()
         } catch (error: Throwable) {
             val promotedIsValid = sourceFile.exists() &&
                 runCatching { verifyEncrypted(sourceFile, key, expectedCounts); true }.getOrDefault(false)
@@ -248,6 +247,15 @@ internal object SqlCipherDatabaseMigration {
             check(cursor.moveToFirst()) { "Não foi possível consultar $query." }
             cursor.getInt(0)
         }
+
+    private fun cleanupSidecars(database: File) {
+        for (suffix in listOf("-wal", "-shm")) {
+            val sidecar = File(database.absolutePath + suffix)
+            check(!sidecar.exists() || sidecar.delete()) {
+                "Não foi possível remover o arquivo auxiliar $suffix antes de liberar o banco criptografado."
+            }
+        }
+    }
 
     private fun isPlainSqlite(file: File): Boolean {
         if (!file.isFile || file.length() < SQLITE_HEADER.size) return false
