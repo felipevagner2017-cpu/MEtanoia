@@ -63,7 +63,11 @@ class FastingRecommendationEngineTest {
         val professional = engine.recommend(LifeDimension.PROFESSIONAL, listOf("Estou com sobrecarga e dificuldade de foco"), emptyList())
         val routine = engine.recommend(LifeDimension.ROUTINE, listOf("Estou tentando organizar meu sono e hábitos"), emptyList())
 
-        assertTrue(requireNotNull(spiritual).recommendationReason.contains("Distrações"))
+        assertEquals("Distrações digitais", requireNotNull(spiritual).identifiedNeed)
+        assertEquals("Comunicação e escuta", requireNotNull(matrimonial).identifiedNeed)
+        assertEquals("Foco e sobrecarga", requireNotNull(professional).identifiedNeed)
+        assertEquals("Hábitos e prioridades", requireNotNull(routine).identifiedNeed)
+        assertTrue(requireNotNull(spiritual).recommendationReason.contains("distrações"))
         assertTrue(requireNotNull(matrimonial).recommendationReason.contains("perspectiva da outra pessoa"))
         assertTrue(requireNotNull(professional).recommendationReason.contains("foco"))
         assertTrue(requireNotNull(routine).recommendationReason.contains("hábitos"))
