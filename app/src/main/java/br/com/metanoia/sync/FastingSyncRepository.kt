@@ -150,8 +150,8 @@ class FastingSyncRepository(
             (record.recordType == "fasting_plan" && record.purpose == "fasting-plan") ||
                 (record.recordType == "fasting_daily_entry" && record.purpose == "fasting-entry")
         ) { "Tipo e finalidade criptográfica do registro não correspondem." }
-        val metadata = database.syncRecordMetadataDao().findByRecordId(record.recordId)
-        database.withTransaction {
+        return database.withTransaction {
+            val metadata = database.syncRecordMetadataDao().findByRecordId(record.recordId)
             database.syncRemoteRecordDao().replace(
                 SyncRemoteRecord(
                     accountId = accountId, recordId = record.recordId, dimension = record.dimension,
