@@ -12,8 +12,9 @@ import java.net.URLEncoder
 
 data class PulledSyncRecord(
     val recordId: String, val dimension: String, val recordType: String,
-    val payloadCiphertext: String, val encryptionVersion: Int, val revision: Int,
-    val clientUpdatedAt: Long, val serverUpdatedAt: Long, val deletedAt: Long?
+    val payloadCiphertext: String, val encryptionVersion: Int, val revision: Long,
+    val clientUpdatedAt: Long, val serverUpdatedAt: Long, val deletedAt: Long?,
+    val sourceDeviceId: String, val purpose: String
 )
 
 data class SyncCycleResult(
@@ -130,10 +131,12 @@ class SyncCoordinator(
                     recordType = item.optString("record_type"),
                     payloadCiphertext = item.optString("payload_ciphertext"),
                     encryptionVersion = item.optInt("encryption_version", 1),
-                    revision = item.optInt("revision"),
+                    revision = item.optLong("revision"),
                     clientUpdatedAt = item.optLong("client_updated_at"),
                     serverUpdatedAt = item.optLong("server_updated_at"),
-                    deletedAt = if (item.isNull("deleted_at")) null else item.optLong("deleted_at")
+                    deletedAt = if (item.isNull("deleted_at")) null else item.optLong("deleted_at"),
+                    sourceDeviceId = item.optString("source_device_id"),
+                    purpose = item.optString("purpose", "record")
                 ))
             }
         }
