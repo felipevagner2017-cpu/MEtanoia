@@ -506,6 +506,11 @@ async function unlockAccountCrypto(){
  }finally{$("accountUnlock").disabled=false}
 }
 $("accountUnlock").onclick=unlockAccountCrypto;
+$("accountSyncFasting").onclick=async()=>{
+ $("accountSyncFasting").disabled=true;
+ try{await syncFastingData(false)}catch(error){accountStatus(error.message||"Falha na sincronização protegida. Os registros locais foram preservados.")}
+ finally{$("accountSyncFasting").disabled=false}
+};
 $("accountLogin").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
  if(!email||!password){accountStatus("Informe e-mail e senha.");return}
