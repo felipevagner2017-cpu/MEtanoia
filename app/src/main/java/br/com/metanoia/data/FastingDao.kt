@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -39,8 +40,17 @@ interface FastingDao {
     @Query("DELETE FROM fasting_daily_entries WHERE id = :id")
     suspend fun deleteDailyEntry(id: String): Int
 
+    @Query("DELETE FROM fasting_daily_entries WHERE planId = :planId")
+    suspend fun deleteEntriesForPlan(planId: String): Int
+
     @Query("DELETE FROM fasting_plans WHERE id = :id")
     suspend fun deletePlan(id: String): Int
+
+    @Transaction
+    suspend fun deletePlanAndEntries(id: String): Int {
+        deleteEntriesForPlan(id)
+        return deletePlan(id)
+    }
 
     @Query("SELECT * FROM fasting_daily_entries WHERE planId = :planId AND dayIndex = :dayIndex LIMIT 1")
     suspend fun findDailyEntry(planId: String, dayIndex: Int): FastingDailyEntry?
