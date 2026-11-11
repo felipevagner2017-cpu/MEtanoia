@@ -71,6 +71,12 @@
       }
       if (normalized[key] === undefined) normalized[key] = [];
     }
+    for (const key of ["syncNonceCounters", "syncRecordMetadata"]) {
+      if (normalized[key] !== undefined && (!normalized[key] || typeof normalized[key] !== "object" || Array.isArray(normalized[key]))) {
+        throw new Error("O estado de sincronização local é inválido: " + key);
+      }
+      if (normalized[key] === undefined) normalized[key] = {};
+    }
     return normalized;
   }
 
@@ -270,6 +276,39 @@
       }
     }
 
+    let counterQueue = Promise.resolve();
+    async function reserveCounter(accountId, deviceId, purpose) {
+      if (!accountId || !deviceId || !purpose) throw new Error("Contexto do contador criptográfico incompleto.");
+      const task = counterQueue.catch(() => {}).then(async () => {
+        data.syncNonceCounters = data.syncNonceCounters || {};
+        const key = JSON.stringify([accountId, deviceId, purpose]);
+        const current = Number(data.syncNonceCounters[key] ?? 0);
+        if (!Number.isSafeInteger(current) || current < 0 || current >= Number.MAX_SAFE_INTEGER) {
+          throw new Error("Contador criptográfico local inválido ou esgotado.");
+        }
+        data.syncNonceCounters[key] = current + 1;
+        await save(data); // The increment is committed inside the encrypted app-state before the nonce is used.
+        return current;
+      });
+      counterQueue = task;
+      return task;
+    }
+
+    function getSyncMetadata(accountId, recordId) {
+      const key = JSON.stringify([accountId, recordId]);
+      const value = data.syncRecordMetadata?.[key];
+      return value ? JSON.parse(JSON.stringify(value)) : null;
+    }
+
+    async function setSyncMetadata(accountId, recordId, metadata) {
+      if (!accountId || !recordId || !metadata || typeof metadata !== "object") {
+        throw new Error("Metadados de sincronização inválidos.");
+      }
+      data.syncRecordMetadata = data.syncRecordMetadata || {};
+      data.syncRecordMetadata[JSON.stringify([accountId, recordId])] = { ...metadata };
+      await save(data);
+    }
+
     async function restoreBackup(fileText, passphrase) {
       const backup = JSON.parse(fileText);
       if (!backup || backup.format !== "metonoia-encrypted-backup" || backup.version !== 1 ||
@@ -301,6 +340,9 @@
       save,
       exportBackup,
       restoreBackup,
+      reserveCounter,
+      getSyncMetadata,
+      setSyncMetadata,
       requestPassphrase: passphraseGate
     });
   }
