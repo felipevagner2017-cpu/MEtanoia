@@ -6,6 +6,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.security.SecureRandom
 
@@ -39,6 +40,38 @@ class AccountCryptoInstrumentedTest {
             "v1.YWJjZGVmZ2hpamtsI0w9uzTCk08vSfnCywtXbEmIGBiQEalSTO+70D1fvf0latMiNHx6XiOUBnn+m4xTg4dtXNMxPObIKzA="
         )
         assertArrayEquals("Conteúdo criado na PWA e aberto no Android".toByteArray(Charsets.UTF_8), webPlain)
+    }
+
+    @Test fun sharedRecordV2MatchesWebCryptoVectorAndAuthenticatesAllContext() {
+        val crypto = AccountCrypto()
+        val dek = bytes(0, 32)
+        val plaintext = "Conteúdo compartilhado Android/PWA — vetor v2".toByteArray(Charsets.UTF_8)
+        val expected = "v2.AAAAAAAAACqcwwxL0VXPNJ4sfTkb+YRGhVourP2v6px5/LWgS4rMDmXu+zpsLHeQe/jyU9fnjsmwA3uglaviKRnXZW7SrhQe"
+        val payload = crypto.encryptRecordV2(
+            "interop-user-v2", "device-android-01", "record", "record-v2-01",
+            "DEVOTION", "journal", dek, 42L, plaintext
+        )
+        assertEquals("Android v2 must match the fixed Web Crypto vector.", expected, payload)
+        assertArrayEquals(plaintext, crypto.decryptRecordV2(
+            "interop-user-v2", "device-android-01", "record", "record-v2-01",
+            "DEVOTION", "journal", dek, payload
+        ))
+        val alteredContexts = listOf(
+            listOf("another-account", "device-android-01", "record", "record-v2-01", "DEVOTION", "journal"),
+            listOf("interop-user-v2", "another-device", "record", "record-v2-01", "DEVOTION", "journal"),
+            listOf("interop-user-v2", "device-android-01", "other-purpose", "record-v2-01", "DEVOTION", "journal"),
+            listOf("interop-user-v2", "device-android-01", "record", "other-record", "DEVOTION", "journal"),
+            listOf("interop-user-v2", "device-android-01", "record", "record-v2-01", "MATRIMONIAL", "journal"),
+            listOf("interop-user-v2", "device-android-01", "record", "record-v2-01", "DEVOTION", "review")
+        )
+        alteredContexts.forEach { fields ->
+            val rejected = runCatching {
+                crypto.decryptRecordV2(
+                    fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], dek, payload
+                )
+            }.isFailure
+            assertTrue("Changing authenticated metadata must be rejected.", rejected)
+        }
     }
 
     @Test fun pbkdf2EnvelopeCanBeRecoveredRepeatedlyWithoutChangingTheKey() {
