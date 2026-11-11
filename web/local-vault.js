@@ -192,9 +192,22 @@
           data = await decryptLocalPayload(key, ciphertext);
         } catch (error) {
           const previous = await read(db, "previous-app-state");
-          if (!previous) throw new Error("Não foi possível autenticar os dados locais. Nenhum dado foi sobrescrito.");
-          data = await decryptLocalPayload(key, previous);
-          await write(db, { "app-state": previous }, ["previous-app-state"]);
+          if (previous) {
+            data = await decryptLocalPayload(key, previous);
+            await write(db, { "app-state": previous }, ["previous-app-state"]);
+          } else if (legacyRaw !== null) {
+            // The legacy copy is retained until a verified encrypted write commits.
+            data = validateData(JSON.parse(legacyRaw));
+            const recoveredCiphertext = await window.MEtanoiaAccountCrypto.encryptRecord(
+              USER_ID, RECORD_ID, DIMENSION, RECORD_TYPE, key, JSON.stringify(data)
+            );
+            await write(db, { "app-state": recoveredCiphertext });
+            const verified = await decryptLocalPayload(key, await read(db, "app-state"));
+            if (canonical(verified) !== canonical(data)) throw new Error("A recuperação da cópia antiga não passou na autenticação.");
+            data = verified;
+          } else {
+            throw new Error("Não foi possível autenticar os dados locais. Nenhum dado foi sobrescrito.");
+          }
         }
       } else if (legacyRaw !== null) {
         data = validateData(JSON.parse(legacyRaw));
@@ -233,19 +246,22 @@
     async function exportBackup(passphrase, currentData) {
       const exportEnvelope = await window.MEtanoiaAccountCrypto.createEnvelope(EXPORT_USER_ID, passphrase);
       const exportKey = await window.MEtanoiaAccountCrypto.openEnvelope(EXPORT_USER_ID, passphrase, exportEnvelope);
-      const exportCiphertext = await window.MEtanoiaAccountCrypto.encryptRecord(
-        EXPORT_USER_ID, EXPORT_RECORD_ID, EXPORT_DIMENSION, EXPORT_TYPE, exportKey, JSON.stringify(validateData(currentData))
-      );
-      exportKey.fill(0);
-      return JSON.stringify({
-        format: "metonoia-encrypted-backup",
-        version: 1,
-        createdAt: new Date().toISOString(),
-        kdf: "PBKDF2-SHA256-600000",
-        cipher: "AES-256-GCM",
-        envelope: exportEnvelope,
-        payload: exportCiphertext
-      });
+      try {
+        const exportCiphertext = await window.MEtanoiaAccountCrypto.encryptRecord(
+          EXPORT_USER_ID, EXPORT_RECORD_ID, EXPORT_DIMENSION, EXPORT_TYPE, exportKey, JSON.stringify(validateData(currentData))
+        );
+        return JSON.stringify({
+          format: "metonoia-encrypted-backup",
+          version: 1,
+          createdAt: new Date().toISOString(),
+          kdf: "PBKDF2-SHA256-600000",
+          cipher: "AES-256-GCM",
+          envelope: exportEnvelope,
+          payload: exportCiphertext
+        });
+      } finally {
+        exportKey.fill(0);
+      }
     }
 
     async function restoreBackup(fileText, passphrase) {
