@@ -185,7 +185,6 @@ try {
   if (await retry !== "INTERRUPTED_MIGRATION") throw new Error("Interrupted migration did not recover its committed encrypted copy.");
   console.log("PASS: interrupted legacy cleanup recovered from the authenticated IndexedDB copy without deleting the original first.");
   await recoveryContext.close();
-  await context.close();
 
   // End-to-end startup against the real PWA HTML and app.js, not just the vault module.
   const appContext = await browser.newContext({ serviceWorkers: "block", acceptDownloads: true });
