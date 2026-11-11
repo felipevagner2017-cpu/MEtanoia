@@ -100,7 +100,7 @@ jobs:
 
 
   release-signing:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/work/phase1-integrated-main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/work/phase1-integrated-main' || github.ref == 'refs/heads/feature/intelligent-agenda-fasting-voice'
     runs-on: ubuntu-latest
     steps:
       - name: Check protected signing secrets
@@ -138,6 +138,16 @@ jobs:
         run: |
           umask 077
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/metanoia-release.jks"
+      - name: Inspect signing certificate without exposing private material
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          CERT_SHA256=$(keytool -list -v -keystore "$RUNNER_TEMP/metanoia-release.jks" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n1 | tr -d ':')
+          test -n "$CERT_SHA256" || { echo "Não foi possível ler o certificado da chave protegida." >&2; exit 1; }
+          echo "Release keystore certificate SHA-256: $CERT_SHA256"
+          echo "Release keystore certificate SHA-256: $CERT_SHA256" >> "$GITHUB_STEP_SUMMARY"
       - name: Build signed release APK
         if: steps.signing.outputs.available == 'true'
         env:
