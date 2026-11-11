@@ -85,7 +85,10 @@ class MainActivityNavigationTest {
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 runCatching {
                     val target = hasText(expected, substring = false)
-                    if (tab == "Matrimônio" && expected == "META E CONTEXTO DO CASAL") {
+                    if (tab == "Matrimônio") {
+                        // Matrimonial records are rendered in this LazyColumn. Scrolling a
+                        // generic ancestor can move the outer HorizontalPager off-screen,
+                        // leaving composed content outside the viewport.
                         composeRule.onNodeWithTag("matrimonial-dimension-list").performScrollToNode(target)
                     } else if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
                         composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
