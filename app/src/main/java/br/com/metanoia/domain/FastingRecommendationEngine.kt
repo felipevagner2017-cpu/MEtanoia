@@ -53,29 +53,29 @@ class FastingRecommendationEngine {
     private fun identifyNeed(dimension: LifeDimension, text: String, noRecords: Boolean): Triple<String, String, String> {
         val signals = when (dimension) {
             LifeDimension.SPIRITUAL -> listOf(
-                listOf("distra", "celular", "rede social", "pressa") to "Distrações podem estar reduzindo o espaço de atenção dedicado à oração e às Escrituras."
+                Triple(listOf("distra", "celular", "rede social", "pressa"), "Distrações digitais", "Os registros mencionam distrações que podem reduzir o espaço de atenção dedicado à oração e às Escrituras.")
             )
             LifeDimension.MATRIMONIAL -> listOf(
-                listOf("conflito", "discuss", "comunica", "distante", "perdão") to "Os registros mencionam tensão ou necessidade de comunicação; isso não permite concluir a perspectiva da outra pessoa."
+                Triple(listOf("conflito", "discuss", "comunica", "distante", "perdão"), "Comunicação e escuta", "Os registros mencionam tensão ou necessidade de comunicação; isso não permite concluir a perspectiva da outra pessoa.")
             )
             LifeDimension.INDIVIDUAL, LifeDimension.ROUTINE -> listOf(
-                listOf("procrast", "ansied", "excesso", "sono", "organiza", "hábito") to "Os registros apontam uma oportunidade de rever hábitos, atenção e prioridades."
+                Triple(listOf("procrast", "ansied", "excesso", "sono", "organiza", "hábito"), "Hábitos e prioridades", "Os registros apontam uma oportunidade de rever hábitos, atenção e prioridades.")
             )
             LifeDimension.PROFESSIONAL -> listOf(
-                listOf("procrast", "foco", "distra", "sobrecarga") to "Os registros sugerem uma oportunidade de proteger períodos de foco e rever distrações."
+                Triple(listOf("procrast", "foco", "distra", "sobrecarga"), "Foco e sobrecarga", "Os registros sugerem uma oportunidade de proteger períodos de foco e rever distrações.")
             )
         }
-        val match = signals.firstOrNull { (keywords, _) -> keywords.any(text::contains) }
+        val match = signals.firstOrNull { (keywords, _, _) -> keywords.any(text::contains) }
         val need = match?.second ?: when (dimension) {
-            LifeDimension.SPIRITUAL -> "Criar espaço intencional para oração e meditação bíblica."
-            LifeDimension.MATRIMONIAL -> "Dedicar atenção à escuta, oração e atitudes concretas de cuidado."
-            LifeDimension.PROFESSIONAL -> "Rever prioridades e proteger um período de concentração."
-            else -> "Observar hábitos e escolher uma prioridade cotidiana."
+            LifeDimension.SPIRITUAL -> "Atenção à oração e à meditação bíblica"
+            LifeDimension.MATRIMONIAL -> "Escuta e cuidado no relacionamento"
+            LifeDimension.PROFESSIONAL -> "Prioridades e concentração"
+            else -> "Hábitos e prioridades cotidianas"
         }
         val reason = if (noRecords) {
             "Não há registros recentes suficientes para inferir uma dificuldade específica; esta é uma sugestão geral, não uma avaliação."
         } else {
-            match?.second ?: "A sugestão é geral porque os registros fornecidos não apresentam um sinal específico para esta dimensão."
+            match?.third ?: "A sugestão é geral porque os registros fornecidos não apresentam um sinal específico para esta dimensão."
         }
         return Triple(need, reason, when (dimension) {
             LifeDimension.SPIRITUAL -> "Separar um período de atenção para buscar a Deus em oração e na Palavra, sem tratar a prática como troca ou garantia de resultado."
