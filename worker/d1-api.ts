@@ -309,7 +309,15 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         const previous = await db.prepare("SELECT status,result_revision FROM sync_operations WHERE user_id=? AND operation_id=?")
           .bind(session.user_id,operationId).first<{status:string;result_revision:number|null}>();
         if (previous) { results.push({ operationId, status: previous.status, revision: previous.result_revision, duplicate: true }); continue; }
-        const nextRevision = baseRevision + 1, now = Date.now();
+        const nextRevision = baseRevision + 1;
+        // Allocate a strictly increasing per-account server cursor. This prevents
+        // same-millisecond writes from being skipped by (server_updated_at, record_id).
+        const clock = await db.prepare(
+          "INSERT INTO sync_account_clocks(user_id,last_server_updated_at) VALUES(?,?) " +
+          "ON CONFLICT(user_id) DO UPDATE SET last_server_updated_at=MAX(sync_account_clocks.last_server_updated_at+1,excluded.last_server_updated_at) " +
+          "RETURNING last_server_updated_at"
+        ).bind(session.user_id, Date.now()).first<{last_server_updated_at:number}>();
+        const now = Number(clock?.last_server_updated_at || Date.now());
         const storedPayload = operation === "delete" ? "" : payload;
         const storedClientTime = operation === "delete" ? now : Number(op.clientUpdatedAt || now);
         const authenticatedSourceDeviceId = session.device_id || "";
