@@ -65,6 +65,28 @@ internal object SqlCipherDatabaseMigration {
         return key
     }
 
+    /**
+     * Called only after Room has successfully opened the encrypted database and
+     * validated its declared schema/migrations. This is the sole path that removes
+     * the plaintext recovery copy.
+     */
+    fun completeEncryptedValidation(
+        context: Context,
+        databaseName: String = DATABASE_NAME,
+        key: ByteArray
+    ) {
+        val database = context.applicationContext.getDatabasePath(databaseName)
+        val backup = File(database.absolutePath + BACKUP_SUFFIX)
+        verifyEncrypted(database, key)
+        if (backup.exists()) {
+            check(isPlainSqlite(backup)) { "A cópia de recuperação não corresponde a um SQLite original reconhecível; foi preservada." }
+            check(backup.delete() || !backup.exists()) {
+                "Room validou a base criptografada, mas a cópia de recuperação não pôde ser removida."
+            }
+        }
+        cleanupSidecars(database)
+    }
+
     private fun createAndPersistKey(keyStore: AccountKeyStore, keyId: String): ByteArray {
         val key = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
         keyStore.save(keyId, key)
@@ -82,10 +104,8 @@ internal object SqlCipherDatabaseMigration {
             val encryptedCurrentIsValid = database.exists() && key != null &&
                 runCatching { verifyEncrypted(database, key); true }.getOrDefault(false)
             if (encryptedCurrentIsValid) {
-                cleanupSidecars(database)
-                check(backup.delete() || !backup.exists()) {
-                    "Não foi possível remover a cópia temporária não criptografada após validar o banco criptografado."
-                }
+                // Keep the plaintext recovery copy until Room has opened the encrypted
+                // database and validated its complete v10 schema.
                 temporary.delete()
                 return
             }
@@ -97,7 +117,7 @@ internal object SqlCipherDatabaseMigration {
                     check(temporary.renameTo(database)) { "Não foi possível recuperar a cópia criptografada temporária." }
                     verifyEncrypted(database, key!!)
                     cleanupSidecars(database)
-                    check(backup.delete() || !backup.exists()) { "Não foi possível remover a cópia de recuperação." }
+                    // The recovery copy is finalized only after Room schema validation.
                     return
                 }
                 check(backup.renameTo(database)) { "Não foi possível restaurar a base original após interrupção." }
@@ -147,11 +167,13 @@ internal object SqlCipherDatabaseMigration {
             null
         )
         val expectedCounts: Map<String, Long>
+        val expectedSchema: List<String>
         val userVersion: Int
         try {
             source.rawQuery("PRAGMA wal_checkpoint(FULL)", emptyArray<String>()).use { }
             source.rawQuery("PRAGMA journal_mode=DELETE", emptyArray<String>()).use { }
             expectedCounts = tableCounts(source)
+            expectedSchema = schemaSnapshot(source)
             userVersion = pragmaInt(source, "PRAGMA user_version")
             source.execSQL(
                 "ATTACH DATABASE ? AS encrypted KEY ?",
@@ -171,6 +193,9 @@ internal object SqlCipherDatabaseMigration {
         cleanupSidecars(sourceFile)
 
         verifyEncrypted(temporaryFile, key, expectedCounts)
+        val encryptedSchema = SQLiteDatabase.openDatabase(temporaryFile.absolutePath, key, null, SQLiteDatabase.OPEN_READONLY, null, null)
+        try { check(schemaSnapshot(encryptedSchema) == expectedSchema) { "Tabelas, índices, views ou triggers não foram preservados na exportação." } }
+        finally { encryptedSchema.close() }
         faultInjector?.invoke(Stage.AFTER_EXPORT_VALIDATED)
 
         check(sourceFile.renameTo(backupFile)) { "Não foi possível criar a cópia de recuperação da base original." }
@@ -180,9 +205,8 @@ internal object SqlCipherDatabaseMigration {
             faultInjector?.invoke(Stage.AFTER_ENCRYPTED_DATABASE_PROMOTED)
             verifyEncrypted(sourceFile, key, expectedCounts)
             cleanupSidecars(sourceFile)
-            check(backupFile.delete() || !backupFile.exists()) {
-                "A base foi criptografada, mas a cópia temporária não pôde ser removida. A abertura foi bloqueada por segurança."
-            }
+            // Do not delete the plaintext recovery copy here. Room must open this
+            // encrypted file and validate the current entity/index schema first.
         } catch (error: Throwable) {
             val promotedIsValid = sourceFile.exists() &&
                 runCatching { verifyEncrypted(sourceFile, key, expectedCounts); true }.getOrDefault(false)
@@ -220,9 +244,21 @@ internal object SqlCipherDatabaseMigration {
                     "A contagem de registros divergiu durante a migração: origem=$expectedCounts destino=$actualCounts"
                 }
             }
+            encrypted.rawQuery("PRAGMA foreign_key_check", emptyArray<String>()).use { cursor ->
+                check(!cursor.moveToFirst()) { "A verificação de chaves estrangeiras encontrou registros órfãos." }
+            }
         } finally {
             encrypted.close()
         }
+    }
+
+    private fun schemaSnapshot(database: SQLiteDatabase): List<String> {
+        val result = mutableListOf<String>()
+        database.rawQuery(
+            "SELECT type || '|' || name || '|' || tbl_name || '|' || COALESCE(sql,'') FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name",
+            emptyArray<String>()
+        ).use { cursor -> while (cursor.moveToNext()) result += cursor.getString(0) }
+        return result
     }
 
     private fun tableCounts(database: SQLiteDatabase): Map<String, Long> {
