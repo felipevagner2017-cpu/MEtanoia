@@ -30,7 +30,16 @@ data class FastingPlan(
     val status: String = "PROPOSED",
     val createdAt: Long = System.currentTimeMillis(),
     val completedAt: Long? = null
-)
+) {
+    init {
+        require(id.isNotBlank()) { "O plano de jejum precisa de um identificador." }
+        require(type == "NON_FOOD" || type == "FOOD") { "Tipo de jejum inválido." }
+        require(durationDays > 0) { "A duração precisa ser positiva." }
+        require(startAt > 0 && endAt >= startAt) { "O período do plano é inválido." }
+        require(createdAt > 0) { "A data de criação do plano é inválida." }
+        require(!foodAbstinence || type == "FOOD") { "Abstinência alimentar exige tipo FOOD explícito." }
+    }
+}
 
 @Entity(
     tableName = "fasting_daily_entries",
@@ -43,4 +52,10 @@ data class FastingDailyEntry(
     val reflection: String,
     val experience: String,
     val recordedAt: Long = System.currentTimeMillis()
-)
+) {
+    init {
+        require(id.isNotBlank() && planId.isNotBlank()) { "A reflexão precisa estar vinculada a um plano." }
+        require(dayIndex >= 0) { "O índice do dia não pode ser negativo." }
+        require(recordedAt > 0) { "A data da reflexão é inválida." }
+    }
+}
