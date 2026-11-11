@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import br.com.metanoia.security.AccountKeyStore
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -205,13 +206,9 @@ class SqlCipherDatabaseMigrationTest {
     private fun openEncrypted(f: Fixture, key: ByteArray): MetanoiaDatabase {
         val database = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName)
             .openHelperFactory(SupportOpenHelperFactory(key.copyOf()))
-            .addMigrations(
-                MetanoiaDatabase.MIGRATION_1_2, MetanoiaDatabase.MIGRATION_2_3,
-                MetanoiaDatabase.MIGRATION_3_4, MetanoiaDatabase.MIGRATION_4_5,
-                MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7,
-                MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9,
-                MetanoiaDatabase.MIGRATION_9_10
-            )
+            // The fixture is created by Room at the current schema version (10).
+            // SQLCipher export preserves user_version and the schema; no historical
+            // migration should be invoked while reopening this same-version database.
             .build()
         database.openHelper.writableDatabase
         SqlCipherDatabaseMigration.completeEncryptedValidation(context, f.databaseName, key)
