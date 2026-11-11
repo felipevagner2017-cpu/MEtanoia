@@ -25,6 +25,9 @@ interface FastingDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPlan(plan: FastingPlan)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertPlan(plan: FastingPlan)
+
     @Update
     suspend fun updatePlan(plan: FastingPlan)
 
@@ -33,6 +36,9 @@ interface FastingDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertDailyEntry(entry: FastingDailyEntry)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertDailyEntry(entry: FastingDailyEntry)
 
     @Update
     suspend fun updateDailyEntry(entry: FastingDailyEntry)
