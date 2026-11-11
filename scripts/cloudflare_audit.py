@@ -53,6 +53,7 @@ for worker_name in ("metanoia", "metanoia-preview", "metonoia"):
     settings = data.get("result", {}) if status == 200 and data.get("success") else {}
     bindings = settings.get("bindings", [])
     add(f"Bindings for {worker_name} (HTTP {status})", [
+        f"- workers_dev={settings.get('workers_dev', 'not returned')}; compatibility_date={settings.get('compatibility_date', 'not returned')}",
         f"- {b.get('type', 'unknown')} binding {b.get('name', 'unnamed')}" +
         (f" — database {b.get('database_name', b.get('id', 'not returned'))}" if b.get("type", "").lower() == "d1" else "")
         for b in bindings
@@ -83,19 +84,22 @@ add(f"D1 database inventory (HTTP {status})", [
 PREVIEW_URL = "https://metanoia-preview.restaura-lar.workers.dev"
 def public_probe(path, method="GET", payload=None):
     body = None if payload is None else json.dumps(payload).encode("utf-8")
-    headers = {"Content-Type": "application/json", "Origin": PREVIEW_URL} if body is not None else {}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; MEtanoia-Preview-Audit/1.0)", "Accept": "text/html,application/json"}
+    if body is not None:\n        headers.update({"Content-Type": "application/json", "Origin": PREVIEW_URL})
     req = urllib.request.Request(PREVIEW_URL + path, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=20) as response:
-            return response.status, response.headers.get("Access-Control-Allow-Origin", ""), response.read(1024).decode("utf-8", "replace")
+            return response.status, response.headers.get("Access-Control-Allow-Origin", ""), response.read(1024).decode("utf-8", "replace"), dict(response.headers)
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.headers.get("Access-Control-Allow-Origin", ""), exc.read(1024).decode("utf-8", "replace")
+        return exc.code, exc.headers.get("Access-Control-Allow-Origin", ""), exc.read(1024).decode("utf-8", "replace"), dict(exc.headers)
     except Exception as exc:
-        return 0, "", type(exc).__name__
+        return 0, "", type(exc).__name__, {}
 
-root_status, _, _ = public_probe("/")
+root_status, _, root_body, root_headers = public_probe("/")
 SUMMARY.append(f"## Preview static PWA smoke check (HTTP {root_status})")
-login_status, cors_origin, login_body = public_probe("/api/auth/login", "POST", {
+SUMMARY.append(f"- Response server={root_headers.get('Server', 'not returned')}; cf-ray={root_headers.get('CF-RAY', 'not returned')}")
+SUMMARY.append(f"- Response diagnostic={root_body[:240].replace(chr(10), ' ')}")
+login_status, cors_origin, login_body, login_headers = public_probe("/api/auth/login", "POST", {
     "email": "preview-readonly-probe@example.invalid",
     "password": "invalid-probe-credential",
     "platform": "pwa",
@@ -107,7 +111,8 @@ except Exception:
 SUMMARY.extend([
     f"## Preview D1 API smoke check (HTTP {login_status})",
     f"- CORS origin accepted: {cors_origin == PREVIEW_URL}",
-    f"- Diagnostic: {login_error or 'no error message'}",
+    f"- Diagnostic: {login_error or login_body[:240].replace(chr(10), ' ') or 'no error message'}",
+    f"- Response server={login_headers.get('Server', 'not returned')}; cf-ray={login_headers.get('CF-RAY', 'not returned')}",
     "- Probe is read-only: synthetic invalid login only; no account or row is created.",
 ])
 
