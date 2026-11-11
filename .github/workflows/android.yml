@@ -1,7 +1,7 @@
 name: Android build
 
 concurrency:
-  group: metanoia-android-${{ github.event.pull_request.number || github.ref }}-${{ github.ref == 'refs/heads/feature/intelligent-agenda-fasting-voice' && github.sha || 'shared' }}
+  group: metanoia-android-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
