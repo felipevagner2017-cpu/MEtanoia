@@ -209,7 +209,7 @@ private fun DimensionAccessCard(modifier: Modifier, number: String, title: Strin
 }
 
 @Composable
-internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
+internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String, String, (Boolean) -> Unit) -> Unit) {
     var selectedTab by remember { mutableStateOf("Estudos pastorais") }
     Column(Modifier.fillMaxSize().background(DeepViolet)) {
         Row(
@@ -355,7 +355,7 @@ private fun StudySection(title: String, body: String) {
 }
 
 @Composable
-internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
+internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (String, String, (Boolean) -> Unit) -> Unit) {
     DimensionRecordPage(
         eyebrow = "DIMENSÃO 03",
         title = "Profissional",
@@ -379,7 +379,7 @@ internal fun ProfessionalDimensionPage(entries: List<JournalEntry>, onSave: (Str
 }
 
 @Composable
-internal fun CotidianoDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
+internal fun CotidianoDimensionPage(entries: List<JournalEntry>, onSave: (String, String, (Boolean) -> Unit) -> Unit) {
     DimensionRecordPage(
         eyebrow = "DIMENSÃO 04",
         title = "Cotidiano",
@@ -401,7 +401,7 @@ internal fun CotidianoDimensionPage(entries: List<JournalEntry>, onSave: (String
 }
 
 @Composable
-internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (String, String) -> Unit) {
+internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (String, String, (Boolean) -> Unit) -> Unit) {
     val challenges = listOf(
         "Reserve quinze minutos de atenção integral, sem celular, para ouvir e compartilhar o dia.",
         "Expresse gratidão por uma atitude concreta que você percebeu nela.",
@@ -414,6 +414,8 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
         entries.take(5).none { it.content.contains(candidate, ignoreCase = true) }
     } ?: challenges.first()
     var note by remember(LocalDate.now()) { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
     var relationshipGoal by remember { mutableStateOf("") }
     var relationshipContext by remember { mutableStateOf("") }
     var relationshipObstacle by remember { mutableStateOf("") }
@@ -452,13 +454,22 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
                     OutlinedTextField(value = relationshipMeasure, onValueChange = { relationshipMeasure = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Como reconhecerá um avanço concreto?") }, minLines = 2)
                     Button(
                         onClick = {
+                            isSaving = true
+                            saveFailed = false
                             val content = "META: $relationshipGoal\nCONTEXTO ATUAL: $relationshipContext\nDIFICULDADE PERCEBIDA: $relationshipObstacle\nPRÓXIMA AÇÃO: $relationshipAction\nPRAZO: $relationshipDeadline\nINDICADOR DE AVANÇO: $relationshipMeasure"
-                            onSave("Meta matrimonial · $relationshipGoal", content)
-                            relationshipGoal = ""; relationshipContext = ""; relationshipObstacle = ""; relationshipAction = ""; relationshipDeadline = ""; relationshipMeasure = ""
+                            onSave("Meta matrimonial · $relationshipGoal", content) { saved ->
+                                isSaving = false
+                                saveFailed = !saved
+                                if (saved) {
+                                    relationshipGoal = ""; relationshipContext = ""; relationshipObstacle = ""
+                                    relationshipAction = ""; relationshipDeadline = ""; relationshipMeasure = ""
+                                }
+                            }
                         },
-                        enabled = relationshipGoal.isNotBlank() && (relationshipContext.isNotBlank() || relationshipAction.isNotBlank()),
+                        enabled = !isSaving && relationshipGoal.isNotBlank() && (relationshipContext.isNotBlank() || relationshipAction.isNotBlank()),
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Salvar meta e plano matrimonial") }
+                    ) { Text(if (isSaving) "Salvando..." else "Salvar meta e plano matrimonial") }
+                    if (saveFailed) Text("Não foi possível salvar. Seus dados continuam no formulário; tente novamente.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     Text("O registro descreve sua perspectiva. A IA deverá perguntar antes de concluir o que Ingrid pensa ou sente.", color = Ivory.copy(alpha = .72f), style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -498,12 +509,17 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
                     )
                     Button(
                         onClick = {
-                            onSave("Desafio matrimonial · ${LocalDate.now()}", "Desafio: $challenge\nAtitude registrada: ${note.trim()}")
-                            note = ""
+                            isSaving = true
+                            saveFailed = false
+                            onSave("Desafio matrimonial · ${LocalDate.now()}", "Desafio: $challenge\nAtitude registrada: ${note.trim()}") { saved ->
+                                isSaving = false
+                                saveFailed = !saved
+                                if (saved) note = ""
+                            }
                         },
-                        enabled = note.isNotBlank(),
+                        enabled = !isSaving && note.isNotBlank(),
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Registrar atitude") }
+                    ) { Text(if (isSaving) "Salvando..." else "Registrar atitude") }
                 }
             }
         }
@@ -524,7 +540,7 @@ private fun DimensionRecordPage(
     promptBody: String,
     saveLabel: String,
     entries: List<JournalEntry>,
-    onSave: (String, String) -> Unit,
+    onSave: (String, String, (Boolean) -> Unit) -> Unit,
     focusAreas: List<String> = emptyList()
 ) {
     var recordTitle by remember { mutableStateOf("") }
@@ -536,6 +552,8 @@ private fun DimensionRecordPage(
     var nextAction by remember { mutableStateOf("") }
     var deadline by remember { mutableStateOf("") }
     var successMeasure by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
     val isSpiritual = eyebrow.contains("01")
     val isProfessional = eyebrow.contains("03")
     val isStructuredGoal = isProfessional || eyebrow.contains("04")
@@ -589,22 +607,30 @@ private fun DimensionRecordPage(
                     }
                     Button(
                         onClick = {
+                            isSaving = true
+                            saveFailed = false
                             val content = when {
                                 isSpiritual -> "Contexto: $contextNotes\nObservações: $analysisNotes\nInterpretação e aplicação pastoral: $applicationNotes"
                                 isStructuredGoal -> "META/OBJETIVO: $recordTitle\nCONTEXTO ATUAL: $body\nOBSTÁCULO OU DIFICULDADE: $obstacle\nPRÓXIMA AÇÃO: $nextAction\nPRAZO/FREQUÊNCIA: $deadline\nCRITÉRIO DE RESULTADO: $successMeasure"
                                 else -> body
                             }
-                            onSave(recordTitle, content)
-                            recordTitle = ""; body = ""; contextNotes = ""; analysisNotes = ""; applicationNotes = ""
-                            obstacle = ""; nextAction = ""; deadline = ""; successMeasure = ""
+                            onSave(recordTitle, content) { saved ->
+                                isSaving = false
+                                saveFailed = !saved
+                                if (saved) {
+                                    recordTitle = ""; body = ""; contextNotes = ""; analysisNotes = ""; applicationNotes = ""
+                                    obstacle = ""; nextAction = ""; deadline = ""; successMeasure = ""
+                                }
+                            }
                         },
-                        enabled = recordTitle.isNotBlank() && when {
+                        enabled = !isSaving && recordTitle.isNotBlank() && when {
                             isSpiritual -> contextNotes.isNotBlank() || analysisNotes.isNotBlank() || applicationNotes.isNotBlank()
                             isStructuredGoal -> body.isNotBlank() || obstacle.isNotBlank() || nextAction.isNotBlank() || deadline.isNotBlank() || successMeasure.isNotBlank()
                             else -> body.isNotBlank()
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text(saveLabel) }
+                    ) { Text(if (isSaving) "Salvando..." else saveLabel) }
+                    if (saveFailed) Text("Não foi possível salvar. Seus dados continuam no formulário; tente novamente.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
