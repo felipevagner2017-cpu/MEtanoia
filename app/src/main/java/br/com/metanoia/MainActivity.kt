@@ -16,6 +16,7 @@ import android.app.TimePickerDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -414,7 +415,7 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
     0 -> DailyJourneyPage(analyses)
     1 -> Column(Modifier.fillMaxSize().background(DeepViolet)) {
      Row(
-      Modifier.fillMaxWidth().background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp, vertical=6.dp),
+      Modifier.fillMaxWidth().testTag("area-dimension-tabs").background(VioletSurface).horizontalScroll(rememberScrollState()).padding(horizontal=8.dp, vertical=6.dp),
       horizontalArrangement=Arrangement.spacedBy(3.dp),
       verticalAlignment=Alignment.CenterVertically
      ) {
