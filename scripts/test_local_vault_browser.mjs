@@ -122,7 +122,8 @@ try {
   console.log("PASS: legacy localStorage migration, AES-GCM IndexedDB storage, offline writes, password-protected export, wrong-password/tamper rejection, and restore recovery.");
 
   // Simulate interruption after ciphertext was committed but before legacy cleanup.
-  const recoveryPage = await context.newPage();
+  const recoveryContext = await browser.newContext();
+  const recoveryPage = await recoveryContext.newPage();
   await recoveryPage.goto(base);
   const interruptedLegacy = { items: [{ id: "recover", title: "INTERRUPTED_MIGRATION" }], journal: [], reviews: [], words: [] };
   await recoveryPage.evaluate(({ key, data }) => {
@@ -149,6 +150,7 @@ try {
   await unlock(recoveryPage, phrase, false);
   if (await retry !== "INTERRUPTED_MIGRATION") throw new Error("Interrupted migration did not recover its committed encrypted copy.");
   console.log("PASS: interrupted legacy cleanup recovered from the authenticated IndexedDB copy without deleting the original first.");
+  await recoveryContext.close();
   await context.close();
 } finally {
   await browser.close();
