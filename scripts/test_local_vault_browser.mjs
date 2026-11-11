@@ -103,10 +103,16 @@ try {
   }, { backup: tampered, pass: exportPhrase });
   if (!tamperRejected) throw new Error("Tampered export was accepted.");
 
+  await page.evaluate(async () => {
+    window.localVault.data.items[0].title = "MUTATED_AFTER_EXPORT";
+    await window.localVault.save(window.localVault.data);
+  });
   const restored = await page.evaluate(async ({ backup, pass }) => {
     return await window.localVault.restoreBackup(backup, pass);
   }, { backup, pass: exportPhrase });
-  if (restored.journal[0]?.body !== original.journal[0].body || restored.items.some(item => item.title === "Persisted offline")) {
+  if (restored.journal[0]?.body !== original.journal[0].body ||
+      !restored.items.some(item => item.title === "Persisted offline") ||
+      restored.items.some(item => item.title === "MUTATED_AFTER_EXPORT")) {
     throw new Error("Protected backup restore did not recover the exact exported snapshot.");
   }
   const previousSnapshot = await page.evaluate(async () => {
