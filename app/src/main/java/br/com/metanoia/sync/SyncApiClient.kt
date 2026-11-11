@@ -2,6 +2,7 @@ package br.com.metanoia.sync
 
 import br.com.metanoia.data.SyncOutboxDao
 import br.com.metanoia.data.SyncOutboxOperation
+import br.com.metanoia.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -77,7 +78,7 @@ class SyncApiClient(
         } finally { connection.disconnect() }
     }
 
-    companion object { const val API_BASE_URL = "https://metanoia.restaura-lar.workers.dev" }
+    companion object { val API_BASE_URL: String = BuildConfig.METANOIA_API_BASE_URL }
 }
 
 /** Outbox drain scoped to the authenticated account returned by the server. */
