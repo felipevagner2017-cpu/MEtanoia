@@ -102,6 +102,17 @@ try {
   });
   if (offlineSave !== 2) throw new Error("Offline encrypted write failed.");
 
+  const syncState = await page.evaluate(async () => {
+    const reserved = await Promise.all(Array.from({ length: 3 }, () =>
+      window.localVault.reserveCounter("sync-user", "device-a", "fasting-plan")
+    ));
+    await window.localVault.setSyncMetadata("sync-user", "record-1", { revision: 4, state: "synced" });
+    return { reserved, metadata: window.localVault.getSyncMetadata("sync-user", "record-1") };
+  });
+  if (syncState.reserved.join(",") !== "0,1,2" || syncState.metadata?.revision !== 4) {
+    throw new Error("Encrypted sync nonce reservations or revision metadata were not serialized.");
+  }
+
   const backup = await page.evaluate(async pass => window.localVault.exportBackup(pass, window.localVault.data), exportPhrase);
   if (backup.includes("PRIVATE_DIARY_SENTINEL") || backup.includes("Offline encrypted write.")) throw new Error("Export contains plaintext personal records.");
   const backupObject = JSON.parse(backup);
@@ -217,6 +228,15 @@ try {
       reopened.fastingEntries[0]?.reflection !== "PRIVATE_FASTING_REFLECTION_SENTINEL" ||
       reopened.studyProgress[0]?.chapter !== 4) {
     throw new Error("Encrypted records were not preserved after closing and reopening the browser tab.");
+  }
+  const nextNonce = await reopenedPage.evaluate(() =>
+    window.reopenedVault.reserveCounter("sync-user", "device-a", "fasting-plan")
+  );
+  const restoredMetadata = await reopenedPage.evaluate(() =>
+    window.reopenedVault.getSyncMetadata("sync-user", "record-1")
+  );
+  if (nextNonce !== 3 || restoredMetadata?.revision !== 4) {
+    throw new Error("Encrypted sync nonce/revision state did not survive browser close and reopen.");
   }
   console.log("PASS: browser tab close/reopen, including confession, fasting, study, goals and habits collections.");
   await reopenedPage.close();
