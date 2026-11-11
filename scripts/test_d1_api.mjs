@@ -145,6 +145,8 @@ try {
       fastingRecord.payload_ciphertext !== fastingOperation.payloadCiphertext) {
     throw new Error("D1 did not round-trip v2 ciphertext and authenticated context: " + JSON.stringify(fastingRecord));
   }
+  if (fastingRecord.server_updated_at <= pulled.data.records[0].server_updated_at)
+    throw new Error("Per-account server cursor did not advance monotonically.");
   if (JSON.stringify(fastingRecord).includes("PRIVATE_FASTING_SENTINEL"))
     throw new Error("Plaintext fasting content reached D1.");
 
