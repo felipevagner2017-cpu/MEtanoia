@@ -10,6 +10,7 @@ const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.ge
 const fixed=x=>x.schedule==="weekly"||x.fixedWeekly===true,area=x=>areas.includes(x)?x:(x==="Individual"||x==="Agenda e rotina"?"Cotidiano":"Cotidiano");
 function normalizeDatabase(){
  db.items=db.items||[];db.journal=db.journal||[];db.reviews=db.reviews||[];db.words=db.words||[];
+ db.fastingPlans=db.fastingPlans||[];db.fastingEntries=db.fastingEntries||[];
  db.items.forEach(x=>{x.dimension=area(x.dimension);if(x.fixedWeekly===true&&!x.schedule)x.schedule="weekly";if(x.repeat==="weekly"&&!x.schedule)x.schedule="weekly";if(x.schedule==="weekly"&&!Array.isArray(x.weekdays))x.weekdays=[1,2,3,4,5];});
  db.journal.forEach(x=>x.dimension=area(x.dimension));
 }
@@ -334,6 +335,7 @@ async function sendAiQuestion(){
 $("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
 const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
 const setAccountSession=(data)=>{
+ aiSession.accountDataKey?.fill(0);aiSession.accountDataKey=null;
  aiSession.token=data.token;sessionStorage.setItem("metonoia-session-token",data.token);
  sessionStorage.setItem("metonoia-user-id",data.userId||"");sessionStorage.setItem("metonoia-device-id",data.deviceId||"");
  $("accountLogout").hidden=false;accountStatus("Conta autenticada neste navegador. A sessão expira em até 30 dias.");
@@ -344,6 +346,99 @@ async function accountRequest(path,payload,extraHeaders={}){
  if(!response.ok)throw new Error(data.error||"Não foi possível autenticar a conta.");
  return data;
 }
+
+async function fastingRecordId(kind,localId){
+ const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(localId)));
+ const hex=Array.from(new Uint8Array(digest).slice(0,24),b=>b.toString(16).padStart(2,"0")).join("");
+ return kind+"-"+hex;
+}
+async function fastingRecordDigest(value){
+ const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify(value)));
+ return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
+function fastingWireDimension(value){
+ return ({SPIRITUAL:"DEVOTION",DEVOTIONAL:"DEVOTION",DEVOTION:"DEVOTION",MATRIMONIAL:"MATRIMONIAL",PROFESSIONAL:"PROFESSIONAL",INDIVIDUAL:"DAILY",ROUTINE:"DAILY",DAILY:"DAILY"})[String(value||"").toUpperCase()]||"DAILY";
+}
+async function syncFastingData(silent=false){
+ const userId=sessionStorage.getItem("metonoia-user-id")||"",deviceId=sessionStorage.getItem("metonoia-device-id")||"";
+ if(!aiSession.token||!aiSession.accountDataKey||!userId||!deviceId){
+  if(!silent)accountStatus("Entre na conta e desbloqueie a criptografia antes de sincronizar os planos de jejum.");
+  return false;
+ }
+ const cryptoApi=window.MEtanoiaAccountCrypto;
+ if(!cryptoApi?.encryptRecordV2||!cryptoApi?.decryptRecordV2){accountStatus("A criptografia compartilhada v2 não está disponível nesta versão.");return false;}
+ db.fastingPlans=db.fastingPlans||[];db.fastingEntries=db.fastingEntries||[];
+ const headers={Authorization:"Bearer "+aiSession.token},pending=[];
+ const addLocal=async(kind,item,dimension,recordType,purpose)=>{
+  if(!item?.id)return;
+  const recordId=await fastingRecordId(kind,item.id),metadata=localVault.getSyncMetadata(userId,recordId);
+  const digest=await fastingRecordDigest(item);
+  if(metadata?.state==="conflict")return;
+  if(metadata?.state==="synced"&&metadata.localDigest===digest)return;
+  const counter=await localVault.reserveCounter(userId,deviceId,purpose);
+  const ciphertext=await cryptoApi.encryptRecordV2(userId,deviceId,purpose,recordId,dimension,recordType,aiSession.accountDataKey,BigInt(counter),JSON.stringify(item));
+  pending.push({operationId:crypto.randomUUID(),recordId,dimension,recordType,operation:"upsert",payloadCiphertext:ciphertext,encryptionVersion:2,baseRevision:Number(metadata?.revision||0),clientUpdatedAt:Number(item.updatedAt||item.recordedAt||item.createdAt||Date.now()),sourceDeviceId:deviceId,purpose,deviceId,localDigest:digest});
+ };
+ for(const plan of db.fastingPlans)await addLocal("fasting-plan",plan,fastingWireDimension(plan.dimension),"fasting_plan","fasting-plan");
+ for(const entry of db.fastingEntries){
+  const plan=db.fastingPlans.find(value=>value.id===entry.planId);
+  if(plan)await addLocal("fasting-entry",entry,fastingWireDimension(plan.dimension),"fasting_daily_entry","fasting-entry");
+ }
+ let uploaded=0,conflicts=0,rejected=0;
+ for(let offset=0;offset<pending.length;offset+=50){
+  const batch=pending.slice(offset,offset+50);
+  const response=await fetch("/api/sync/push",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify({operations:batch})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Não foi possível enviar os registros criptografados.");
+  const outcomes=new Map((result.results||[]).map(item=>[item.operationId,item]));
+  for(const operation of batch){
+   const outcome=outcomes.get(operation.operationId);
+   if(outcome?.status==="applied"){
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:Number(outcome.revision||operation.baseRevision+1),state:"synced",localDigest:operation.localDigest,sourceDeviceId:deviceId,purpose:operation.purpose});uploaded++;
+   }else if(outcome?.status==="conflict"){
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:operation.baseRevision,state:"conflict",localDigest:operation.localDigest,remoteRevision:Number(outcome.currentRevision||0),purpose:operation.purpose});conflicts++;
+   }else{
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:operation.baseRevision,state:"rejected",localDigest:operation.localDigest,reason:String(outcome?.reason||"rejected"),purpose:operation.purpose});rejected++;
+   }
+  }
+ }
+ let imported=0,remoteConflicts=0,since=0,afterId="";
+ for(let page=0;page<20;page++){
+  const response=await fetch("/api/sync/pull?since="+since+"&afterId="+encodeURIComponent(afterId),{headers});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Não foi possível receber os registros sincronizados.");
+  const records=(result.records||[]).filter(record=>Number(record.encryption_version)===2&&["fasting_plan","fasting_daily_entry"].includes(record.record_type)).sort((a,b)=>a.record_type===b.record_type?Number(a.server_updated_at)-Number(b.server_updated_at):(a.record_type==="fasting_plan"?-1:1));
+  for(const record of records){
+   const kind=record.record_type==="fasting_plan"?"fasting-plan":"fasting-entry",purpose=record.record_type==="fasting_plan"?"fasting-plan":"fasting-entry";
+   if(record.purpose!==purpose||!record.source_device_id||!String(record.payload_ciphertext||"").startsWith("v2."))continue;
+   const metadata=localVault.getSyncMetadata(userId,record.record_id);
+   if(metadata?.state==="conflict"||metadata?.state==="rejected")continue;
+   if(metadata&&Number(metadata.revision||0)>=Number(record.revision||0))continue;
+   const collection=kind==="fasting-plan"?db.fastingPlans:db.fastingEntries;
+   let index=-1;
+   for(let i=0;i<collection.length;i++)if(await fastingRecordId(kind,collection[i].id)===record.record_id){index=i;break;}
+   if(index>=0){
+    const localDigest=await fastingRecordDigest(collection[index]);
+    if(!metadata||metadata.state!=="synced"||metadata.localDigest!==localDigest){
+     await localVault.setSyncMetadata(userId,record.record_id,{revision:Number(metadata?.revision||0),state:"conflict",localDigest,remoteRevision:Number(record.revision||0),purpose});remoteConflicts++;continue;
+    }
+   }
+   const plaintext=await cryptoApi.decryptRecordV2(userId,record.source_device_id,purpose,record.record_id,record.dimension,record.record_type,aiSession.accountDataKey,record.payload_ciphertext);
+   let value;try{value=JSON.parse(new TextDecoder().decode(plaintext))}finally{plaintext.fill(0)}
+   if(!value||!value.id||await fastingRecordId(kind,value.id)!==record.record_id)throw new Error("O registro recebido não corresponde ao identificador criptografado.");
+   if(index>=0)collection[index]=value;else collection.push(value);
+   await save();
+   await localVault.setSyncMetadata(userId,record.record_id,{revision:Number(record.revision||0),state:"synced",localDigest:await fastingRecordDigest(value),sourceDeviceId:record.source_device_id,purpose});imported++;
+  }
+  if(!result.hasMore||!result.nextCursor)break;
+  since=Number(result.nextCursor.since||0);afterId=String(result.nextCursor.afterId||"");
+  if(page===19)throw new Error("A sincronização excedeu o limite de páginas desta execução; tente novamente.");
+ }
+ accountStatus("Sincronização protegida concluída: "+uploaded+" enviados, "+imported+" recebidos, "+(conflicts+remoteConflicts)+" conflitos e "+rejected+" rejeitados.");
+ return {uploaded,imported,conflicts:conflicts+remoteConflicts,rejected};
+}
+window.MEtanoiaSyncFastingData=syncFastingData;
+
 async function unlockAccountCrypto(){
  const phrase=$("accountEncryptionPassphrase").value;
  if(!aiSession.token){accountStatus("Entre na conta antes de inicializar a criptografia.");return}
@@ -366,6 +461,7 @@ async function unlockAccountCrypto(){
   }
   $("accountEncryptionPassphrase").value="";
   accountStatus("Criptografia da conta desbloqueada neste navegador. A chave permanece somente na memória desta sessão.");
+  await syncFastingData(true);
  }catch(error){
   aiSession.accountDataKey=null;
   accountStatus(error.message||"Não foi possível desbloquear a criptografia.");
@@ -390,7 +486,7 @@ $("accountRegister").onclick=async()=>{
 };
 $("accountLogout").onclick=async()=>{
  try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
- aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ aiSession.token="";aiSession.accountDataKey?.fill(0);aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
  $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
 };
 if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
