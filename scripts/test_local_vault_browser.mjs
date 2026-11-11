@@ -4,19 +4,25 @@ import path from "node:path";
 import { chromium } from "playwright";
 
 const root = process.cwd();
-const assets = {
-  "/crypto.js": fs.readFileSync(path.join(root, "web/crypto.js")),
-  "/local-vault.js": fs.readFileSync(path.join(root, "web/local-vault.js"))
-};
+const webRoot = path.join(root, "web");
+const mime = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp" };
 const server = http.createServer((request, response) => {
-  const asset = assets[new URL(request.url, "http://localhost").pathname];
-  if (asset) {
-    response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" });
-    response.end(asset);
+  const pathname = new URL(request.url, "http://localhost").pathname;
+  if (pathname === "/vault-harness") {
+    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    response.end("<!doctype html><html lang='pt-BR'><meta charset='utf-8'><body><script src='/crypto.js'></script><script src='/local-vault.js'></script></body></html>");
     return;
   }
-  response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-  response.end("<!doctype html><html lang='pt-BR'><meta charset='utf-8'><body><script src='/crypto.js'></script><script src='/local-vault.js'></script></body></html>");
+  const relative = pathname === "/" ? "index.html" : pathname.replace(/^\\//, "");
+  const file = path.resolve(webRoot, relative);
+  if (!file.startsWith(webRoot + path.sep) && file !== path.join(webRoot, "index.html")) {
+    response.writeHead(403); response.end(); return;
+  }
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    response.writeHead(404); response.end("Not found"); return;
+  }
+  response.writeHead(200, { "Content-Type": mime[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-store" });
+  response.end(fs.readFileSync(file));
 });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const base = "http://127.0.0.1:" + server.address().port;
@@ -41,7 +47,7 @@ async function unlock(page, value, create = false) {
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto(base);
+  await page.goto(base + "/vault-harness");
   await page.evaluate(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: legacyKey, data: original });
 
   const opening = page.evaluate(async key => {
@@ -130,7 +136,7 @@ try {
   // Simulate interruption after ciphertext was committed but before legacy cleanup.
   const recoveryContext = await browser.newContext();
   const recoveryPage = await recoveryContext.newPage();
-  await recoveryPage.goto(base);
+  await recoveryPage.goto(base + "/vault-harness");
   const interruptedLegacy = { items: [{ id: "recover", title: "INTERRUPTED_MIGRATION" }], journal: [], reviews: [], words: [] };
   await recoveryPage.evaluate(({ key, data }) => {
     localStorage.setItem(key, JSON.stringify(data));
@@ -158,6 +164,32 @@ try {
   console.log("PASS: interrupted legacy cleanup recovered from the authenticated IndexedDB copy without deleting the original first.");
   await recoveryContext.close();
   await context.close();
+
+  // End-to-end startup against the real PWA HTML and app.js, not just the vault module.
+  const appContext = await browser.newContext({ serviceWorkers: "block", acceptDownloads: true });
+  const appPage = await appContext.newPage();
+  await appPage.addInitScript(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key: legacyKey, data: original });
+  await appPage.goto(base);
+  await unlock(appPage, phrase, true);
+  await appPage.waitForSelector("#todayDate", { timeout: 15000 });
+  await appPage.waitForSelector("#homeReminderCard");
+  const appMigration = await appPage.evaluate(key => ({
+    legacy: localStorage.getItem(key),
+    heading: document.querySelector("h1")?.textContent,
+    vaultLoaded: !!window.MEtanoiaLocalVault
+  }), legacyKey);
+  if (appMigration.legacy !== null || appMigration.heading !== "MEtanoia" || !appMigration.vaultLoaded) {
+    throw new Error("The actual PWA did not start with its encrypted local store.");
+  }
+  await appPage.locator('[data-tab="evolution"]').click();
+  await appPage.waitForSelector("#exportLocalBackup", { state: "visible" });
+  const downloadPromise = appPage.waitForEvent("download");
+  await appPage.locator("#exportLocalBackup").click();
+  await unlock(appPage, exportPhrase, true);
+  const download = await downloadPromise;
+  if (!download.suggestedFilename().includes("MEtanoia-backup-")) throw new Error("The PWA export control did not create the protected backup file.");
+  console.log("PASS: real PWA startup, legacy data migration, and user-interface export flow.");
+  await appContext.close();
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
