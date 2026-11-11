@@ -77,7 +77,7 @@ try {
     window.localVault.data.items.push({ id: "agenda-2", title: "Persisted offline" });
     await window.localVault.save(window.localVault.data);
   });
-  await page.setOffline(true);
+  await context.setOffline(true);
   const offlineSave = await page.evaluate(async () => {
     window.localVault.data.reviews.push({ id: "review-offline", body: "Offline encrypted write." });
     await window.localVault.save(window.localVault.data);
