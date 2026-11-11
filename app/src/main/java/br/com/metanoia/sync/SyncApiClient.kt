@@ -141,7 +141,12 @@ class SyncCoordinator(
             }
         }
         val cursorObject = pull.optJSONObject("nextCursor")
-        val cursor = if (cursorObject == null) null else cursorObject.optLong("since").toString() + ":" + cursorObject.optString("afterId")
+        val lastRecord = records.lastOrNull()
+        val cursor = if (cursorObject != null) {
+            cursorObject.optLong("since").toString() + ":" + cursorObject.optString("afterId")
+        } else {
+            lastRecord?.let { it.serverUpdatedAt.toString() + ":" + it.recordId }
+        }
         return SyncCycleResult(uploaded, conflicts, rejected, records, pull.optBoolean("hasMore"), cursor)
     }
 }
