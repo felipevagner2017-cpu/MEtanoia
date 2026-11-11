@@ -359,6 +359,41 @@ async function fastingRecordDigest(value){
 function fastingWireDimension(value){
  return ({SPIRITUAL:"DEVOTION",DEVOTIONAL:"DEVOTION",DEVOTION:"DEVOTION",MATRIMONIAL:"MATRIMONIAL",PROFESSIONAL:"PROFESSIONAL",INDIVIDUAL:"DAILY",ROUTINE:"DAILY",DAILY:"DAILY"})[String(value||"").toUpperCase()]||"DAILY";
 }
+function fastingDomainDimension(value){
+ const v=String(value||"").toUpperCase();
+ if(["SPIRITUAL","ESPIRITUAL","DEVOCIONAL","DEVOTION"].includes(v))return "SPIRITUAL";
+ if(["MATRIMONIAL","MATRIMONIO"].includes(v))return "MATRIMONIAL";
+ if(["PROFESSIONAL","PROFISSIONAL"].includes(v))return "PROFESSIONAL";
+ if(["INDIVIDUAL","PESSOAL"].includes(v))return "INDIVIDUAL";
+ if(["ROUTINE","ROTINA","DAILY","COTIDIANO"].includes(v))return "ROUTINE";
+ throw new Error("A dimensão do plano de jejum não é reconhecida: "+v);
+}
+function canonicalFastingPlan(value){
+ const plan={...value,dimension:fastingDomainDimension(value.dimension)};
+ if(!plan.id||!["FOOD","NON_FOOD"].includes(plan.type)||!Number.isInteger(Number(plan.durationDays))||Number(plan.durationDays)<=0||
+    !Number.isFinite(Number(plan.startAt))||Number(plan.startAt)<=0||!Number.isFinite(Number(plan.endAt))||Number(plan.endAt)<Number(plan.startAt)) {
+  throw new Error("Um plano de jejum local possui campos obrigatórios inválidos e não será sincronizado.");
+ }
+ return {
+  id:String(plan.id),dimension:plan.dimension,type:plan.type,
+  identifiedNeed:String(plan.identifiedNeed||""),recommendationReason:String(plan.recommendationReason||""),
+  purpose:String(plan.purpose||""),scriptureReferences:String(plan.scriptureReferences||""),
+  scriptureContext:String(plan.scriptureContext||""),preparation:String(plan.preparation||""),
+  dailyGuidance:String(plan.dailyGuidance||""),durationDays:Number(plan.durationDays),
+  startAt:Number(plan.startAt),endAt:Number(plan.endAt),foodAbstinence:!!plan.foodAbstinence,
+  status:String(plan.status||"PROPOSED"),createdAt:Number(plan.createdAt||Date.now()),
+  completedAt:plan.completedAt==null?null:Number(plan.completedAt)
+ };
+}
+function canonicalFastingEntry(value){
+ const entry={...value};
+ if(!entry.id||!entry.planId||!Number.isInteger(Number(entry.dayIndex))||Number(entry.dayIndex)<0||
+    !Number.isFinite(Number(entry.recordedAt))||Number(entry.recordedAt)<=0) {
+  throw new Error("Uma reflexão de jejum local possui campos obrigatórios inválidos e não será sincronizada.");
+ }
+ return {id:String(entry.id),planId:String(entry.planId),dayIndex:Number(entry.dayIndex),
+  reflection:String(entry.reflection||""),experience:String(entry.experience||""),recordedAt:Number(entry.recordedAt)};
+}
 async function syncFastingData(silent=false){
  const userId=sessionStorage.getItem("metonoia-user-id")||"",deviceId=sessionStorage.getItem("metonoia-device-id")||"";
  if(!aiSession.token||!aiSession.accountDataKey||!userId||!deviceId){
@@ -379,10 +414,13 @@ async function syncFastingData(silent=false){
   const ciphertext=await cryptoApi.encryptRecordV2(userId,deviceId,purpose,recordId,dimension,recordType,aiSession.accountDataKey,BigInt(counter),JSON.stringify(item));
   pending.push({operationId:crypto.randomUUID(),recordId,dimension,recordType,operation:"upsert",payloadCiphertext:ciphertext,encryptionVersion:2,baseRevision:Number(metadata?.revision||0),clientUpdatedAt:Number(item.updatedAt||item.recordedAt||item.createdAt||Date.now()),sourceDeviceId:deviceId,purpose,deviceId,localDigest:digest});
  };
- for(const plan of db.fastingPlans)await addLocal("fasting-plan",plan,fastingWireDimension(plan.dimension),"fasting_plan","fasting-plan");
+ for(const plan of db.fastingPlans){
+  const value=canonicalFastingPlan(plan);
+  await addLocal("fasting-plan",value,fastingWireDimension(value.dimension),"fasting_plan","fasting-plan");
+ }
  for(const entry of db.fastingEntries){
   const plan=db.fastingPlans.find(value=>value.id===entry.planId);
-  if(plan)await addLocal("fasting-entry",entry,fastingWireDimension(plan.dimension),"fasting_daily_entry","fasting-entry");
+  if(plan)await addLocal("fasting-entry",canonicalFastingEntry(entry),fastingWireDimension(plan.dimension),"fasting_daily_entry","fasting-entry");
  }
  let uploaded=0,conflicts=0,rejected=0;
  for(let offset=0;offset<pending.length;offset+=50){
