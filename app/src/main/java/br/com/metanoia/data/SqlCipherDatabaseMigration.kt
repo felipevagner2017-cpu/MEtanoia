@@ -157,6 +157,10 @@ internal object SqlCipherDatabaseMigration {
     ) {
         check(!backupFile.exists()) { "Já existe uma cópia de recuperação; migração interrompida." }
         if (temporaryFile.exists()) check(temporaryFile.delete()) { "Não foi possível limpar a exportação temporária anterior." }
+        // SQLCipher's Android ATTACH path may open the target without CREATE on
+        // some API/runtime combinations. Create the private empty target first;
+        // ATTACH initializes it as an encrypted database using the supplied key.
+        check(temporaryFile.createNewFile()) { "Não foi possível criar o arquivo temporário criptografado." }
 
         val source = SQLiteDatabase.openDatabase(
             sourceFile.absolutePath,
