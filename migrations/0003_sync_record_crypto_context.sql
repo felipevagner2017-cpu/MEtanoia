@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS sync_record_context (
   purpose TEXT NOT NULL DEFAULT 'record',
   PRIMARY KEY(user_id, record_id),
   FOREIGN KEY(user_id, record_id) REFERENCES records(user_id, record_id) ON DELETE CASCADE,
-  FOREIGN KEY(user_id, source_device_id) REFERENCES devices(user_id, id) ON DELETE RESTRICT
+  FOREIGN KEY(source_device_id) REFERENCES devices(id) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS idx_sync_record_context_source_device
   ON sync_record_context(user_id, source_device_id);
