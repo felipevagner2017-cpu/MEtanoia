@@ -443,9 +443,16 @@ internal fun MatrimonialDimensionPage(entries: List<JournalEntry>, onSave: (Stri
             )
         }
         item {
+            Text(
+                "META E CONTEXTO DO CASAL",
+                color = GoldChampagne,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag("matrimonial-goal-heading")
+            )
+        }
+        item {
             Card(colors = CardDefaults.cardColors(containerColor = CardSurface), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    Text("META E CONTEXTO DO CASAL", color = GoldChampagne, fontWeight = FontWeight.Bold)
                     OutlinedTextField(value = relationshipGoal, onValueChange = { relationshipGoal = it }, modifier = Modifier.fillMaxWidth(), label = { Text("O que deseja fortalecer ou reconstruir?") }, singleLine = true)
                     OutlinedTextField(value = relationshipContext, onValueChange = { relationshipContext = it }, modifier = Modifier.fillMaxWidth(), label = { Text("O que aconteceu? Descreva fatos e contexto sem atribuir culpa.") }, minLines = 3)
                     OutlinedTextField(value = relationshipObstacle, onValueChange = { relationshipObstacle = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Qual dificuldade ou necessidade está percebendo?") }, minLines = 2)

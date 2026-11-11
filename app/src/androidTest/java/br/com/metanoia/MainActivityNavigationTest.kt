@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -97,10 +98,13 @@ class MainActivityNavigationTest {
                 runCatching {
                     val target = hasText(expected, substring = false)
                     if (tab == "Matrimônio") {
-                        // Matrimonial records are rendered in this LazyColumn. Scrolling a
-                        // generic ancestor can move the outer HorizontalPager off-screen,
-                        // leaving composed content outside the viewport.
-                        composeRule.onNodeWithTag("matrimonial-dimension-list").performScrollToNode(target)
+                        // Keep the section heading as a first-class LazyColumn item and
+                        // target its stable semantics tag instead of matching text nested
+                        // inside a Material Card's merged semantics subtree.
+                        val matcher = if (expected == "META E CONTEXTO DO CASAL") {
+                            hasTestTag("matrimonial-goal-heading")
+                        } else target
+                        composeRule.onNodeWithTag("matrimonial-dimension-list").performScrollToNode(matcher)
                     } else if (tab == "Jornada diária" && expected == "DESAFIO DE HOJE") {
                         composeRule.onNodeWithTag("daily-journey-list").performScrollToNode(target)
                     } else if (tab == "Devocional" && expected == "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES") {
