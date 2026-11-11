@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,7 +15,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class RoomV9ToV10MigrationTest {
     @Test
-    fun addsAgendaFieldsWithoutLosingExistingCommitments() {
+    fun addsFastingTablesAndPreservesAllExistingRecords() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val name = "room_v9_v10_fixture.db"
         context.deleteDatabase(name)
@@ -47,6 +48,11 @@ class RoomV9ToV10MigrationTest {
             legacy.execSQL("""INSERT INTO agenda_items(
                 id,title,description,dimension,kind,scheduledAt,completed,recurrenceRule,reminderAt,createdAt
             ) VALUES(42,'Consulta','Retorno','ROUTINE','APPOINTMENT',1700000000000,0,NULL,1699992800000,1690000000000)""")
+            legacy.execSQL("INSERT INTO journal_entries(id,title,content,dimension,createdAt,updatedAt,dayKey) VALUES(7,'Diário preservado','Registro anterior','SPIRITUAL',100,110,'2026-11-10')")
+            legacy.execSQL("INSERT INTO review_entries(id,period,periodStart,periodEnd,reflection,createdAt) VALUES(8,'WEEKLY',1,7,'Revisão preservada',120)")
+            legacy.execSQL("INSERT INTO confession_entries(id,dayKey,content,createdAt,updatedAt) VALUES(9,'2026-11-10','Confissão preservada',130,140)")
+            legacy.execSQL("INSERT INTO daily_analysis(dayKey,categories,dimensions,emotionalState,summary,attention,learning,direction,nextStep,scriptureReference,scriptureContext,updatedAt) VALUES('2026-11-10','[]','{}','sereno','Resumo preservado','','','','','Salmo 23','Contexto',150)")
+            legacy.execSQL("INSERT INTO sync_outbox(accountId,operationId,recordId,dimension,recordType,operation,payloadCiphertext,encryptionVersion,baseRevision,clientUpdatedAt,status,attemptCount,nextAttemptAt,lastError,createdAt,sourceDeviceId,purpose) VALUES('account-a','op-a','record-a','DAILY','journal','upsert','ciphertext',2,0,160,'pending',0,160,NULL,160,'device-a','record')")
             legacy.version = 9
         } finally { legacy.close() }
 
@@ -72,6 +78,28 @@ class RoomV9ToV10MigrationTest {
                 assertEquals("fasting_plans", cursor.getString(0))
                 assertFalse(cursor.moveToNext())
             }
+            sqlite.query("SELECT title,content FROM journal_entries WHERE id=7").use { assertTrue(it.moveToFirst()); assertEquals("Diário preservado", it.getString(0)); assertEquals("Registro anterior", it.getString(1)) }
+            sqlite.query("SELECT reflection FROM review_entries WHERE id=8").use { assertTrue(it.moveToFirst()); assertEquals("Revisão preservada", it.getString(0)) }
+            sqlite.query("SELECT content FROM confession_entries WHERE id=9").use { assertTrue(it.moveToFirst()); assertEquals("Confissão preservada", it.getString(0)) }
+            sqlite.query("SELECT summary FROM daily_analysis WHERE dayKey='2026-11-10'").use { assertTrue(it.moveToFirst()); assertEquals("Resumo preservado", it.getString(0)) }
+            sqlite.query("SELECT payloadCiphertext FROM sync_outbox WHERE operationId='op-a'").use { assertTrue(it.moveToFirst()); assertEquals("ciphertext", it.getString(0)) }
+
+            val dao = db.fastingDao()
+            val plan = FastingPlan("fast-1", LifeDimension.SPIRITUAL, "NON_FOOD", "Atenção", "Registro de teste", "Oração e reflexão", "Mateus 6:16–18", "Jesus ensina a sinceridade", "Escolha livre", "Leia e reflita", 1, 1000L, 2000L, createdAt = 1000L)
+            dao.insertPlan(plan)
+            assertEquals(plan, dao.findPlan("fast-1"))
+            dao.updatePlan(plan.copy(status = "ACTIVE"))
+            assertEquals("ACTIVE", dao.findPlan("fast-1")?.status)
+            val reflection = FastingDailyEntry("entry-1", "fast-1", 0, "Reflexão inicial", "Em paz", 1100L)
+            dao.insertDailyEntry(reflection)
+            assertEquals(reflection, dao.findDailyEntry("fast-1", 0))
+            dao.updateDailyEntry(reflection.copy(reflection = "Reflexão revisada"))
+            assertEquals("Reflexão revisada", dao.findDailyEntry("fast-1", 0)?.reflection)
+            assertEquals(1, dao.deleteDailyEntry("entry-1"))
+            assertEquals(null, dao.findDailyEntry("fast-1", 0))
+            assertEquals(1, dao.deletePlan("fast-1"))
+            assertEquals(null, dao.findPlan("fast-1"))
+
             sqlite.query("PRAGMA integrity_check").use {
                 assertTrue(it.moveToFirst())
                 assertEquals("ok", it.getString(0))
