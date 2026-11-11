@@ -30,7 +30,7 @@ jobs:
       - name: Install browser test runtime
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Validate JavaScript syntax
         run: |
           node --check web/crypto.js
