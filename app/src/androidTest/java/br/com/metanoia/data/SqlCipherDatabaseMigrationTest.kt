@@ -105,6 +105,22 @@ class SqlCipherDatabaseMigrationTest {
     }
 
     @Test
+    fun emptyPlainRoomDatabaseMigratesWithoutRecreatingOrDroppingItsSchema() = runBlocking {
+        val f = Fixture()
+        val plain = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName).build()
+        plain.openHelper.writableDatabase
+        plain.close()
+
+        val key = SqlCipherDatabaseMigration.ensureEncrypted(context, f.databaseName, f.keyId)
+        val encrypted = openEncrypted(f, key)
+        assertTrue(encrypted.agendaDao().observeAll().first().isEmpty())
+        assertTrue(encrypted.fastingDao().observePlans().first().isEmpty())
+        encrypted.close()
+        context.deleteDatabase(f.databaseName)
+        Unit
+    }
+
+    @Test
     fun interruptionAfterPlaintextRenameRestoresSourceAndNextLaunchCompletesMigration() = runBlocking {
         val f = Fixture()
         val plain = Room.databaseBuilder(context, MetanoiaDatabase::class.java, f.databaseName).build()
