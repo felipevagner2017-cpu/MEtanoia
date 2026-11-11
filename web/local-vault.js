@@ -57,15 +57,21 @@
 
   function validateData(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("A estrutura do arquivo de dados não é válida.");
-    for (const key of ["items", "journal", "reviews", "words"]) {
-      if (value[key] !== undefined && !Array.isArray(value[key])) throw new Error("O arquivo contém uma coleção inválida: " + key);
+    // Preserve the complete app-state object, including records owned by modules
+    // added in later releases. Silently projecting only four collections could
+    // erase study, fasting, goal, or dimension data during an ordinary save.
+    const normalized = { ...value };
+    for (const key of [
+      "items", "journal", "reviews", "words",
+      "confessions", "dailyAnalysis", "fastingPlans", "fastingEntries",
+      "studyProgress", "studyReflections", "goals", "habits"
+    ]) {
+      if (normalized[key] !== undefined && !Array.isArray(normalized[key])) {
+        throw new Error("O arquivo contém uma coleção inválida: " + key);
+      }
+      if (normalized[key] === undefined) normalized[key] = [];
     }
-    return {
-      items: Array.isArray(value.items) ? value.items : [],
-      journal: Array.isArray(value.journal) ? value.journal : [],
-      reviews: Array.isArray(value.reviews) ? value.reviews : [],
-      words: Array.isArray(value.words) ? value.words : []
-    };
+    return normalized;
   }
 
   function passphraseGate(mode, errorMessage = "") {
