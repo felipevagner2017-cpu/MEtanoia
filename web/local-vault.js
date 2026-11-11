@@ -75,7 +75,7 @@
         mode === "export" ? "Proteger cópia de segurança" :
         mode === "restore" ? "Desbloquear cópia de segurança" : "Desbloquear MEtanoia";
       const description = mode === "create"
-        ? "Seus registros serão cifrados neste aparelho. Crie uma frase exclusiva com pelo menos 12 caracteres. Ela não será enviada ao servidor."
+        ? "Seus registros serão cifrados neste aparelho. Crie uma frase exclusiva com pelo menos 12 caracteres. Ela não será enviada ao servidor. Se perdê-la sem uma cópia protegida, não será possível recuperar os dados locais."
         : mode === "export"
         ? "A cópia será protegida com AES-GCM. Guarde esta frase separadamente: sem ela, o arquivo não poderá ser recuperado."
         : mode === "restore"
