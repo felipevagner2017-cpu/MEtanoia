@@ -147,6 +147,8 @@ class MainActivityNavigationTest {
         assertPageVisible("Devocional", "DIMENSÃO 01")
         val runSuffix = System.nanoTime().toString()
         val devotionalTitle = "Estudo bíblico Atos 2:42 $runSuffix"
+        composeRule.onNodeWithTag("dimension-record-list")
+            .performScrollToNode(hasText("Texto bíblico ou tema pastoral", substring = false) and hasSetTextAction())
         composeRule.onNode(hasText("Texto bíblico ou tema pastoral", substring = false) and hasSetTextAction())
             .performTextInput(devotionalTitle)
         composeRule.onNode(hasText("Contexto histórico, cultural e literário", substring = false) and hasSetTextAction())
