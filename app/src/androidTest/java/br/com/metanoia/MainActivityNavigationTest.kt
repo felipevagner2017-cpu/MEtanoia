@@ -171,9 +171,10 @@ class MainActivityNavigationTest {
         // Separate Room persistence from Compose presentation: first wait for a
         // direct DAO read, then independently assert that the visible list renders it.
         awaitJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
-        // Distinguish Room persistence from ViewModel/Compose propagation before scrolling.
+        // Room has emitted the saved row. Confirm the ViewModel/Compose Flow
+        // updated the always-composed count marker before scrolling to the lazy item.
         composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodes(hasText(devotionalTitle, substring = false)).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag("dimension-record-count-1").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("dimension-record-list")
             .performScrollToNode(hasText(devotionalTitle, substring = false))
