@@ -119,7 +119,7 @@ SUMMARY.extend([
     "- Probe is read-only: synthetic invalid login only; no account or row is created.",
 ])
 
-for build_id in ("bf6a1318-1e36-4303-a8f3-40d58ec94b5a", "b32cf052-dba3-4f71-a794-c7c91cceaa5a", "d08878b1-c4bf-4e7a-9c58-f745332e23cd", "ff732fe1-14d1-493f-bd97-658253f49053", "acb6fba7-4e02-4a40-991d-873faabe8eba", "99a49e20-ae4d-424d-8bb2-2a328fbd31fc"):
+for build_id in ("84747295-171a-4ed1-9f88-bd8c999c4860", "bf6a1318-1e36-4303-a8f3-40d58ec94b5a", "b32cf052-dba3-4f71-a794-c7c91cceaa5a", "d08878b1-c4bf-4e7a-9c58-f745332e23cd", "ff732fe1-14d1-493f-bd97-658253f49053", "acb6fba7-4e02-4a40-991d-873faabe8eba", "99a49e20-ae4d-424d-8bb2-2a328fbd31fc"):
     status, data = get(f"/accounts/{account}/builds/builds/{build_id}")
     result = data.get("result", {}) if status == 200 and data.get("success") else {}
     meta = result.get("build_trigger_metadata") or {}
