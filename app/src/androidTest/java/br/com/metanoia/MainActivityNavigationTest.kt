@@ -11,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import java.io.ByteArrayOutputStream
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -174,7 +175,7 @@ class MainActivityNavigationTest {
         // Room has emitted the saved row. Confirm the ViewModel/Compose Flow
         // updated the always-composed count marker before scrolling to the lazy item.
         composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithTag("dimension-record-count-1").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasContentDescription("1 registro na dimensão")).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("dimension-record-list")
             .performScrollToNode(hasText(devotionalTitle, substring = false))

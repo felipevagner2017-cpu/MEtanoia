@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Brush
@@ -565,12 +567,14 @@ private fun DimensionRecordPage(
     val isProfessional = eyebrow.contains("03")
     val isStructuredGoal = isProfessional || eyebrow.contains("04")
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp).testTag("dimension-record-list"),
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp)
+            .testTag("dimension-record-list")
+            .semantics {
+                contentDescription = if (entries.size == 1) "1 registro na dimensão" else "${entries.size} registros na dimensão"
+            },
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Keep the Flow-driven record count on its own semantics node.
-        item { Spacer(Modifier.size(1.dp).testTag("dimension-record-count-${entries.size}")) }
         item { DimensionHero(eyebrow, title, description) }
         item {
             JourneyProgressCard(
