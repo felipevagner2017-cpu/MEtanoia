@@ -11,6 +11,7 @@ const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const ALLOWED_ORIGINS = new Set([
   "https://metanoia.restaura-lar.workers.dev",
   "https://metonoia.restaura-lar.workers.dev",
+  "https://metanoia-preview.restaura-lar.workers.dev",
 ]);
 
 const SYSTEM_PROMPT = `Você é a inteligência assistiva integrada do aplicativo MEtanoia. Responda sempre em português brasileiro, com clareza, profundidade e respeito.
