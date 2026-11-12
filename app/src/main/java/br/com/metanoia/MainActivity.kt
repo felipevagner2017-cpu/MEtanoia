@@ -308,10 +308,13 @@ private class AppViewModel(private val appContext: Context, private val db: Meta
    return
   }
   viewModelScope.launch(Dispatchers.IO) {
-   val saved = runCatching {
+   val saveResult = runCatching {
     db.journalDao().insert(JournalEntry(title=title.trim(),content=body.trim(),dimension=dimension,dayKey=LocalDate.now().toString()))
-   }.isSuccess
-   withContext(Dispatchers.Main.immediate) { onComplete(saved) }
+   }
+   saveResult.exceptionOrNull()?.let { error ->
+    android.util.Log.e("MEtonoia", "Falha ao persistir registro da dimensão no Room.", error)
+   }
+   withContext(Dispatchers.Main.immediate) { onComplete(saveResult.isSuccess) }
   }
  }
  fun addReview(period:ReviewPeriod, body:String) {
