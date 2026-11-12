@@ -1,0 +1,44 @@
+name: PWA security validation
+
+on:
+  push:
+    branches: [feature/intelligent-agenda-fasting-voice]
+    paths:
+      - "web/**"
+      - "scripts/test_local_vault_browser.mjs"
+      - ".github/workflows/pwa-security.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metonoia-pwa-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  encrypted-local-vault:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test runtime
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Validate JavaScript syntax
+        run: |
+          node --check web/crypto.js
+          node --check web/local-vault.js
+          node --check web/app.js
+          node --check web/sw.js
+          node --check scripts/test_local_vault_browser.mjs
+      - name: Verify existing account cryptography
+        run: node scripts/test_account_crypto.mjs
+      - name: Verify encrypted IndexedDB migration, offline writes and protected exports
+        run: node scripts/test_local_vault_browser.mjs

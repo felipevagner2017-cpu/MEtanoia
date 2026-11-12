@@ -1,14 +1,23 @@
-(()=> {
+(async()=> {
 const $=id=>document.getElementById(id),K="metonoia-pwa-v1",areas=["Espiritual","Matrimonial","Profissional","Cotidiano"],days=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
-let db;try{db=JSON.parse(localStorage.getItem(K))||{items:[],journal:[],reviews:[],words:[]}}catch{db={items:[],journal:[],reviews:[],words:[]}}
-db.items=db.items||[];db.journal=db.journal||[];db.reviews=db.reviews||[];db.words=db.words||[];
+let promptInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;const install=$("install");if(install)install.hidden=false});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(registration=>registration.update()).catch(error=>console.warn("Não foi possível verificar atualização do MEtanoia",error));
+const localVault=await window.MEtanoiaLocalVault.open(K,{items:[],journal:[],reviews:[],words:[]});
+let db=localVault.data;
 const uid=()=>crypto.randomUUID?.()||String(Date.now()+Math.random()),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const key=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-"),parse=k=>new Date(k+"T00:00:00"),today=()=>key(new Date()),fmt=k=>parse(k).toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
 const fixed=x=>x.schedule==="weekly"||x.fixedWeekly===true,area=x=>areas.includes(x)?x:(x==="Individual"||x==="Agenda e rotina"?"Cotidiano":"Cotidiano");
-db.items.forEach(x=>{x.dimension=area(x.dimension);if(x.fixedWeekly===true&&!x.schedule)x.schedule="weekly";if(x.repeat==="weekly"&&!x.schedule)x.schedule="weekly";if(x.schedule==="weekly"&&!Array.isArray(x.weekdays))x.weekdays=[1,2,3,4,5];});
-db.journal.forEach(x=>x.dimension=area(x.dimension));localStorage.setItem(K,JSON.stringify(db));
-let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected),calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1),observedToday=today(),promptInstall=null;
-const save=()=>localStorage.setItem(K,JSON.stringify(db));
+function normalizeDatabase(){
+ db.items=db.items||[];db.journal=db.journal||[];db.reviews=db.reviews||[];db.words=db.words||[];
+ db.fastingPlans=db.fastingPlans||[];db.fastingEntries=db.fastingEntries||[];
+ db.items.forEach(x=>{x.dimension=area(x.dimension);if(x.fixedWeekly===true&&!x.schedule)x.schedule="weekly";if(x.repeat==="weekly"&&!x.schedule)x.schedule="weekly";if(x.schedule==="weekly"&&!Array.isArray(x.weekdays))x.weekdays=[1,2,3,4,5];});
+ db.journal.forEach(x=>x.dimension=area(x.dimension));
+}
+normalizeDatabase();
+await localVault.save(db);
+let selected= new Date();selected.setHours(0,0,0,0);let agendaDate=key(selected),calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1),observedToday=today();
+const save=()=>localVault.save(db);
 const occurrence=(x,k)=>x.completions?.[k]||{done:!!x.done&&x.date===k,note:""};
 function occursOn(x,d){const k=key(d);if(!fixed(x))return x.date===k;if(k<(x.date||"0000-01-01")||(x.endDate&&k>x.endDate))return false;return (Array.isArray(x.weekdays)?x.weekdays:[]).includes(d.getDay())}function forDate(d){return db.items.filter(x=>occursOn(x,d)).sort((a,b)=>(a.time||"").localeCompare(b.time||""))}
 const categoryColor=x=>({"Espiritual":"#7986CB","Matrimonial":"#E67C73","Profissional":"#039BE5","Cotidiano":"#33B679"}[area(x.dimension)]||"#9E9E9E");
@@ -113,11 +122,11 @@ function modal(x){
  const autoEmoji=()=>{$("eventEmoji").value=suggestEventEmoji($("eventTitle").value,$("edit").kind.value,$("edit").dimension.value)};
  $("eventTitle").addEventListener("input",autoEmoji);$("edit").kind.onchange=autoEmoji;$("edit").dimension.onchange=autoEmoji;
  $("close").onclick=()=>$("modal").innerHTML="";
- $("edit").onsubmit=e=>{e.preventDefault();const fd=new FormData(e.target),weekly=fd.get("schedule")==="weekly",weekdays=fd.getAll("weekdays").map(Number),v={title:fd.get("title").trim(),kind:fd.get("kind"),dimension:fd.get("dimension"),emoji:fd.get("emoji"),time:fd.get("time")||"",schedule:weekly?"weekly":"once",category:"extra",date:fd.get("date"),endDate:weekly?(fd.get("endDate")||""):"",weekdays:weekly?weekdays:[],completions:old.completions||{}};if(weekly&&!weekdays.length)return alert("Escolha ao menos um dia da semana para este compromisso fixo.");
- if(x)Object.assign(x,v);else db.items.push({id:uid(),...v});save();$("modal").innerHTML="";renderAgenda();renderEvolution()};
+ $("edit").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),weekly=fd.get("schedule")==="weekly",weekdays=fd.getAll("weekdays").map(Number),v={title:fd.get("title").trim(),kind:fd.get("kind"),dimension:fd.get("dimension"),emoji:fd.get("emoji"),time:fd.get("time")||"",schedule:weekly?"weekly":"once",category:"extra",date:fd.get("date"),endDate:weekly?(fd.get("endDate")||""):"",weekdays:weekly?weekdays:[],completions:old.completions||{}};if(weekly&&!weekdays.length)return alert("Escolha ao menos um dia da semana para este compromisso fixo.");
+ if(x)Object.assign(x,v);else db.items.push({id:uid(),...v});await save();$("modal").innerHTML="";renderAgenda();renderEvolution()};
 }
 function answer(x,k){const o=occurrence(x,k);$("modal").innerHTML='<div class="modalbg"><div class="modal"><div class="eyebrow">Confirmação</div><h2>'+esc(x.title)+'</h2><p class="muted">'+fmt(k)+' · '+esc(x.time||"Sem horário")+'</p><p>Você realizou este compromisso?</p><label>Observação (opcional)</label><textarea id="note" class="field" rows="3" placeholder="Como foi ou o que impediu?">'+esc(o.note||"")+'</textarea><div class="row"><button class="btn gold" id="done">Sim, concluído</button><button class="btn" id="notdone">Não concluído</button></div><button class="link" id="cancel">Voltar</button></div></div>';$("done").onclick=()=>saveAnswer(x,k,true);$("notdone").onclick=()=>saveAnswer(x,k,false);$("cancel").onclick=()=>$("modal").innerHTML=""}
-function saveAnswer(x,k,done){x.completions=x.completions||{};x.completions[k]={done,note:$("note").value.trim(),at:Date.now()};save();$("modal").innerHTML="";renderAgenda();renderEvolution()}
+async function saveAnswer(x,k,done){x.completions=x.completions||{};x.completions[k]={done,note:$("note").value.trim(),at:Date.now()};await save();$("modal").innerHTML="";renderAgenda();renderEvolution()}
 const journalQuestions={
 "Espiritual":[["scripture","Qual passagem bíblica leu ou estudou?"],["learning","O que compreendeu no contexto?"],["practice","Que obediência concreta vai praticar?"]],
 "Matrimonial":[["event","O que aconteceu entre vocês, sem acusações ou rótulos?"],["feeling","O que sentiu e do que precisava naquele momento?"],["responsibility","Qual parte da situação está sob sua responsabilidade?"],["repair","Qual conversa, atitude de cuidado ou reparação será seu próximo passo?"]],
@@ -326,6 +335,7 @@ async function sendAiQuestion(){
 $("aiOpen").onclick=()=>{show("intel");$("aiQuestion").focus()};
 const accountStatus=(message)=>{const el=$("accountStatus");if(el)el.textContent=message};
 const setAccountSession=(data)=>{
+ aiSession.accountDataKey?.fill(0);aiSession.accountDataKey=null;
  aiSession.token=data.token;sessionStorage.setItem("metonoia-session-token",data.token);
  sessionStorage.setItem("metonoia-user-id",data.userId||"");sessionStorage.setItem("metonoia-device-id",data.deviceId||"");
  $("accountLogout").hidden=false;accountStatus("Conta autenticada neste navegador. A sessão expira em até 30 dias.");
@@ -336,6 +346,145 @@ async function accountRequest(path,payload,extraHeaders={}){
  if(!response.ok)throw new Error(data.error||"Não foi possível autenticar a conta.");
  return data;
 }
+
+async function fastingRecordId(kind,localId){
+ const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(localId)));
+ const hex=Array.from(new Uint8Array(digest).slice(0,24),b=>b.toString(16).padStart(2,"0")).join("");
+ return kind+"-"+hex;
+}
+async function fastingRecordDigest(value){
+ const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify(value)));
+ return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
+function fastingWireDimension(value){
+ return ({SPIRITUAL:"DEVOTION",DEVOTIONAL:"DEVOTION",DEVOTION:"DEVOTION",MATRIMONIAL:"MATRIMONIAL",PROFESSIONAL:"PROFESSIONAL",INDIVIDUAL:"DAILY",ROUTINE:"DAILY",DAILY:"DAILY"})[String(value||"").toUpperCase()]||"DAILY";
+}
+function fastingDomainDimension(value){
+ const v=String(value||"").toUpperCase();
+ if(["SPIRITUAL","ESPIRITUAL","DEVOCIONAL","DEVOTION"].includes(v))return "SPIRITUAL";
+ if(["MATRIMONIAL","MATRIMONIO"].includes(v))return "MATRIMONIAL";
+ if(["PROFESSIONAL","PROFISSIONAL"].includes(v))return "PROFESSIONAL";
+ if(["INDIVIDUAL","PESSOAL"].includes(v))return "INDIVIDUAL";
+ if(["ROUTINE","ROTINA","DAILY","COTIDIANO"].includes(v))return "ROUTINE";
+ throw new Error("A dimensão do plano de jejum não é reconhecida: "+v);
+}
+function canonicalFastingPlan(value){
+ const plan={...value,dimension:fastingDomainDimension(value.dimension)};
+ if(!plan.id||!["FOOD","NON_FOOD"].includes(plan.type)||!Number.isInteger(Number(plan.durationDays))||Number(plan.durationDays)<=0||
+    !Number.isFinite(Number(plan.startAt))||Number(plan.startAt)<=0||!Number.isFinite(Number(plan.endAt))||Number(plan.endAt)<Number(plan.startAt)) {
+  throw new Error("Um plano de jejum local possui campos obrigatórios inválidos e não será sincronizado.");
+ }
+ return {
+  id:String(plan.id),dimension:plan.dimension,type:plan.type,
+  identifiedNeed:String(plan.identifiedNeed||""),recommendationReason:String(plan.recommendationReason||""),
+  purpose:String(plan.purpose||""),scriptureReferences:String(plan.scriptureReferences||""),
+  scriptureContext:String(plan.scriptureContext||""),preparation:String(plan.preparation||""),
+  dailyGuidance:String(plan.dailyGuidance||""),durationDays:Number(plan.durationDays),
+  startAt:Number(plan.startAt),endAt:Number(plan.endAt),foodAbstinence:!!plan.foodAbstinence,
+  status:String(plan.status||"PROPOSED"),createdAt:Number(plan.createdAt||Date.now()),
+  completedAt:plan.completedAt==null?null:Number(plan.completedAt)
+ };
+}
+function canonicalFastingEntry(value){
+ const entry={...value};
+ if(!entry.id||!entry.planId||!Number.isInteger(Number(entry.dayIndex))||Number(entry.dayIndex)<0||
+    !Number.isFinite(Number(entry.recordedAt))||Number(entry.recordedAt)<=0) {
+  throw new Error("Uma reflexão de jejum local possui campos obrigatórios inválidos e não será sincronizada.");
+ }
+ return {id:String(entry.id),planId:String(entry.planId),dayIndex:Number(entry.dayIndex),
+  reflection:String(entry.reflection||""),experience:String(entry.experience||""),recordedAt:Number(entry.recordedAt)};
+}
+async function syncFastingData(silent=false){
+ const userId=sessionStorage.getItem("metonoia-user-id")||"",deviceId=sessionStorage.getItem("metonoia-device-id")||"";
+ if(!aiSession.token||!aiSession.accountDataKey||!userId||!deviceId){
+  if(!silent)accountStatus("Entre na conta e desbloqueie a criptografia antes de sincronizar os planos de jejum.");
+  return false;
+ }
+ const cryptoApi=window.MEtanoiaAccountCrypto;
+ if(!cryptoApi?.encryptRecordV2||!cryptoApi?.decryptRecordV2){accountStatus("A criptografia compartilhada v2 não está disponível nesta versão.");return false;}
+ db.fastingPlans=db.fastingPlans||[];db.fastingEntries=db.fastingEntries||[];
+ const headers={Authorization:"Bearer "+aiSession.token},pending=[];
+ const addLocal=async(kind,item,dimension,recordType,purpose)=>{
+  if(!item?.id)return;
+  const recordId=await fastingRecordId(kind,item.id),metadata=localVault.getSyncMetadata(userId,recordId);
+  const digest=await fastingRecordDigest(item);
+  if(metadata?.state==="conflict")return;
+  if(metadata?.state==="synced"&&metadata.localDigest===digest)return;
+  const counter=await localVault.reserveCounter(userId,deviceId,purpose);
+  const ciphertext=await cryptoApi.encryptRecordV2(userId,deviceId,purpose,recordId,dimension,recordType,aiSession.accountDataKey,BigInt(counter),JSON.stringify(item));
+  pending.push({operationId:crypto.randomUUID(),recordId,dimension,recordType,operation:"upsert",payloadCiphertext:ciphertext,encryptionVersion:2,baseRevision:Number(metadata?.revision||0),clientUpdatedAt:Number(item.updatedAt||item.recordedAt||item.createdAt||Date.now()),sourceDeviceId:deviceId,purpose,deviceId,localDigest:digest});
+ };
+ for(const plan of db.fastingPlans){
+  const value=canonicalFastingPlan(plan);
+  await addLocal("fasting-plan",value,fastingWireDimension(value.dimension),"fasting_plan","fasting-plan");
+ }
+ for(const entry of db.fastingEntries){
+  const plan=db.fastingPlans.find(value=>value.id===entry.planId);
+  if(plan)await addLocal("fasting-entry",canonicalFastingEntry(entry),fastingWireDimension(plan.dimension),"fasting_daily_entry","fasting-entry");
+ }
+ let uploaded=0,conflicts=0,rejected=0;
+ for(let offset=0;offset<pending.length;offset+=50){
+  const batch=pending.slice(offset,offset+50);
+  const response=await fetch("/api/sync/push",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify({operations:batch})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Não foi possível enviar os registros criptografados.");
+  const outcomes=new Map((result.results||[]).map(item=>[item.operationId,item]));
+  for(const operation of batch){
+   const outcome=outcomes.get(operation.operationId);
+   if(outcome?.status==="applied"){
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:Number(outcome.revision||operation.baseRevision+1),state:"synced",localDigest:operation.localDigest,sourceDeviceId:deviceId,purpose:operation.purpose});uploaded++;
+   }else if(outcome?.status==="conflict"){
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:operation.baseRevision,state:"conflict",localDigest:operation.localDigest,remoteRevision:Number(outcome.currentRevision||0),purpose:operation.purpose});conflicts++;
+   }else{
+    await localVault.setSyncMetadata(userId,operation.recordId,{revision:operation.baseRevision,state:"rejected",localDigest:operation.localDigest,reason:String(outcome?.reason||"rejected"),purpose:operation.purpose});rejected++;
+   }
+  }
+ }
+ let imported=0,remoteConflicts=0;
+ const savedCursor=localVault.getSyncMetadata(userId,"__sync-cursor__");
+ let since=Number(savedCursor?.since||0),afterId=String(savedCursor?.afterId||"");
+ for(let page=0;page<20;page++){
+  const response=await fetch("/api/sync/pull?since="+since+"&afterId="+encodeURIComponent(afterId),{headers});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||"Não foi possível receber os registros sincronizados.");
+  const records=(result.records||[]).filter(record=>Number(record.encryption_version)===2&&["fasting_plan","fasting_daily_entry"].includes(record.record_type)).sort((a,b)=>a.record_type===b.record_type?Number(a.server_updated_at)-Number(b.server_updated_at):(a.record_type==="fasting_plan"?-1:1));
+  for(const record of records){
+   const kind=record.record_type==="fasting_plan"?"fasting-plan":"fasting-entry",purpose=record.record_type==="fasting_plan"?"fasting-plan":"fasting-entry";
+   if(record.purpose!==purpose||!record.source_device_id||!String(record.payload_ciphertext||"").startsWith("v2."))continue;
+   const metadata=localVault.getSyncMetadata(userId,record.record_id);
+   if(metadata?.state==="conflict"||metadata?.state==="rejected")continue;
+   if(metadata&&Number(metadata.revision||0)>=Number(record.revision||0))continue;
+   const collection=kind==="fasting-plan"?db.fastingPlans:db.fastingEntries;
+   let index=-1;
+   for(let i=0;i<collection.length;i++)if(await fastingRecordId(kind,collection[i].id)===record.record_id){index=i;break;}
+   if(index>=0){
+    const localDigest=await fastingRecordDigest(collection[index]);
+    if(!metadata||metadata.state!=="synced"||metadata.localDigest!==localDigest){
+     await localVault.setSyncMetadata(userId,record.record_id,{revision:Number(metadata?.revision||0),state:"conflict",localDigest,remoteRevision:Number(record.revision||0),purpose});remoteConflicts++;continue;
+    }
+   }
+   const plaintext=await cryptoApi.decryptRecordV2(userId,record.source_device_id,purpose,record.record_id,record.dimension,record.record_type,aiSession.accountDataKey,record.payload_ciphertext);
+   let value;try{value=JSON.parse(new TextDecoder().decode(plaintext))}finally{plaintext.fill(0)}
+   if(!value||!value.id||await fastingRecordId(kind,value.id)!==record.record_id)throw new Error("O registro recebido não corresponde ao identificador criptografado.");
+   if(index>=0)collection[index]=value;else collection.push(value);
+   await save();
+   await localVault.setSyncMetadata(userId,record.record_id,{revision:Number(record.revision||0),state:"synced",localDigest:await fastingRecordDigest(value),sourceDeviceId:record.source_device_id,purpose});imported++;
+  }
+  const lastRecord=result.records?.[result.records.length-1];
+  const nextCursor=result.nextCursor||(lastRecord?{since:lastRecord.server_updated_at,afterId:lastRecord.record_id}:null);
+  if(nextCursor){
+   since=Number(nextCursor.since||0);afterId=String(nextCursor.afterId||"");
+   await localVault.setSyncMetadata(userId,"__sync-cursor__",{since,afterId,state:"cursor"});
+  }
+  if(!result.hasMore)break;
+  if(!nextCursor)throw new Error("A API não forneceu cursor para continuar a sincronização.");
+  if(page===19)throw new Error("A sincronização excedeu o limite de páginas desta execução; tente novamente.");
+ }
+ accountStatus("Sincronização protegida concluída: "+uploaded+" enviados, "+imported+" recebidos, "+(conflicts+remoteConflicts)+" conflitos e "+rejected+" rejeitados.");
+ return {uploaded,imported,conflicts:conflicts+remoteConflicts,rejected};
+}
+window.MEtanoiaSyncFastingData=syncFastingData;
+
 async function unlockAccountCrypto(){
  const phrase=$("accountEncryptionPassphrase").value;
  if(!aiSession.token){accountStatus("Entre na conta antes de inicializar a criptografia.");return}
@@ -358,12 +507,18 @@ async function unlockAccountCrypto(){
   }
   $("accountEncryptionPassphrase").value="";
   accountStatus("Criptografia da conta desbloqueada neste navegador. A chave permanece somente na memória desta sessão.");
+  await syncFastingData(true);
  }catch(error){
   aiSession.accountDataKey=null;
   accountStatus(error.message||"Não foi possível desbloquear a criptografia.");
  }finally{$("accountUnlock").disabled=false}
 }
 $("accountUnlock").onclick=unlockAccountCrypto;
+$("accountSyncFasting").onclick=async()=>{
+ $("accountSyncFasting").disabled=true;
+ try{await syncFastingData(false)}catch(error){accountStatus(error.message||"Falha na sincronização protegida. Os registros locais foram preservados.")}
+ finally{$("accountSyncFasting").disabled=false}
+};
 $("accountLogin").onclick=async()=>{
  const email=$("accountEmail").value.trim(),password=$("accountPassword").value;
  if(!email||!password){accountStatus("Informe e-mail e senha.");return}
@@ -382,7 +537,7 @@ $("accountRegister").onclick=async()=>{
 };
 $("accountLogout").onclick=async()=>{
  try{if(aiSession.token)await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+aiSession.token}})}catch{}
- aiSession.token="";aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
+ aiSession.token="";aiSession.accountDataKey?.fill(0);aiSession.accountDataKey=null;sessionStorage.removeItem("metonoia-session-token");sessionStorage.removeItem("metonoia-user-id");sessionStorage.removeItem("metonoia-device-id");
  $("accountLogout").hidden=true;accountStatus("Sessão encerrada neste navegador.");
 };
 if(aiSession.token){$("accountLogout").hidden=false;accountStatus("Sessão MEtanoia recuperada nesta aba do navegador.")}
@@ -393,7 +548,7 @@ $("aiClear").onclick=()=>{aiSession.history=[];renderAiConversation();$("aiStatu
 function show(id){["word","agenda","diary","intel","evolution","ingrid"].forEach(n=>$(n).classList.toggle("hidden",n!==id));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));renderHomeReminder();if(id==="agenda")renderAgenda();if(id==="ingrid")renderIngrid();if(id==="diary")renderDiary();if(id==="intel")renderIntel();if(id==="evolution")renderEvolution()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("addCommitment").onclick=()=>modal(null);$("agendaDate").value=agendaDate;$("agendaDate").onchange=()=>{agendaDate=$("agendaDate").value||today();const d=parse(agendaDate);calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);renderAgenda()};$("prevMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$("nextMonth").onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};setInterval(()=>{checkReminderClock();renderHomeReminder();const now=today();if(now!==observedToday){if(agendaDate===observedToday){agendaDate=now;calendarMonth=new Date(parse(now).getFullYear(),parse(now).getMonth(),1);renderAgenda()}observedToday=now;renderWord();$("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}},15000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkReminderClock()});
-document.body.addEventListener("click",e=>{const areaAction=e.target.closest("[data-open-section]");if(areaAction){const target=areaAction.dataset.openSection;show(target);if(target==="diary"){$("jd").value=areaAction.dataset.dimension;renderJournalPrompts();}return;}const calendarDay=e.target.closest("[data-calendar-date]");if(calendarDay){agendaDate=calendarDay.dataset.calendarDate;renderAgenda();return}const diary=e.target.closest("[data-open-diary]");if(diary){show("diary")}const ans=e.target.closest("[data-answer]"),ed=e.target.closest("[data-edit]"),del=e.target.closest("[data-del]");if(ans){const x=db.items.find(z=>z.id===ans.dataset.answer);if(x)answer(x,ans.dataset.date)}else if(ed){const x=db.items.find(z=>z.id===ed.dataset.edit);if(x)modal(x)}else if(del){const id=del.dataset.del;if(confirm("Excluir este compromisso?")){db.items=db.items.filter(x=>x.id!==id);save();renderAgenda();renderEvolution()}}});
+document.body.addEventListener("click",async e=>{const areaAction=e.target.closest("[data-open-section]");if(areaAction){const target=areaAction.dataset.openSection;show(target);if(target==="diary"){$("jd").value=areaAction.dataset.dimension;renderJournalPrompts();}return;}const calendarDay=e.target.closest("[data-calendar-date]");if(calendarDay){agendaDate=calendarDay.dataset.calendarDate;renderAgenda();return}const diary=e.target.closest("[data-open-diary]");if(diary){show("diary")}const ans=e.target.closest("[data-answer]"),ed=e.target.closest("[data-edit]"),del=e.target.closest("[data-del]");if(ans){const x=db.items.find(z=>z.id===ans.dataset.answer);if(x)answer(x,ans.dataset.date)}else if(ed){const x=db.items.find(z=>z.id===ed.dataset.edit);if(x)modal(x)}else if(del){const id=del.dataset.del;if(confirm("Excluir este compromisso?")){db.items=db.items.filter(x=>x.id!==id);await save();renderAgenda();renderEvolution()}}});
 function confessionAdvice(raw){
  const t=normalizeText(raw);
  if(/irmao|irma|ofendi|ofensa|mago|feri|machuquei|injusti/.test(t))return {title:"Quando você pecou contra alguém",ref:"Mateus 5:23–24; Mateus 18:15; Efésios 4:25–32",text:"Jesus ensina que a reconciliação com o irmão não deve ser tratada como detalhe. Efésios chama a abandonar a mentira, a amargura e palavras que destroem, buscando palavras que edifiquem. O texto não manda esconder o dano: chama à verdade e à responsabilidade.",step:"Se você prejudicou alguém, reconheça com clareza o que fez, sem justificar nem transferir a culpa. Procure seu irmão em particular quando for seguro e apropriado, peça perdão e pergunte como pode reparar o dano. Se a situação for complexa, procure seu pastor para acompanhamento."};
@@ -410,9 +565,42 @@ function runConfession(){
  $("confessionResult").scrollIntoView({behavior:"smooth",block:"start"});
  $("finishConfession").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML='<div class="empty">Relato temporário encerrado. O texto digitado não foi salvo no diário nem no histórico do aplicativo.</div>';};
 }
-$("jd").onchange=renderJournalPrompts;$("confessionRun").onclick=runConfession;$("confessionClear").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML="";};$("saveJ").onclick=()=>{const body=$("jb").value.trim(),dimension=$("jd").value,checkin={};document.querySelectorAll("[data-jprompt]").forEach(el=>{if(el.value.trim())checkin[el.dataset.jprompt]=el.value.trim()});if(!body&&!Object.keys(checkin).length)return alert("Registre ao menos uma informação.");db.journal.push({id:uid(),title:$("jt").value.trim(),body,dimension,checkin,at:Date.now()});save();$("jt").value="";$("jb").value="";renderDiary();renderIntel();renderEvolution();alert("Registro salvo neste aparelho. A análise considerará somente o que você informou.")};
-$("saveR").onclick=()=>{const body=$("rb").value.trim();if(!body)return alert("Escreva sua revisão.");db.reviews.push({id:uid(),body,at:Date.now()});save();$("rb").value="";renderEvolution()};
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptInstall=e;$("install").hidden=false});$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
-if("serviceWorker"in navigator)addEventListener("load",async()=>{try{const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});await registration.update();}catch(error){console.warn("Não foi possível verificar atualização do MEtanoia",error);}});
+$("jd").onchange=renderJournalPrompts;$("confessionRun").onclick=runConfession;$("confessionClear").onclick=()=>{$("confessionText").value="";$("confessionResult").innerHTML="";};$("saveJ").onclick=async()=>{const body=$("jb").value.trim(),dimension=$("jd").value,checkin={};document.querySelectorAll("[data-jprompt]").forEach(el=>{if(el.value.trim())checkin[el.dataset.jprompt]=el.value.trim()});if(!body&&!Object.keys(checkin).length)return alert("Registre ao menos uma informação.");db.journal.push({id:uid(),title:$("jt").value.trim(),body,dimension,checkin,at:Date.now()});await save();$("jt").value="";$("jb").value="";renderDiary();renderIntel();renderEvolution();alert("Registro salvo neste aparelho. A análise considerará somente o que você informou.")};
+$("saveR").onclick=async()=>{const body=$("rb").value.trim();if(!body)return alert("Escreva sua revisão.");db.reviews.push({id:uid(),body,at:Date.now()});await save();$("rb").value="";renderEvolution()};
+$("exportLocalBackup").onclick=async()=>{
+ const status=$("localBackupStatus"),phrase=await localVault.requestPassphrase("export");
+ if(phrase===null)return;
+ try{
+  const content=await localVault.exportBackup(phrase,db);
+  const blob=new Blob([content],{type:"application/json"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="MEtanoia-backup-"+today()+".metonoia.json";
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  status.textContent="Cópia protegida gerada. Guarde o arquivo e a frase em locais separados.";
+ }catch(error){status.textContent=error.message||"Não foi possível gerar a cópia protegida."}
+};
+$("restoreLocalBackup").onclick=()=>$("localBackupFile").click();
+$("localBackupFile").onchange=async()=>{
+ const file=$("localBackupFile").files?.[0];if(!file)return;
+ if(!confirm("Restaurar esta cópia substituirá a agenda, o diário e as revisões atuais. Uma cópia cifrada do estado atual será mantida para recuperação. Continuar?")){$("localBackupFile").value="";return}
+ const status=$("localBackupStatus"),phrase=await localVault.requestPassphrase("restore");
+ if(phrase===null){$("localBackupFile").value="";return}
+ try{
+  db=await localVault.restoreBackup(await file.text(),phrase);
+  normalizeDatabase();await save();
+  renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();
+  status.textContent="Cópia autenticada e restaurada. O estado anterior foi mantido como recuperação cifrada.";
+ }catch(error){status.textContent=error.message||"A cópia não pôde ser autenticada; os dados atuais foram preservados."}
+ finally{$("localBackupFile").value=""}
+};
+$("install").onclick=async()=>{if(promptInstall){promptInstall.prompt();await promptInstall.userChoice;promptInstall=null;$("install").hidden=true}};
 $("todayDate").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});renderWord();renderDiary();renderIntel();renderEvolution();renderAgenda();renderHomeReminder();
-})();
+})().catch(error=>{
+ const overlay=document.createElement("div"),panel=document.createElement("div");
+ overlay.className="modalbg";overlay.style.zIndex="10000";panel.className="modal";
+ const eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent="MEtonoia · Proteção dos dados";
+ const heading=document.createElement("h2");heading.textContent="Não foi possível abrir os registros";
+ const message=document.createElement("p");message.className="muted";message.textContent=error?.message||"O armazenamento protegido não pôde ser aberto. Nenhuma cópia antiga foi apagada.";
+ const retry=document.createElement("button");retry.className="btn gold";retry.textContent="Tentar novamente";retry.onclick=()=>location.reload();
+ panel.append(eyebrow,heading,message,retry);overlay.append(panel);document.body.append(overlay);
+});

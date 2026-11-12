@@ -335,6 +335,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
   <div class="row" style="flex-wrap:wrap">
    <button id="accountLogin" class="btn">Entrar</button>
    <button id="accountUnlock" class="btn">Inicializar / desbloquear criptografia</button>
+   <button id="accountSyncFasting" class="btn">Sincronizar planos e reflexões</button>
    <button id="accountRegister" class="btn">Criar conta</button>
    <button id="accountLogout" class="btn" hidden>Sair</button>
   </div>
@@ -348,7 +349,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-brigh
  <div class="row"><button id="aiSend" class="btn gold">Enviar à IA</button><button id="aiClear" class="btn">Limpar conversa</button></div>
  <div id="aiStatus" class="muted" role="status">Entre com sua conta MEtanoia para autorizar a sessão.</div>
 </div></section>
-<section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div></section>
+<section id="evolution" class="hidden"><div class="panel"><div class="eyebrow">Acompanhamento</div><h2>Evolução por área</h2><p class="muted">Evidências dos registros e confirmações. Quantidade não mede maturidade.</p><div id="evolutionAreas"></div></div><div class="panel"><h2>Revisão pessoal</h2><label>O que percebi neste período?</label><textarea id="rb" class="field" rows="4"></textarea><button id="saveR" class="btn gold">Salvar revisão</button><div id="reviewList"></div></div><div class="panel"><div class="eyebrow">Segurança dos registros</div><h2>Proteção e cópia de segurança</h2><p class="muted">Diário, agenda e revisões ficam cifrados no armazenamento local. Você pode criar uma cópia protegida por uma frase exclusiva e restaurá-la em outro aparelho.</p><div class="row" style="flex-wrap:wrap"><button id="exportLocalBackup" class="btn gold">Exportar cópia protegida</button><button id="restoreLocalBackup" class="btn">Restaurar cópia</button><input id="localBackupFile" type="file" accept="application/json,.json" hidden></div><div id="localBackupStatus" class="muted" role="status"></div></div></section>
 <p class="muted" style="text-align:center;padding:10px">MEtanoia · A transformação é uma construção diária.</p></main>
 <nav class="tabs"><button class="tab active" data-tab="word"><b>✧</b>Jornada</button><button class="tab" data-tab="agenda"><b>▦</b>Agenda</button><button class="tab" data-tab="diary"><b>✎</b>Diário</button><button class="tab" data-tab="intel"><b>⌕</b>Inteligência</button><button class="tab" data-tab="evolution"><b>◷</b>Evolução</button></nav>
-<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/app.js?v=20261104-39"></script></body></html>
+<div id="modal"></div><script src="/crypto.js?v=20261105-1"></script><script src="/local-vault.js?v=20261111-1"></script><script src="/app.js?v=20261111-1"></script></body></html>

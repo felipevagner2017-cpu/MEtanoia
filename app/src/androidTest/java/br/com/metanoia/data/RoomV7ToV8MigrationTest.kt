@@ -36,7 +36,7 @@ class RoomV7ToV8MigrationTest {
         } finally { legacy.close() }
 
         val db = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9)
+            .addMigrations(MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9, MetanoiaDatabase.MIGRATION_9_10)
             .allowMainThreadQueries()
             .build()
         try {

@@ -2,6 +2,7 @@ package br.com.metanoia.sync
 
 import br.com.metanoia.data.SyncOutboxDao
 import br.com.metanoia.data.SyncOutboxOperation
+import br.com.metanoia.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -11,8 +12,9 @@ import java.net.URLEncoder
 
 data class PulledSyncRecord(
     val recordId: String, val dimension: String, val recordType: String,
-    val payloadCiphertext: String, val encryptionVersion: Int, val revision: Int,
-    val clientUpdatedAt: Long, val serverUpdatedAt: Long, val deletedAt: Long?
+    val payloadCiphertext: String, val encryptionVersion: Int, val revision: Long,
+    val clientUpdatedAt: Long, val serverUpdatedAt: Long, val deletedAt: Long?,
+    val sourceDeviceId: String, val purpose: String
 )
 
 data class SyncCycleResult(
@@ -77,7 +79,7 @@ class SyncApiClient(
         } finally { connection.disconnect() }
     }
 
-    companion object { const val API_BASE_URL = "https://metanoia.restaura-lar.workers.dev" }
+    companion object { val API_BASE_URL: String = BuildConfig.METANOIA_API_BASE_URL }
 }
 
 /** Outbox drain scoped to the authenticated account returned by the server. */
@@ -129,15 +131,22 @@ class SyncCoordinator(
                     recordType = item.optString("record_type"),
                     payloadCiphertext = item.optString("payload_ciphertext"),
                     encryptionVersion = item.optInt("encryption_version", 1),
-                    revision = item.optInt("revision"),
+                    revision = item.optLong("revision"),
                     clientUpdatedAt = item.optLong("client_updated_at"),
                     serverUpdatedAt = item.optLong("server_updated_at"),
-                    deletedAt = if (item.isNull("deleted_at")) null else item.optLong("deleted_at")
+                    deletedAt = if (item.isNull("deleted_at")) null else item.optLong("deleted_at"),
+                    sourceDeviceId = item.optString("source_device_id"),
+                    purpose = item.optString("purpose", "record")
                 ))
             }
         }
         val cursorObject = pull.optJSONObject("nextCursor")
-        val cursor = if (cursorObject == null) null else cursorObject.optLong("since").toString() + ":" + cursorObject.optString("afterId")
+        val lastRecord = records.lastOrNull()
+        val cursor = if (cursorObject != null) {
+            cursorObject.optLong("since").toString() + ":" + cursorObject.optString("afterId")
+        } else {
+            lastRecord?.let { it.serverUpdatedAt.toString() + ":" + it.recordId }
+        }
         return SyncCycleResult(uploaded, conflicts, rejected, records, pull.optBoolean("hasMore"), cursor)
     }
 }

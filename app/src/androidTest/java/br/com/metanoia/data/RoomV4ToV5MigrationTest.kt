@@ -43,7 +43,7 @@ class RoomV4ToV5MigrationTest {
         }
 
         val migrated = Room.databaseBuilder(context, MetanoiaDatabase::class.java, name)
-            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9)
+            .addMigrations(MetanoiaDatabase.MIGRATION_4_5, MetanoiaDatabase.MIGRATION_5_6, MetanoiaDatabase.MIGRATION_6_7, MetanoiaDatabase.MIGRATION_7_8, MetanoiaDatabase.MIGRATION_8_9, MetanoiaDatabase.MIGRATION_9_10)
             .build()
         try {
             assertEquals("Compromisso legado", migrated.agendaDao().findById(41L)?.title)
@@ -55,7 +55,7 @@ class RoomV4ToV5MigrationTest {
             quarantinedV4.use { c -> assertTrue(c.moveToFirst()); assertEquals("v1.ciphertext", c.getString(0)); assertEquals("quarantined", c.getString(1)) }
 
             val db = migrated.openHelper.readableDatabase
-            assertEquals(9, db.version)
+            assertEquals(10, db.version)
             val expectedTables = setOf(
                 "agenda_items", "journal_entries", "review_entries", "confession_entries",
                 "daily_analysis", "sync_outbox", "sync_nonce_counters", "sync_record_metadata", "sync_cursors", "sync_remote_records", "android_metadata", "room_master_table"

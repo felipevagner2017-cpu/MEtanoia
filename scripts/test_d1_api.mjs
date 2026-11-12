@@ -118,6 +118,47 @@ try {
   const pulled = await request("/api/sync/pull?since=0", "GET", undefined, session.token);
   if (pulled.status !== 200 || pulled.data.records?.length !== 1 || pulled.data.records[0].record_id !== operation.recordId)
     throw new Error("Sync pull failed: " + JSON.stringify(pulled));
+  if (pulled.data.records[0].source_device_id !== session.deviceId || pulled.data.records[0].purpose !== "record")
+    throw new Error("The Worker did not preserve the authenticated source-device context.");
+
+  const fastingOperation = {
+    operationId: "operation-fasting-0001",
+    recordId: "fasting-plan-" + "a".repeat(48),
+    operation: "upsert",
+    dimension: "DEVOTION",
+    recordType: "fasting_plan",
+    payloadCiphertext: "v2." + Buffer.from("authenticated-ciphertext-only").toString("base64"),
+    encryptionVersion: 2,
+    baseRevision: 0,
+    clientUpdatedAt: Date.now(),
+    sourceDeviceId: session.deviceId,
+    purpose: "fasting-plan",
+    deviceId: session.deviceId
+  };
+  const fastingPush = await request("/api/sync/push", "POST", { operations: [fastingOperation] }, session.token);
+  if (fastingPush.status !== 200 || fastingPush.data.results?.[0]?.status !== "applied")
+    throw new Error("Encrypted v2 fasting push failed: " + JSON.stringify(fastingPush));
+  const fastingPull = await request("/api/sync/pull?since=0", "GET", undefined, session.token);
+  const fastingRecord = fastingPull.data.records?.find(record => record.record_id === fastingOperation.recordId);
+  if (!fastingRecord || fastingRecord.encryption_version !== 2 ||
+      fastingRecord.source_device_id !== session.deviceId || fastingRecord.purpose !== "fasting-plan" ||
+      fastingRecord.payload_ciphertext !== fastingOperation.payloadCiphertext) {
+    throw new Error("D1 did not round-trip v2 ciphertext and authenticated context: " + JSON.stringify(fastingRecord));
+  }
+  if (fastingRecord.server_updated_at <= pulled.data.records[0].server_updated_at)
+    throw new Error("Per-account server cursor did not advance monotonically.");
+  if (JSON.stringify(fastingRecord).includes("PRIVATE_FASTING_SENTINEL"))
+    throw new Error("Plaintext fasting content reached D1.");
+
+  const spoofedContext = {
+    ...fastingOperation,
+    operationId: "operation-fasting-spoof",
+    recordId: "fasting-plan-" + "b".repeat(48),
+    sourceDeviceId: "another-device-id"
+  };
+  const spoofed = await request("/api/sync/push", "POST", { operations: [spoofedContext] }, session.token);
+  if (spoofed.status !== 200 || spoofed.data.results?.[0]?.status !== "rejected")
+    throw new Error("The Worker accepted a caller-spoofed source device.");
 
   const backup = await request("/api/backups/create", "POST", {
     deviceId: session.deviceId, payloadCiphertext: "encrypted-backup-test", recordCount: 1, formatVersion: 1

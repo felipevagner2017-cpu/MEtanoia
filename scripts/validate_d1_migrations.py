@@ -22,6 +22,7 @@ tables = {
 required = {
     "users", "sessions", "devices", "records", "sync_operations",
     "consents", "ai_conversations", "ai_messages", "ai_usage_daily", "backups", "account_key_envelopes",
+    "sync_record_context", "sync_account_clocks",
 }
 missing = sorted(required - tables)
 if missing:
@@ -69,6 +70,11 @@ db.execute(
     "INSERT INTO records (user_id,record_id,dimension,record_type,payload_ciphertext,client_updated_at,server_updated_at) "
     "VALUES ('u1','r1','DEVOTION','journal','ciphertext',1,1)"
 )
+db.execute(
+    "INSERT INTO sync_record_context(user_id,record_id,source_device_id,purpose) VALUES ('u1','r1','d1','record')"
+)
+if db.execute("SELECT source_device_id,purpose FROM sync_record_context WHERE user_id='u1' AND record_id='r1'").fetchone() != ("d1","record"):
+    raise SystemExit("Authenticated record crypto context is not bound to the source device")
 # Validate the exact atomic compare-and-swap pattern used by /api/sync/push.
 def apply_sync(operation_id: str, record_id: str, base_revision: int, next_revision: int, now: int):
     write = db.execute(

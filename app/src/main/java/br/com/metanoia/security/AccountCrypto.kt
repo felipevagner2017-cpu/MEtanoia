@@ -59,6 +59,121 @@ class AccountCrypto(
         cipher.updateAAD(recordAad(userId, recordId, dimension, recordType))
         return cipher.doFinal(all.copyOfRange(12, all.size))
     }
+
+    fun encryptRecordV2(
+        accountId: String, sourceDeviceId: String, purpose: String, recordId: String,
+        dimension: String, recordType: String, dataKey: ByteArray, counter: Long, plaintext: ByteArray
+    ): String {
+        require(accountId.isNotBlank() && sourceDeviceId.isNotBlank() && purpose.isNotBlank())
+        require(recordId.isNotBlank() && dimension.isNotBlank() && recordType.isNotBlank())
+        require(dataKey.size == 32 && counter >= 0L && plaintext.isNotEmpty())
+        val counterBytes = ByteBuffer.allocate(8).putLong(counter).array()
+        val material = deriveSyncMaterial(dataKey, accountId, sourceDeviceId, purpose)
+        val aesKey = material.copyOfRange(0, 32)
+        val nonce = ByteArray(12).also {
+            material.copyInto(it, 0, 32, 36)
+            counterBytes.copyInto(it, 4)
+        }
+        try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), GCMParameterSpec(128, nonce))
+            cipher.updateAAD(syncRecordAad(accountId, sourceDeviceId, purpose, recordId, dimension, recordType, counterBytes))
+            return "v2." + Base64.encodeToString(counterBytes + cipher.doFinal(plaintext), Base64.NO_WRAP)
+        } finally {
+            material.fill(0); aesKey.fill(0); nonce.fill(0); counterBytes.fill(0)
+        }
+    }
+
+    fun decryptRecordV2(
+        accountId: String, sourceDeviceId: String, purpose: String, recordId: String,
+        dimension: String, recordType: String, dataKey: ByteArray, value: String
+    ): ByteArray {
+        require(accountId.isNotBlank() && sourceDeviceId.isNotBlank() && purpose.isNotBlank())
+        require(recordId.isNotBlank() && dimension.isNotBlank() && recordType.isNotBlank())
+        require(dataKey.size == 32 && value.startsWith("v2."))
+        val packed = Base64.decode(value.removePrefix("v2."), Base64.NO_WRAP)
+        require(packed.size > 24) { "Payload v2 inválido." }
+        val counterBytes = packed.copyOfRange(0, 8)
+        require(ByteBuffer.wrap(counterBytes).long >= 0L) { "Contador v2 fora do intervalo suportado." }
+        val material = deriveSyncMaterial(dataKey, accountId, sourceDeviceId, purpose)
+        val aesKey = material.copyOfRange(0, 32)
+        val nonce = ByteArray(12).also {
+            material.copyInto(it, 0, 32, 36)
+            counterBytes.copyInto(it, 4)
+        }
+        try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(aesKey, "AES"), GCMParameterSpec(128, nonce))
+            cipher.updateAAD(syncRecordAad(accountId, sourceDeviceId, purpose, recordId, dimension, recordType, counterBytes))
+            return cipher.doFinal(packed.copyOfRange(8, packed.size))
+        } finally {
+            material.fill(0); aesKey.fill(0); nonce.fill(0); counterBytes.fill(0)
+        }
+    }
+
+    private fun deriveSyncMaterial(dataKey: ByteArray, accountId: String, sourceDeviceId: String, purpose: String): ByteArray {
+        require(dataKey.size == 32)
+        val info = encodeLengthPrefixed(
+            "metonoia-sync-record-v2".toByteArray(Charsets.UTF_8),
+            accountId.toByteArray(Charsets.UTF_8),
+            sourceDeviceId.toByteArray(Charsets.UTF_8),
+            purpose.toByteArray(Charsets.UTF_8)
+        )
+        return hkdfSha256(dataKey, "metonoia-sync-v2-hkdf-salt".toByteArray(Charsets.UTF_8), info, 36)
+            .also { info.fill(0) }
+    }
+
+    private fun syncRecordAad(
+        accountId: String, sourceDeviceId: String, purpose: String, recordId: String,
+        dimension: String, recordType: String, counterBytes: ByteArray
+    ): ByteArray = encodeLengthPrefixed(
+        "metonoia-sync-record-v2".toByteArray(Charsets.UTF_8),
+        accountId.toByteArray(Charsets.UTF_8),
+        sourceDeviceId.toByteArray(Charsets.UTF_8),
+        purpose.toByteArray(Charsets.UTF_8),
+        recordId.toByteArray(Charsets.UTF_8),
+        dimension.toByteArray(Charsets.UTF_8),
+        recordType.toByteArray(Charsets.UTF_8),
+        counterBytes
+    )
+
+    private fun encodeLengthPrefixed(vararg fields: ByteArray): ByteArray =
+        ByteBuffer.allocate(fields.sumOf { 4 + it.size }).apply {
+            fields.forEach { field -> putInt(field.size); put(field) }
+        }.array()
+
+    /** RFC 5869 HKDF-SHA-256. */
+    private fun hkdfSha256(ikm: ByteArray, salt: ByteArray, info: ByteArray, length: Int): ByteArray {
+        require(length in 1..(255 * 32))
+        val extract = Mac.getInstance("HmacSHA256")
+        extract.init(SecretKeySpec(salt, "HmacSHA256"))
+        val prk = extract.doFinal(ikm)
+        var previous = ByteArray(0)
+        try {
+            val output = ByteArray(length)
+            var offset = 0
+            var blockIndex = 1
+            while (offset < length) {
+                val expand = Mac.getInstance("HmacSHA256")
+                expand.init(SecretKeySpec(prk, "HmacSHA256"))
+                expand.update(previous)
+                expand.update(info)
+                expand.update(blockIndex.toByte())
+                val block = expand.doFinal()
+                previous.fill(0)
+                previous = block
+                val count = minOf(block.size, length - offset)
+                block.copyInto(output, offset, 0, count)
+                offset += count
+                blockIndex++
+            }
+            return output
+        } finally {
+            prk.fill(0)
+            previous.fill(0)
+        }
+    }
+
     private fun derive(passphrase: CharArray, salt: ByteArray, rounds: Int): SecretKeySpec {
         // Explicit UTF-8 PBKDF2 avoids provider-specific PBEKeySpec character conversion
         // and exactly matches Web Crypto's TextEncoder + PBKDF2 contract.

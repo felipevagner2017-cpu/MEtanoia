@@ -33,6 +33,10 @@ await assert.rejects(() => api.openEnvelope("interop-user-01","wrong encryption 
 await assert.rejects(() => api.decryptRecord("another-account","record-interop-1","DEVOTION","journal",androidKey,androidRecord));
 await assert.rejects(() => api.decryptRecord("interop-user-01","record-other","DEVOTION","journal",androidKey,androidRecord));
 console.log("PASS: fixed Android→PWA and PWA→Android AES-256-GCM/PBKDF2 vectors; account and record AAD isolation.");
+const largePlaintext = "sensitive-record-".repeat(70000);
+const largeCiphertext = await api.encryptRecord("large-test-user","large-record","LOCAL","journal",androidKey,largePlaintext);
+assert.equal(new TextDecoder().decode(await api.decryptRecord("large-test-user","large-record","LOCAL","journal",androidKey,largeCiphertext)),largePlaintext);
+console.log("PASS: 1.1 MB encrypted record round-trip without base64 stack overflow.");
 
 const v2Dek = Uint8Array.from({length:32},(_,i)=>i);
 const v2Plain = "Conteúdo compartilhado Android/PWA — vetor v2";

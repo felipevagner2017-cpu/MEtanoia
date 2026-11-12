@@ -2,6 +2,9 @@ name: Cloudflare read-only audit
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/intelligent-agenda-fasting-voice]
+    paths: ["scripts/cloudflare_audit.py", ".github/workflows/cloudflare-audit.yml", ".github/workflows/deploy-cloudflare.yml", "wrangler.jsonc", "wrangler.test.jsonc", "worker/**"]
 
 permissions:
   contents: read

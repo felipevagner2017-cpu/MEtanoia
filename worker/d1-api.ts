@@ -266,7 +266,7 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
     if (url.pathname === "/api/sync/pull" && request.method === "GET") {
       const since = Math.max(0, Number(url.searchParams.get("since") || 0));
       const afterId = String(url.searchParams.get("afterId") || "");
-      const result = await db.prepare("SELECT record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at FROM records WHERE user_id=? AND (server_updated_at>? OR (server_updated_at=? AND record_id>?)) ORDER BY server_updated_at,record_id LIMIT 501")
+      const result = await db.prepare("SELECT r.record_id,r.dimension,r.record_type,r.payload_ciphertext,r.encryption_version,r.revision,r.client_updated_at,r.server_updated_at,r.deleted_at,c.source_device_id,c.purpose FROM records r LEFT JOIN sync_record_context c ON c.user_id=r.user_id AND c.record_id=r.record_id WHERE r.user_id=? AND (r.server_updated_at>? OR (r.server_updated_at=? AND r.record_id>?)) ORDER BY r.server_updated_at,r.record_id LIMIT 501")
         .bind(session.user_id,since,since,afterId).all();
       const records = result.results.slice(0,500);
       const last = records[records.length - 1] as {server_updated_at:number;record_id:string} | undefined;
@@ -288,31 +288,54 @@ export async function handleD1Api(request: Request, env: D1Env, url: URL, origin
         const payload = String(op?.payloadCiphertext || "");
         const baseRevision = Math.max(0, Number(op?.baseRevision || 0));
         const deviceId = String(op?.deviceId || "");
+        const sourceDeviceId = String(op?.sourceDeviceId || deviceId);
+        const purpose = String(op?.purpose || "record").slice(0, 80);
+        const encryptionVersion = Number(op?.encryptionVersion || 1);
+        const recordType = operation === "delete" ? "tombstone" : String(op?.recordType || "entry").slice(0, 80);
         if (!/^[\w-]{8,100}$/.test(operationId) || !/^[\w-]{8,100}$/.test(recordId) || !operation ||
             !["DEVOTION","MATRIMONIAL","PROFESSIONAL","DAILY"].includes(dimension) ||
-            !deviceId || (operation === "upsert" && (!payload || payload.length > 50000))) {
-          results.push({ operationId, status: "rejected", reason: "invalid_operation" }); continue;
+            !deviceId || sourceDeviceId !== deviceId || !purpose ||
+            !Number.isSafeInteger(baseRevision) || baseRevision < 0 ||
+            !Number.isInteger(encryptionVersion) || ![1,2].includes(encryptionVersion) ||
+            (operation === "upsert" && (!payload || payload.length > 50000)) ||
+            (encryptionVersion === 2 && (operation !== "upsert" || !payload.startsWith("v2."))) ||
+            (encryptionVersion === 1 && payload.startsWith("v2.")) ||
+            (encryptionVersion === 2 && purpose === "fasting-plan" && recordType !== "fasting_plan") ||
+            (encryptionVersion === 2 && purpose === "fasting-entry" && recordType !== "fasting_daily_entry")) {
+          results.push({ operationId, status: "rejected", reason: "invalid_operation_or_crypto_context" }); continue;
         }
         const device = await db.prepare("SELECT id FROM devices WHERE id=? AND user_id=? AND revoked_at IS NULL").bind(deviceId,session.user_id).first();
-        if (!device || deviceId !== session.device_id) { results.push({ operationId, status: "rejected", reason: "device_revoked_or_mismatched" }); continue; }
+        if (!device || deviceId !== session.device_id || sourceDeviceId !== session.device_id) { results.push({ operationId, status: "rejected", reason: "device_revoked_or_mismatched" }); continue; }
         const previous = await db.prepare("SELECT status,result_revision FROM sync_operations WHERE user_id=? AND operation_id=?")
           .bind(session.user_id,operationId).first<{status:string;result_revision:number|null}>();
         if (previous) { results.push({ operationId, status: previous.status, revision: previous.result_revision, duplicate: true }); continue; }
-        const nextRevision = baseRevision + 1, now = Date.now();
-        const recordType = operation === "delete" ? "tombstone" : String(op.recordType || "entry").slice(0,80);
+        const nextRevision = baseRevision + 1;
+        // Allocate a strictly increasing per-account server cursor. This prevents
+        // same-millisecond writes from being skipped by (server_updated_at, record_id).
+        const clock = await db.prepare(
+          "INSERT INTO sync_account_clocks(user_id,last_server_updated_at) VALUES(?,?) " +
+          "ON CONFLICT(user_id) DO UPDATE SET last_server_updated_at=MAX(sync_account_clocks.last_server_updated_at+1,excluded.last_server_updated_at) " +
+          "RETURNING last_server_updated_at"
+        ).bind(session.user_id, Date.now()).first<{last_server_updated_at:number}>();
+        const now = Number(clock?.last_server_updated_at || Date.now());
         const storedPayload = operation === "delete" ? "" : payload;
         const storedClientTime = operation === "delete" ? now : Number(op.clientUpdatedAt || now);
         const write = db.prepare(
           "INSERT INTO records(user_id,record_id,dimension,record_type,payload_ciphertext,encryption_version,revision,client_updated_at,server_updated_at,deleted_at) " +
-          "VALUES(?,?,?,?,?,1,?,?,?,?) " +
+          "VALUES(?,?,?,?,?,?,?,?,?,?) " +
           "ON CONFLICT(user_id,record_id) DO UPDATE SET dimension=excluded.dimension,record_type=excluded.record_type,payload_ciphertext=excluded.payload_ciphertext,encryption_version=excluded.encryption_version,revision=excluded.revision,client_updated_at=excluded.client_updated_at,server_updated_at=excluded.server_updated_at,deleted_at=excluded.deleted_at " +
           "WHERE records.revision=?"
-        ).bind(session.user_id,recordId,dimension,recordType,storedPayload,nextRevision,storedClientTime,now,operation === "delete" ? now : null,baseRevision);
+        ).bind(session.user_id,recordId,dimension,recordType,storedPayload,encryptionVersion,nextRevision,storedClientTime,now,operation === "delete" ? now : null,baseRevision);
         const audit = db.prepare(
           "INSERT INTO sync_operations(user_id,operation_id,device_id,record_id,operation,base_revision,result_revision,status,server_updated_at) " +
           "SELECT ?,?,?,?,?,?,?, 'applied', ? WHERE changes()=1"
         ).bind(session.user_id,operationId,deviceId,recordId,operation,baseRevision,nextRevision,now);
-        const batchResult = await db.batch([write,audit]);
+        const context = db.prepare(
+          "INSERT INTO sync_record_context(user_id,record_id,source_device_id,purpose) " +
+          "SELECT user_id,record_id,device_id,? FROM sync_operations WHERE user_id=? AND operation_id=? AND status='applied' " +
+          "ON CONFLICT(user_id,record_id) DO UPDATE SET source_device_id=excluded.source_device_id,purpose=excluded.purpose"
+        ).bind(purpose,session.user_id,operationId);
+        const batchResult = await db.batch([write,audit,context]);
         const changed = Number((batchResult[0] as any)?.meta?.changes || 0);
         if (changed !== 1) {
           const current = await db.prepare("SELECT revision FROM records WHERE user_id=? AND record_id=?")

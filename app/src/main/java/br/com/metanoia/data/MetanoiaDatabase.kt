@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
@@ -22,9 +23,10 @@ class AgendaConverters {
     entities = [
         AgendaItem::class, JournalEntry::class, ReviewEntry::class,
         ConfessionEntry::class, DailyAnalysisEntry::class, SyncOutboxOperation::class,
-        SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class
+        SyncNonceCounterEntity::class, SyncRecordMetadata::class, SyncCursorEntity::class, SyncRemoteRecord::class,
+        FastingPlan::class, FastingDailyEntry::class
     ],
-    version = 9,
+    version = 10, 
     exportSchema = false
 )
 @TypeConverters(AgendaConverters::class)
@@ -39,6 +41,7 @@ abstract class MetanoiaDatabase : RoomDatabase() {
     abstract fun syncRecordMetadataDao(): SyncRecordMetadataDao
     abstract fun syncCursorDao(): SyncCursorDao
     abstract fun syncRemoteRecordDao(): SyncRemoteRecordDao
+    abstract fun fastingDao(): FastingDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -234,15 +237,73 @@ abstract class MetanoiaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE fasting_plans (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    dimension TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    identifiedNeed TEXT NOT NULL,
+                    recommendationReason TEXT NOT NULL,
+                    purpose TEXT NOT NULL,
+                    scriptureReferences TEXT NOT NULL,
+                    scriptureContext TEXT NOT NULL,
+                    preparation TEXT NOT NULL,
+                    dailyGuidance TEXT NOT NULL,
+                    durationDays INTEGER NOT NULL,
+                    startAt INTEGER NOT NULL,
+                    endAt INTEGER NOT NULL,
+                    foodAbstinence INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    completedAt INTEGER
+                )""")
+                db.execSQL("CREATE INDEX index_fasting_plans_dimension_createdAt ON fasting_plans(dimension, createdAt)")
+                db.execSQL("CREATE INDEX index_fasting_plans_status ON fasting_plans(status)")
+                db.execSQL("""CREATE TABLE fasting_daily_entries (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    planId TEXT NOT NULL,
+                    dayIndex INTEGER NOT NULL,
+                    reflection TEXT NOT NULL,
+                    experience TEXT NOT NULL,
+                    recordedAt INTEGER NOT NULL
+                )""")
+                db.execSQL("CREATE UNIQUE INDEX index_fasting_daily_entries_planId_dayIndex ON fasting_daily_entries(planId, dayIndex)")
+            }
+        }
+
         @Volatile private var INSTANCE: MetanoiaDatabase? = null
         fun get(context: Context): MetanoiaDatabase =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    MetanoiaDatabase::class.java,
-                    "metanoia.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
-                    .build().also { INSTANCE = it }
+                INSTANCE ?: run {
+                    val appContext = context.applicationContext
+                    val databaseKey = SqlCipherDatabaseMigration.ensureEncrypted(appContext)
+                    try {
+                        val database = Room.databaseBuilder(
+                            appContext,
+                            MetanoiaDatabase::class.java,
+                            SqlCipherDatabaseMigration.DATABASE_NAME
+                        ).openHelperFactory(SupportOpenHelperFactory(databaseKey.copyOf()))
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                            .build()
+                        try {
+                            // Force Room's full schema validation before discarding recovery.
+                            database.openHelper.writableDatabase
+                            SqlCipherDatabaseMigration.completeEncryptedValidation(
+                                appContext,
+                                SqlCipherDatabaseMigration.DATABASE_NAME,
+                                databaseKey
+                            )
+                            INSTANCE = database
+                            database
+                        } catch (error: Throwable) {
+                            database.close()
+                            throw error
+                        }
+                    } finally {
+                        databaseKey.fill(0)
+                    }
+                }
             }
     }
 }

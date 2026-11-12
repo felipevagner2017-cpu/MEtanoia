@@ -44,7 +44,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private const val METANOIA_API_BASE = "https://metanoia.restaura-lar.workers.dev"
+private val METANOIA_API_BASE = BuildConfig.METANOIA_API_BASE_URL
 private data class AiChatMessage(val role: String, val content: String)
 private data class AiAuthenticatedSession(val token: String, val userId: String, val deviceId: String)
 

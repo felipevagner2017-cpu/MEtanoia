@@ -2,7 +2,7 @@
 (()=> {
 "use strict";
 const VERSION=1,ITERATIONS=600000,KEY_BYTES=32,SALT_BYTES=16,NONCE_BYTES=12,enc=new TextEncoder();
-const b64=b=>btoa(String.fromCharCode(...b)),unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const b64=b=>{let binary="";for(let offset=0;offset<b.length;offset+=0x8000)binary+=String.fromCharCode(...b.subarray(offset,Math.min(offset+0x8000,b.length)));return btoa(binary)},unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 const keyAad=id=>enc.encode("metanoia-account-key|1|"+id);
 const recordAad=(u,id,d,t)=>enc.encode("metanoia-record|1|"+u+"|"+id+"|"+d+"|"+t);
 const random=n=>crypto.getRandomValues(new Uint8Array(n));
