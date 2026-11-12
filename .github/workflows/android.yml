@@ -58,6 +58,10 @@ jobs:
         run: python3 scripts/validate_d1_migrations.py
       - name: Test matrimonial vault encryption
         run: node scripts/test_ingrid_vault.mjs
+      - name: Generate official PWA PNG icons
+        run: |
+          npm install --prefix "$RUNNER_TEMP/metonoia-icon-tools" --no-save --package-lock=false sharp
+          NODE_PATH="$RUNNER_TEMP/metonoia-icon-tools/node_modules" node scripts/generate_pwa_icons.cjs
       - name: Validate PWA JavaScript
         run: node --check web/app.js && node --check web/sw.js && node --check web/crypto.js && node scripts/test_account_crypto.mjs
       - name: Validate Cloudflare Worker bundle
@@ -71,6 +75,7 @@ jobs:
         run: |
           git archive --format=zip --output=MEtanoia-codigo-fonte.zip HEAD
           zip -u MEtanoia-codigo-fonte.zip gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties
+          zip -u MEtanoia-codigo-fonte.zip web/icons/metonoia-192.png web/icons/metonoia-512.png
           cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/MEtanoia-Android.apk
       - name: Upload source code
         uses: actions/upload-artifact@v4

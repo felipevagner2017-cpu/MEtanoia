@@ -36,6 +36,10 @@ jobs:
           fi
       - name: Install Wrangler
         run: npm install --global wrangler
+      - name: Generate official PWA PNG icons
+        run: |
+          npm install --prefix "$RUNNER_TEMP/metonoia-icon-tools" --no-save --package-lock=false sharp
+          NODE_PATH="$RUNNER_TEMP/metonoia-icon-tools/node_modules" node scripts/generate_pwa_icons.cjs
       - name: Validate Worker configuration
         run: wrangler deploy --dry-run
         env:
