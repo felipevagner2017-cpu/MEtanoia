@@ -153,7 +153,10 @@ class MainActivityNavigationTest {
         captureScreen("02-devocao")
         assertPageVisible("Devocional", "REFERÊNCIAS BIBLIOGRÁFICAS E FONTES")
         captureScreen("02b-fontes")
-        clickNavigationControl("Meus registros")
+        composeRule.onNodeWithTag("spiritual-records-tab").assertIsDisplayed().performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("dimension-record-list").fetchSemanticsNodes().isNotEmpty()
+        }
         assertPageVisible("Devocional", "DIMENSÃO 01")
         val runSuffix = System.nanoTime().toString()
         val devotionalTitle = "Estudo bíblico Atos 2:42 $runSuffix"
@@ -170,7 +173,7 @@ class MainActivityNavigationTest {
         awaitJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
         // Distinguish Room persistence from ViewModel/Compose propagation before scrolling.
         composeRule.waitUntil(timeoutMillis = 10_000) {
-            composeRule.onAllNodesWithTag("dimension-record-count-1").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodes(hasText(devotionalTitle, substring = false)).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("dimension-record-list")
             .performScrollToNode(hasText(devotionalTitle, substring = false))
