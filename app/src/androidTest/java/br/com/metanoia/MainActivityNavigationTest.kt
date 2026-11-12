@@ -38,12 +38,21 @@ class MainActivityNavigationTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
-    private fun assertJournalPersisted(title: String, dimension: LifeDimension) = runBlocking {
+    private fun awaitJournalPersisted(title: String, dimension: LifeDimension) {
         val database = MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
-        val matches = database.journalDao().observeAll().first().filter { it.title == title }
-        check(matches.size == 1) { "Esperado exatamente um registro Room para '$title'; encontrados: ${matches.size}." }
-        check(matches.single().dimension == dimension) {
-            "Dimensão persistida incorreta para '$title': ${matches.single().dimension}."
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            runBlocking {
+                database.journalDao().observeAll().first().any {
+                    it.title == title && it.dimension == dimension
+                }
+            }
+        }
+        runBlocking {
+            val matches = database.journalDao().observeAll().first().filter { it.title == title }
+            check(matches.size == 1) { "Esperado exatamente um registro Room para '$title'; encontrados: ${matches.size}." }
+            check(matches.single().dimension == dimension) {
+                "Dimensão persistida incorreta para '$title': ${matches.single().dimension}."
+            }
         }
     }
 
@@ -155,8 +164,10 @@ class MainActivityNavigationTest {
             .performTextInput("Atos 2 descreve a formação da comunidade cristã após Pentecostes.")
         composeRule.onNodeWithText("Salvar estudo bíblico", substring = false)
             .performScrollTo().assertIsDisplayed().performClick()
+        // Separate Room persistence from Compose presentation: first wait for a
+        // direct DAO read, then independently assert that the visible list renders it.
+        awaitJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
         assertPageVisible("Devocional", devotionalTitle)
-        assertJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
 
         // Return to Áreas, then use a real horizontal swipe on the narrow-screen tab strip.
         clickNavigationControl("Áreas")
