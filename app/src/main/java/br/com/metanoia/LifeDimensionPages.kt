@@ -565,7 +565,7 @@ private fun DimensionRecordPage(
     val isProfessional = eyebrow.contains("03")
     val isStructuredGoal = isProfessional || eyebrow.contains("04")
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp).testTag("dimension-record-list"),
+        modifier = Modifier.fillMaxSize().background(DeepViolet).padding(horizontal = 16.dp).testTag("dimension-record-count-${entries.size}").testTag("dimension-record-list"),
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {

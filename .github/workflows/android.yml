@@ -263,8 +263,9 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             set +e
-            gradle connectedDebugAndroidTest --stacktrace --info 2>&1 | tee "$RUNNER_TEMP/room-integration.log"
-            test_status=${PIPESTATUS[0]}
+            gradle connectedDebugAndroidTest --stacktrace --info > "$RUNNER_TEMP/room-integration.log" 2>&1
+            test_status=$?
+            cat "$RUNNER_TEMP/room-integration.log"
             if [ "$test_status" -eq 0 ]; then
               python3 scripts/capture_emulator_screens.py || echo "Aviso: captura visual indisponível; os testes funcionais continuam independentes."
             else

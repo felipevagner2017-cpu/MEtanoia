@@ -18,6 +18,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -167,7 +168,13 @@ class MainActivityNavigationTest {
         // Separate Room persistence from Compose presentation: first wait for a
         // direct DAO read, then independently assert that the visible list renders it.
         awaitJournalPersisted(devotionalTitle, LifeDimension.SPIRITUAL)
-        assertPageVisible("Devocional", devotionalTitle)
+        // Distinguish Room persistence from ViewModel/Compose propagation before scrolling.
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("dimension-record-count-1").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("dimension-record-list")
+            .performScrollToNode(hasText(devotionalTitle, substring = false))
+        composeRule.onNodeWithText(devotionalTitle, substring = false).assertIsDisplayed()
 
         // Return to Áreas, then use a real horizontal swipe on the narrow-screen tab strip.
         clickNavigationControl("Áreas")
