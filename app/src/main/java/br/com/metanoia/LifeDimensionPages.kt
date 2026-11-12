@@ -218,7 +218,7 @@ internal fun SpiritualDimensionPage(entries: List<JournalEntry>, onSave: (String
             verticalAlignment = Alignment.CenterVertically
         ) {
             listOf("Estudos pastorais", "Meus registros").forEach { tab ->
-                TextButton(onClick = { selectedTab = tab }) {
+                TextButton(onClick = { selectedTab = tab }, modifier = Modifier.testTag(if (tab == "Meus registros") "spiritual-records-tab" else "spiritual-studies-tab")) {
                     Text(
                         tab,
                         color = if (selectedTab == tab) GoldBright else Ivory.copy(alpha = .78f),
