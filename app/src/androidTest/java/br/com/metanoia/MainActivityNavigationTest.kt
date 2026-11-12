@@ -40,6 +40,12 @@ class MainActivityNavigationTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
+    private fun enterTextInLazyList(listTag: String, label: String, value: String) {
+        val matcher = hasText(label, substring = false) and hasSetTextAction()
+        composeRule.onNodeWithTag(listTag).performScrollToNode(matcher)
+        composeRule.onNode(matcher).performTextInput(value)
+    }
+
     private fun awaitJournalPersisted(title: String, dimension: LifeDimension) {
         val database = MetanoiaDatabase.get(InstrumentationRegistry.getInstrumentation().targetContext)
         composeRule.waitUntil(timeoutMillis = 10_000) {
@@ -189,8 +195,8 @@ class MainActivityNavigationTest {
         assertPageVisible("Matrimônio", "Matrimônio / Ingrid")
         assertPageVisible("Matrimônio", "META E CONTEXTO DO CASAL")
         val relationshipGoal = "Fortalecer a comunicação do casal"
-        composeRule.onNode(hasText("O que deseja fortalecer ou reconstruir?", substring = false) and hasSetTextAction()).performTextInput(relationshipGoal)
-        composeRule.onNode(hasText("O que aconteceu? Descreva fatos e contexto sem atribuir culpa.", substring = false) and hasSetTextAction()).performTextInput("Quero conversar com mais calma sobre nossas prioridades.")
+        enterTextInLazyList("matrimonial-dimension-list", "O que deseja fortalecer ou reconstruir?", relationshipGoal)
+        enterTextInLazyList("matrimonial-dimension-list", "O que aconteceu? Descreva fatos e contexto sem atribuir culpa.", "Quero conversar com mais calma sobre nossas prioridades.")
         // The six-field form extends below the viewport. With the IME open, the
         // save action is composed but off-screen; explicitly bring it into view
         // before clicking so the test exercises the real Room save callback.
@@ -211,12 +217,12 @@ class MainActivityNavigationTest {
         clickNavigationControl("Profissional")
         assertPageVisible("Profissional", "DIMENSÃO 03")
         val professionalGoal = "Organizar uma transição profissional"
-        composeRule.onNode(hasText("Meta, projeto ou desafio profissional", substring = false) and hasSetTextAction()).performTextInput(professionalGoal)
-        composeRule.onNode(hasText("Descreva sua situação profissional atual, experiência, responsabilidades e recursos disponíveis.", substring = false) and hasSetTextAction()).performTextInput("Atualmente trabalho com vendas e quero migrar para trabalho remoto.")
-        composeRule.onNode(hasText("Obstáculo ou dificuldade atual", substring = false) and hasSetTextAction()).performTextInput("Preciso identificar competências transferíveis.")
-        composeRule.onNode(hasText("Próxima ação concreta", substring = false) and hasSetTextAction()).performTextInput("Mapear três funções compatíveis.")
-        composeRule.onNode(hasText("Prazo ou frequência desejada", substring = false) and hasSetTextAction()).performTextInput("Próximos sete dias")
-        composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Lista de competências e três vagas analisadas.")
+        enterTextInLazyList("dimension-record-list", "Meta, projeto ou desafio profissional", professionalGoal)
+        enterTextInLazyList("dimension-record-list", "Descreva sua situação profissional atual, experiência, responsabilidades e recursos disponíveis.", "Atualmente trabalho com vendas e quero migrar para trabalho remoto.")
+        enterTextInLazyList("dimension-record-list", "Obstáculo ou dificuldade atual", "Preciso identificar competências transferíveis.")
+        enterTextInLazyList("dimension-record-list", "Próxima ação concreta", "Mapear três funções compatíveis.")
+        enterTextInLazyList("dimension-record-list", "Prazo ou frequência desejada", "Próximos sete dias")
+        enterTextInLazyList("dimension-record-list", "Como vou reconhecer o resultado?", "Lista de competências e três vagas analisadas.")
         composeRule.onNodeWithText("Registrar plano profissional", substring = false).performClick()
         assertPageVisible("Profissional", professionalGoal)
         awaitJournalPersisted(professionalGoal, LifeDimension.PROFESSIONAL)
@@ -226,12 +232,12 @@ class MainActivityNavigationTest {
         assertPageVisible("Cotidiano", "EVOLUÇÃO COTIDIANA")
         assertPageVisible("Cotidiano", "Objetivo de rotina ou desenvolvimento pessoal")
         val dailyGoal = "Criar uma rotina diária consistente"
-        composeRule.onNode(hasText("Objetivo de rotina ou desenvolvimento pessoal", substring = false) and hasSetTextAction()).performTextInput(dailyGoal)
-        composeRule.onNode(hasText("Descreva sua realidade atual, rotina, energia, responsabilidades e o que deseja melhorar.", substring = false) and hasSetTextAction()).performTextInput("Minha rotina varia e preciso organizar horários.")
-        composeRule.onNode(hasText("Obstáculo ou dificuldade atual", substring = false) and hasSetTextAction()).performTextInput("Falta de constância.")
-        composeRule.onNode(hasText("Próxima ação concreta", substring = false) and hasSetTextAction()).performTextInput("Definir horário de início do dia.")
-        composeRule.onNode(hasText("Prazo ou frequência desejada", substring = false) and hasSetTextAction()).performTextInput("Todos os dias")
-        composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Cumprir o horário em cinco dias da semana.")
+        enterTextInLazyList("dimension-record-list", "Objetivo de rotina ou desenvolvimento pessoal", dailyGoal)
+        enterTextInLazyList("dimension-record-list", "Descreva sua realidade atual, rotina, energia, responsabilidades e o que deseja melhorar.", "Minha rotina varia e preciso organizar horários.")
+        enterTextInLazyList("dimension-record-list", "Obstáculo ou dificuldade atual", "Falta de constância.")
+        enterTextInLazyList("dimension-record-list", "Próxima ação concreta", "Definir horário de início do dia.")
+        enterTextInLazyList("dimension-record-list", "Prazo ou frequência desejada", "Todos os dias")
+        enterTextInLazyList("dimension-record-list", "Como vou reconhecer o resultado?", "Cumprir o horário em cinco dias da semana.")
         composeRule.onNodeWithText("Registrar objetivo cotidiano", substring = false).performClick()
         assertPageVisible("Cotidiano", dailyGoal)
         awaitJournalPersisted(dailyGoal, LifeDimension.ROUTINE)
