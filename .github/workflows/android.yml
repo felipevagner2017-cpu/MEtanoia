@@ -54,6 +54,9 @@ jobs:
           echo "APK SHA-256: $APK_SHA256" >> "$GITHUB_STEP_SUMMARY"
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
+      - name: Enforce unit test results
+        if: always()
+        run: python3 scripts/verify_android_test_results.py app/build/test-results/testDebugUnitTest
       - name: Validate D1 migrations
         run: python3 scripts/validate_d1_migrations.py
       - name: Test matrimonial vault encryption
@@ -259,11 +262,18 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
-            set -o pipefail
+            set +e
             gradle connectedDebugAndroidTest --stacktrace --info 2>&1 | tee "$RUNNER_TEMP/room-integration.log"
-      - name: Capture emulator screenshots
-        if: success()
-        run: python3 scripts/capture_emulator_screens.py
+            test_status=${PIPESTATUS[0]}
+            if [ "$test_status" -eq 0 ]; then
+              python3 scripts/capture_emulator_screens.py || echo "Aviso: captura visual indisponível; os testes funcionais continuam independentes."
+            else
+              echo "Capturas visuais ignoradas porque os testes instrumentados não passaram."
+            fi
+            exit "$test_status"
+      - name: Enforce instrumented test results
+        if: always()
+        run: python3 scripts/verify_android_test_results.py app/build/outputs/androidTest-results/connected/debug
       - name: Add Room test diagnostics to job summary
         if: always()
         shell: bash
@@ -305,7 +315,7 @@ jobs:
         with:
           name: metonoia-emulator-screens
           path: screenshots/*.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
   publish-preview:

@@ -189,7 +189,7 @@ class MainActivityNavigationTest {
         // assertPageVisible waits for the Room-backed Flow to render the inserted
         // record, rather than assuming that the asynchronous ViewModel write is done.
         assertPageVisible("Matrimônio", "Meta matrimonial · $relationshipGoal")
-        assertJournalPersisted("Meta matrimonial · $relationshipGoal", LifeDimension.MATRIMONIAL)
+        awaitJournalPersisted("Meta matrimonial · $relationshipGoal", LifeDimension.MATRIMONIAL)
         captureScreen("03-matrimonio")
 
         // Leave and re-enter Matrimonio to verify pager state and content remain reachable.
@@ -207,7 +207,7 @@ class MainActivityNavigationTest {
         composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Lista de competências e três vagas analisadas.")
         composeRule.onNodeWithText("Registrar plano profissional", substring = false).performClick()
         assertPageVisible("Profissional", professionalGoal)
-        assertJournalPersisted(professionalGoal, LifeDimension.PROFESSIONAL)
+        awaitJournalPersisted(professionalGoal, LifeDimension.PROFESSIONAL)
         captureScreen("04-profissional")
 
         clickNavigationControl("Cotidiano")
@@ -222,7 +222,7 @@ class MainActivityNavigationTest {
         composeRule.onNode(hasText("Como vou reconhecer o resultado?", substring = false) and hasSetTextAction()).performTextInput("Cumprir o horário em cinco dias da semana.")
         composeRule.onNodeWithText("Registrar objetivo cotidiano", substring = false).performClick()
         assertPageVisible("Cotidiano", dailyGoal)
-        assertJournalPersisted(dailyGoal, LifeDimension.ROUTINE)
+        awaitJournalPersisted(dailyGoal, LifeDimension.ROUTINE)
         captureScreen("05-cotidiano")
 
         clickNavigationControl("Agenda")
