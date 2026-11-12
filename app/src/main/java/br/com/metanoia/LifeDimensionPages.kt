@@ -569,6 +569,8 @@ private fun DimensionRecordPage(
         contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Keep the Flow-driven record count on its own semantics node.
+        item { Spacer(Modifier.size(1.dp).testTag("dimension-record-count-${entries.size}")) }
         item { DimensionHero(eyebrow, title, description) }
         item {
             JourneyProgressCard(
